@@ -1,0 +1,63 @@
+{
+  "header": {
+    "title": "Pembuat Jadwal",
+    "subtitle": "Buat kalender acara dalam hitungan detik"
+  },
+  "form": {
+    "title": "Detail Acara",
+    "eventName": "Nama Acara",
+    "eventNamePlaceholder": "contoh: Bootcamp Pengembangan Web",
+    "startDate": "Tanggal Mulai",
+    "pickDate": "Pilih tanggal",
+    "numberOfMeetings": "Jumlah Pertemuan",
+    "meetingDays": "Hari Pertemuan",
+    "selectDays": "Pilih hari dalam seminggu untuk pertemuan Anda",
+    "startTime": "Waktu Mulai",
+    "endTime": "Waktu Selesai",
+    "generateButton": "Buat Jadwal",
+    "validation": {
+      "eventNameRequired": "Silakan masukkan nama acara",
+      "dateRequired": "Silakan pilih tanggal mulai",
+      "meetingsRequired": "Jumlah pertemuan minimal 1",
+      "daysRequired": "Silakan pilih setidaknya satu hari dalam seminggu"
+    }
+  },
+  "weekdays": {
+    "sunday": "Minggu",
+    "monday": "Senin",
+    "tuesday": "Selasa",
+    "wednesday": "Rabu",
+    "thursday": "Kamis",
+    "friday": "Jumat",
+    "saturday": "Sabtu"
+  },
+  "schedule": {
+    "title": "Jadwal Acara",
+    "sessionsSelected": "{{count}} dari {{total}} sesi dipilih",
+    "session": "Sesi",
+    "csvButton": "CSV",
+    "icsButton": "ICS"
+  },
+  "export": {
+    "successCsv": "Jadwal diekspor sebagai CSV",
+    "successIcs": "Jadwal diekspor sebagai ICS",
+    "errorNoSessions": "Silakan pilih setidaknya satu sesi untuk diekspor",
+    "sessionNumber": "Nomor Sesi",
+    "date": "Tanggal",
+    "day": "Hari",
+    "startTime": "Waktu Mulai",
+    "endTime": "Waktu Selesai",
+    "summary": "{{eventName}} - Sesi {{sessionNumber}}",
+    "description": "Sesi {{sessionNumber}} dari {{eventName}}"
+  },
+  "emptyState": {
+    "title": "Belum Ada Jadwal",
+    "description": "Isi formulir dan klik \"Buat Jadwal\" untuk membuat kalender acara Anda"
+  },
+  "footer": {
+    "text": "Dibuat untuk akademi, penyedia bootcamp, dan penyelenggara acara"
+  },
+  "toast": {
+    "generated": "Berhasil membuat {{count}} sesi!"
+  }
+}

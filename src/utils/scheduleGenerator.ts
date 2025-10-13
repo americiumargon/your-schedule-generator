@@ -1,4 +1,7 @@
-import { addDays, getDay } from "date-fns";
+import { addDays, getDay, format } from "date-fns";
+import { enUS, id as idLocale } from "date-fns/locale";
+import en from "@/locales/en.json";
+import id from "@/locales/id.json";
 
 interface Session {
   date: Date;
@@ -40,12 +43,22 @@ export function generateSchedule(
   return sessions;
 }
 
-export function exportToCSV(sessions: Session[], eventName: string): void {
-  const headers = ["Session Number", "Date", "Day", "Start Time", "End Time"];
+export function exportToCSV(sessions: Session[], eventName: string, language: string = 'en'): void {
+  const t = language === 'id' ? id : en;
+  const locale = language === 'id' ? idLocale : enUS;
+  
+  const headers = [
+    t.export.sessionNumber,
+    t.export.date,
+    t.export.day,
+    t.export.startTime,
+    t.export.endTime
+  ];
+  
   const rows = sessions.map(session => [
     session.sessionNumber,
-    session.date.toLocaleDateString(),
-    session.date.toLocaleDateString("en-US", { weekday: "long" }),
+    format(session.date, "P", { locale }),
+    format(session.date, "EEEE", { locale }),
     session.startTime,
     session.endTime,
   ]);
@@ -58,7 +71,8 @@ export function exportToCSV(sessions: Session[], eventName: string): void {
   downloadFile(csvContent, `${eventName || "schedule"}.csv`, "text/csv");
 }
 
-export function exportToICS(sessions: Session[], eventName: string): void {
+export function exportToICS(sessions: Session[], eventName: string, language: string = 'en'): void {
+  const t = language === 'id' ? id : en;
   const formatICSDate = (date: Date, time: string): string => {
     const [hours, minutes] = time.split(":");
     const dateWithTime = new Date(date);
@@ -70,12 +84,19 @@ export function exportToICS(sessions: Session[], eventName: string): void {
     const startDateTime = formatICSDate(session.date, session.startTime);
     const endDateTime = formatICSDate(session.date, session.endTime);
     
+    const summary = t.export.summary
+      .replace('{{eventName}}', eventName)
+      .replace('{{sessionNumber}}', session.sessionNumber.toString());
+    const description = t.export.description
+      .replace('{{sessionNumber}}', session.sessionNumber.toString())
+      .replace('{{eventName}}', eventName);
+    
     return [
       "BEGIN:VEVENT",
       `DTSTART:${startDateTime}`,
       `DTEND:${endDateTime}`,
-      `SUMMARY:${eventName} - Session ${session.sessionNumber}`,
-      `DESCRIPTION:Session ${session.sessionNumber} of ${eventName}`,
+      `SUMMARY:${summary}`,
+      `DESCRIPTION:${description}`,
       `UID:${Date.now()}-${session.sessionNumber}@schedule-generator.com`,
       "END:VEVENT",
     ].join("\r\n");

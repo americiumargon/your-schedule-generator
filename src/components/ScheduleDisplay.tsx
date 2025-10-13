@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { format } from "date-fns";
+import { enUS, id as idLocale } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Download, Calendar, FileText } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 interface Session {
   date: Date;
@@ -16,13 +18,16 @@ interface Session {
 interface ScheduleDisplayProps {
   eventName: string;
   sessions: Session[];
-  onExport: (format: "csv" | "ics", enabledSessions: Session[]) => void;
+  onExport: (format: "csv" | "ics", enabledSessions: Session[], language: string) => void;
 }
 
 export function ScheduleDisplay({ eventName, sessions, onExport }: ScheduleDisplayProps) {
+  const { t, i18n } = useTranslation();
   const [enabledSessions, setEnabledSessions] = useState<Set<number>>(
     new Set(sessions.map((_, idx) => idx))
   );
+
+  const dateLocale = i18n.language === 'id' ? idLocale : enUS;
 
   const toggleSession = (index: number) => {
     setEnabledSessions(prev => {
@@ -43,10 +48,10 @@ export function ScheduleDisplay({ eventName, sessions, onExport }: ScheduleDispl
   const handleExport = (format: "csv" | "ics") => {
     const enabled = getEnabledSessions();
     if (enabled.length === 0) {
-      toast.error("Please select at least one session to export");
+      toast.error(t('export.errorNoSessions'));
       return;
     }
-    onExport(format, enabled);
+    onExport(format, enabled, i18n.language);
   };
 
   const enabledCount = enabledSessions.size;
@@ -55,9 +60,9 @@ export function ScheduleDisplay({ eventName, sessions, onExport }: ScheduleDispl
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">{eventName || "Event Schedule"}</h2>
+          <h2 className="text-2xl font-bold">{eventName || t('schedule.title')}</h2>
           <p className="text-sm text-muted-foreground mt-1">
-            {enabledCount} of {sessions.length} sessions selected
+            {t('schedule.sessionsSelected', { count: enabledCount, total: sessions.length })}
           </p>
         </div>
         <div className="flex gap-2">
@@ -68,7 +73,7 @@ export function ScheduleDisplay({ eventName, sessions, onExport }: ScheduleDispl
             className="gap-2"
           >
             <FileText className="h-4 w-4" />
-            CSV
+            {t('schedule.csvButton')}
           </Button>
           <Button
             variant="outline"
@@ -77,7 +82,7 @@ export function ScheduleDisplay({ eventName, sessions, onExport }: ScheduleDispl
             className="gap-2"
           >
             <Calendar className="h-4 w-4" />
-            ICS
+            {t('schedule.icsButton')}
           </Button>
         </div>
       </div>
@@ -100,10 +105,10 @@ export function ScheduleDisplay({ eventName, sessions, onExport }: ScheduleDispl
                 />
                 <div>
                   <div className="font-medium">
-                    Session {session.sessionNumber}
+                    {t('schedule.session')} {session.sessionNumber}
                   </div>
                   <div className="text-sm text-muted-foreground">
-                    {format(session.date, "EEEE, MMMM d, yyyy")}
+                    {format(session.date, "EEEE, MMMM d, yyyy", { locale: dateLocale })}
                   </div>
                 </div>
               </div>

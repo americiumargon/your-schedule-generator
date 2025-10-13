@@ -1,0 +1,63 @@
+{
+  "header": {
+    "title": "Schedule Generator",
+    "subtitle": "Create event calendars in seconds"
+  },
+  "form": {
+    "title": "Event Details",
+    "eventName": "Event Name",
+    "eventNamePlaceholder": "e.g., Web Development Bootcamp",
+    "startDate": "Start Date",
+    "pickDate": "Pick a date",
+    "numberOfMeetings": "Number of Meetings",
+    "meetingDays": "Meeting Days",
+    "selectDays": "Select the days of the week for your meetings",
+    "startTime": "Start Time",
+    "endTime": "End Time",
+    "generateButton": "Generate Schedule",
+    "validation": {
+      "eventNameRequired": "Please enter an event name",
+      "dateRequired": "Please select a start date",
+      "meetingsRequired": "Number of meetings must be at least 1",
+      "daysRequired": "Please select at least one day of the week"
+    }
+  },
+  "weekdays": {
+    "sunday": "Sunday",
+    "monday": "Monday",
+    "tuesday": "Tuesday",
+    "wednesday": "Wednesday",
+    "thursday": "Thursday",
+    "friday": "Friday",
+    "saturday": "Saturday"
+  },
+  "schedule": {
+    "title": "Event Schedule",
+    "sessionsSelected": "{{count}} of {{total}} sessions selected",
+    "session": "Session",
+    "csvButton": "CSV",
+    "icsButton": "ICS"
+  },
+  "export": {
+    "successCsv": "Schedule exported as CSV",
+    "successIcs": "Schedule exported as ICS",
+    "errorNoSessions": "Please select at least one session to export",
+    "sessionNumber": "Session Number",
+    "date": "Date",
+    "day": "Day",
+    "startTime": "Start Time",
+    "endTime": "End Time",
+    "summary": "{{eventName}} - Session {{sessionNumber}}",
+    "description": "Session {{sessionNumber}} of {{eventName}}"
+  },
+  "emptyState": {
+    "title": "No Schedule Yet",
+    "description": "Fill in the form and click \"Generate Schedule\" to create your event calendar"
+  },
+  "footer": {
+    "text": "Built for academies, bootcamps, and event organizers"
+  },
+  "toast": {
+    "generated": "Generated {{count}} sessions!"
+  }
+}
