@@ -43,29 +43,50 @@ export function generateSchedule(
   return sessions;
 }
 
+function convertTo12Hour(time24: string): string {
+  const [hours, minutes] = time24.split(':').map(Number);
+  const period = hours >= 12 ? 'PM' : 'AM';
+  const hours12 = hours % 12 || 12;
+  return `${hours12.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')} ${period}`;
+}
+
 export function exportToCSV(sessions: Session[], eventName: string, language: string = 'en'): void {
   const t = language === 'id' ? id : en;
-  const locale = language === 'id' ? idLocale : enUS;
   
+  // Google Calendar CSV format headers
   const headers = [
-    t.export.sessionNumber,
-    t.export.date,
-    t.export.day,
-    t.export.startTime,
-    t.export.endTime
+    "Subject",
+    "Start Date",
+    "Start Time",
+    "End Date",
+    "End Time",
+    "All Day Event",
+    "Description",
+    "Location",
+    "Private"
   ];
   
-  const rows = sessions.map(session => [
-    session.sessionNumber,
-    format(session.date, "P", { locale }),
-    format(session.date, "EEEE", { locale }),
-    session.startTime,
-    session.endTime,
-  ]);
+  const rows = sessions.map(session => {
+    const dateStr = format(session.date, "MM/dd/yyyy"); // Always use MM/DD/YYYY for Google Calendar
+    const subject = `${eventName} - ${t.schedule.session} ${session.sessionNumber}`;
+    const description = `${t.schedule.session} ${session.sessionNumber} ${t.export.description.split(' ')[0]} ${eventName}`;
+    
+    return [
+      subject,
+      dateStr,
+      convertTo12Hour(session.startTime),
+      dateStr,
+      convertTo12Hour(session.endTime),
+      "False",
+      description,
+      "",
+      ""
+    ];
+  });
 
   const csvContent = [
     headers.join(","),
-    ...rows.map(row => row.join(",")),
+    ...rows.map(row => row.map(cell => `"${cell}"`).join(",")),
   ].join("\n");
 
   downloadFile(csvContent, `${eventName || "schedule"}.csv`, "text/csv");
