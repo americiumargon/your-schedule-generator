@@ -1,24 +1,24 @@
 {
   "header": {
     "title": "Pembuat Jadwal",
-    "subtitle": "Buat kalender acara dalam hitungan detik"
+    "subtitle": "Buat jadwal berulang untuk aktivitas apa pun"
   },
   "form": {
-    "title": "Detail Acara",
-    "eventName": "Nama Acara",
-    "eventNamePlaceholder": "contoh: Bootcamp Pengembangan Web",
+    "title": "Detail Jadwal",
+    "eventName": "Nama Aktivitas",
+    "eventNamePlaceholder": "contoh: Olahraga Pagi, Rapat Tim, Sesi Belajar",
     "startDate": "Tanggal Mulai",
     "pickDate": "Pilih tanggal",
-    "numberOfMeetings": "Jumlah Pertemuan",
-    "meetingDays": "Hari Pertemuan",
-    "selectDays": "Pilih hari dalam seminggu untuk pertemuan Anda",
+    "numberOfMeetings": "Jumlah Sesi",
+    "meetingDays": "Hari Berulang",
+    "selectDays": "Pilih hari dalam seminggu untuk sesi Anda",
     "startTime": "Waktu Mulai",
     "endTime": "Waktu Selesai",
     "generateButton": "Buat Jadwal",
     "validation": {
-      "eventNameRequired": "Silakan masukkan nama acara",
+      "eventNameRequired": "Silakan masukkan nama aktivitas",
       "dateRequired": "Silakan pilih tanggal mulai",
-      "meetingsRequired": "Jumlah pertemuan minimal 1",
+      "meetingsRequired": "Jumlah sesi minimal 1",
       "daysRequired": "Silakan pilih setidaknya satu hari dalam seminggu"
     }
   },
@@ -32,7 +32,7 @@
     "saturday": "Sabtu"
   },
   "schedule": {
-    "title": "Jadwal Acara",
+    "title": "Jadwal Anda",
     "sessionsSelected": "{{count}} dari {{total}} sesi dipilih",
     "session": "Sesi",
     "csvButton": "CSV",
@@ -55,7 +55,7 @@
     "description": "Isi formulir dan klik \"Buat Jadwal\" untuk membuat kalender acara Anda"
   },
   "footer": {
-    "text": "Dibuat untuk akademi, penyedia bootcamp, dan penyelenggara acara"
+    "text": "Sempurna untuk rutinitas pribadi, jadwal tim, dan acara berulang"
   },
   "toast": {
     "generated": "Berhasil membuat {{count}} sesi!"

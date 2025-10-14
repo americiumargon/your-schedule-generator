@@ -1,24 +1,24 @@
 {
   "header": {
     "title": "Schedule Generator",
-    "subtitle": "Create event calendars in seconds"
+    "subtitle": "Create recurring schedules for any activity"
   },
   "form": {
-    "title": "Event Details",
-    "eventName": "Event Name",
-    "eventNamePlaceholder": "e.g., Web Development Bootcamp",
+    "title": "Schedule Details",
+    "eventName": "Activity Name",
+    "eventNamePlaceholder": "e.g., Morning Workout, Team Standup, Study Session",
     "startDate": "Start Date",
     "pickDate": "Pick a date",
-    "numberOfMeetings": "Number of Meetings",
-    "meetingDays": "Meeting Days",
-    "selectDays": "Select the days of the week for your meetings",
+    "numberOfMeetings": "Number of Sessions",
+    "meetingDays": "Recurring Days",
+    "selectDays": "Select the days of the week for your sessions",
     "startTime": "Start Time",
     "endTime": "End Time",
     "generateButton": "Generate Schedule",
     "validation": {
-      "eventNameRequired": "Please enter an event name",
+      "eventNameRequired": "Please enter an activity name",
       "dateRequired": "Please select a start date",
-      "meetingsRequired": "Number of meetings must be at least 1",
+      "meetingsRequired": "Number of sessions must be at least 1",
       "daysRequired": "Please select at least one day of the week"
     }
   },
@@ -32,7 +32,7 @@
     "saturday": "Saturday"
   },
   "schedule": {
-    "title": "Event Schedule",
+    "title": "Your Schedule",
     "sessionsSelected": "{{count}} of {{total}} sessions selected",
     "session": "Session",
     "csvButton": "CSV",
@@ -55,7 +55,7 @@
     "description": "Fill in the form and click \"Generate Schedule\" to create your event calendar"
   },
   "footer": {
-    "text": "Built for academies, bootcamps, and event organizers"
+    "text": "Perfect for personal routines, team schedules, and recurring events"
   },
   "toast": {
     "generated": "Generated {{count}} sessions!"
