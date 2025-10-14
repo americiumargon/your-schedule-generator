@@ -37,8 +37,8 @@ export function ScheduleForm({ onGenerate }: ScheduleFormProps) {
   const { t, i18n } = useTranslation();
   const [eventName, setEventName] = useState("");
   const [startDate, setStartDate] = useState<Date>();
-  const [numberOfMeetings, setNumberOfMeetings] = useState("28");
-  const [selectedDays, setSelectedDays] = useState<number[]>([1, 3, 4]); // Mon, Wed, Thu
+  const [numberOfMeetings, setNumberOfMeetings] = useState("");
+  const [selectedDays, setSelectedDays] = useState<number[]>([]);
   const [startTime, setStartTime] = useState("19:00");
   const [endTime, setEndTime] = useState("21:00");
 
