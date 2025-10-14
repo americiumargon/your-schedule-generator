@@ -11,6 +11,7 @@ import { enUS, id as idLocale } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { z } from "zod";
 
 const WEEKDAYS = [
   { id: 1, key: "monday" },
@@ -21,6 +22,28 @@ const WEEKDAYS = [
   { id: 6, key: "saturday" },
   { id: 0, key: "sunday" },
 ];
+
+// Zod schema for input validation
+const scheduleSchema = z.object({
+  eventName: z.string()
+    .trim()
+    .min(1, "Activity name is required")
+    .max(100, "Activity name must be less than 100 characters"),
+  numberOfMeetings: z.number()
+    .int("Number of sessions must be a whole number")
+    .min(1, "At least 1 session is required")
+    .max(365, "Maximum 365 sessions allowed"),
+  selectedDays: z.array(z.number().min(0).max(6))
+    .min(1, "At least one day must be selected"),
+  startTime: z.string()
+    .regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid start time format"),
+  endTime: z.string()
+    .regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid end time format"),
+  holidays: z.array(z.date())
+}).refine(data => data.startTime < data.endTime, {
+  message: "End time must be after start time",
+  path: ["endTime"]
+});
 
 interface ScheduleFormProps {
   onGenerate: (data: {
@@ -57,35 +80,48 @@ export function ScheduleForm({ onGenerate }: ScheduleFormProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!eventName.trim()) {
-      toast.error(t('form.validation.eventNameRequired'));
-      return;
-    }
-
     if (!startDate) {
       toast.error(t('form.validation.dateRequired'));
       return;
     }
 
-    if (parseInt(numberOfMeetings) < 1) {
-      toast.error(t('form.validation.meetingsRequired'));
+    if (!startTime || !endTime) {
+      toast.error(t('form.validation.timeRequired'));
       return;
     }
 
-    if (selectedDays.length === 0) {
-      toast.error(t('form.validation.daysRequired'));
-      return;
-    }
+    // Validate using zod schema
+    try {
+      const validatedData = scheduleSchema.parse({
+        eventName: eventName.trim(),
+        numberOfMeetings: parseInt(numberOfMeetings),
+        selectedDays,
+        startTime,
+        endTime,
+        holidays,
+      });
 
-    onGenerate({
-      eventName,
-      startDate,
-      numberOfMeetings: parseInt(numberOfMeetings),
-      selectedDays,
-      startTime,
-      endTime,
-      holidays,
-    });
+      // Sanitize eventName for safe export (remove special chars that could break CSV/ICS)
+      const sanitizedEventName = validatedData.eventName.replace(/[",\n\r]/g, ' ');
+
+      onGenerate({
+        eventName: sanitizedEventName,
+        startDate,
+        numberOfMeetings: validatedData.numberOfMeetings,
+        selectedDays: validatedData.selectedDays,
+        startTime: validatedData.startTime,
+        endTime: validatedData.endTime,
+        holidays: validatedData.holidays,
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        // Display the first validation error
+        const firstError = error.errors[0];
+        toast.error(firstError.message);
+      } else {
+        toast.error(t('form.validation.invalid'));
+      }
+    }
   };
 
   return (

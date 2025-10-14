@@ -23,7 +23,9 @@
       "eventNameRequired": "Silakan masukkan nama aktivitas",
       "dateRequired": "Silakan pilih tanggal mulai",
       "meetingsRequired": "Jumlah sesi minimal 1",
-      "daysRequired": "Silakan pilih setidaknya satu hari dalam seminggu"
+      "daysRequired": "Silakan pilih setidaknya satu hari dalam seminggu",
+      "timeRequired": "Silakan masukkan waktu mulai dan selesai",
+      "invalid": "Silakan periksa input Anda dan coba lagi"
     }
   },
   "weekdays": {
