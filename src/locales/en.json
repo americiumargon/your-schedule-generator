@@ -42,6 +42,8 @@
     "title": "Your Schedule",
     "sessionsSelected": "{{count}} of {{total}} sessions selected",
     "session": "Session",
+    "selectAll": "Select All",
+    "deselectAll": "Deselect All",
     "csvButton": "CSV",
     "icsButton": "ICS"
   },

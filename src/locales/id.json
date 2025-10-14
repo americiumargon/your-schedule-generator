@@ -41,6 +41,8 @@
     "title": "Jadwal Anda",
     "sessionsSelected": "{{count}} dari {{total}} sesi dipilih",
     "session": "Sesi",
+    "selectAll": "Pilih Semua",
+    "deselectAll": "Batalkan Semua",
     "csvButton": "CSV",
     "icsButton": "ICS"
   },

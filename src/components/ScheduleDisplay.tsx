@@ -55,6 +55,16 @@ export function ScheduleDisplay({ eventName, sessions, onExport }: ScheduleDispl
   };
 
   const enabledCount = enabledSessions.size;
+  const allSelected = enabledCount === sessions.length;
+  const someSelected = enabledCount > 0 && enabledCount < sessions.length;
+
+  const toggleAll = () => {
+    if (allSelected) {
+      setEnabledSessions(new Set());
+    } else {
+      setEnabledSessions(new Set(sessions.map((_, idx) => idx)));
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -85,6 +95,21 @@ export function ScheduleDisplay({ eventName, sessions, onExport }: ScheduleDispl
             {t('schedule.icsButton')}
           </Button>
         </div>
+      </div>
+
+      <div className="flex items-center gap-2 pb-2 border-b">
+        <Checkbox
+          checked={allSelected}
+          onCheckedChange={toggleAll}
+          ref={(ref) => {
+            if (ref) {
+              (ref as any).indeterminate = someSelected;
+            }
+          }}
+        />
+        <label className="text-sm font-medium cursor-pointer" onClick={toggleAll}>
+          {allSelected ? t('schedule.deselectAll') : t('schedule.selectAll')}
+        </label>
       </div>
 
       <div className="space-y-2 max-h-[600px] overflow-y-auto pr-2">
