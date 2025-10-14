@@ -30,6 +30,7 @@ interface ScheduleFormProps {
     selectedDays: number[];
     startTime: string;
     endTime: string;
+    holidays: Date[];
   }) => void;
 }
 
@@ -39,8 +40,9 @@ export function ScheduleForm({ onGenerate }: ScheduleFormProps) {
   const [startDate, setStartDate] = useState<Date>();
   const [numberOfMeetings, setNumberOfMeetings] = useState("");
   const [selectedDays, setSelectedDays] = useState<number[]>([]);
-  const [startTime, setStartTime] = useState("19:00");
-  const [endTime, setEndTime] = useState("21:00");
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
+  const [holidays, setHolidays] = useState<Date[]>([]);
 
   const dateLocale = i18n.language === 'id' ? idLocale : enUS;
 
@@ -82,6 +84,7 @@ export function ScheduleForm({ onGenerate }: ScheduleFormProps) {
       selectedDays,
       startTime,
       endTime,
+      holidays,
     });
   };
 
@@ -185,6 +188,34 @@ export function ScheduleForm({ onGenerate }: ScheduleFormProps) {
             className="mt-2"
           />
         </div>
+      </div>
+
+      <div>
+        <Label className="mb-3 block">{t('form.holidays')}</Label>
+        <p className="text-sm text-muted-foreground mb-2">{t('form.holidaysDescription')}</p>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className="w-full justify-start text-left font-normal"
+            >
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {holidays.length > 0 
+                ? t('form.holidaysSelected', { count: holidays.length })
+                : t('form.selectHolidays')}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar
+              mode="multiple"
+              selected={holidays}
+              onSelect={(dates) => setHolidays(dates || [])}
+              initialFocus
+              className="pointer-events-auto"
+              locale={dateLocale}
+            />
+          </PopoverContent>
+        </Popover>
       </div>
 
       <Button

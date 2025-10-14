@@ -14,6 +14,11 @@
     "selectDays": "Select the days of the week for your sessions",
     "startTime": "Start Time",
     "endTime": "End Time",
+    "holidays": "Holidays / Days Off",
+    "holidaysDescription": "Select dates to exclude from the schedule",
+    "selectHolidays": "Select holidays",
+    "holidaysSelected": "{{count}} holiday selected",
+    "holidaysSelected_other": "{{count}} holidays selected",
     "generateButton": "Generate Schedule",
     "validation": {
       "eventNameRequired": "Please enter an activity name",

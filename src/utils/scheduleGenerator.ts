@@ -15,7 +15,8 @@ export function generateSchedule(
   numberOfMeetings: number,
   selectedDays: number[], // 0 = Sunday, 1 = Monday, etc.
   startTime: string,
-  endTime: string
+  endTime: string,
+  holidays: Date[] = []
 ): Session[] {
   const sessions: Session[] = [];
   let currentDate = new Date(startDate);
@@ -23,11 +24,18 @@ export function generateSchedule(
 
   // Sort selected days to ensure consistent ordering
   const sortedDays = [...selectedDays].sort();
+  
+  // Create a Set of holiday date strings for fast lookup
+  const holidayStrings = new Set(
+    holidays.map(date => format(date, "yyyy-MM-dd"))
+  );
 
   while (sessionCount < numberOfMeetings) {
     const dayOfWeek = getDay(currentDate);
+    const currentDateStr = format(currentDate, "yyyy-MM-dd");
     
-    if (sortedDays.includes(dayOfWeek)) {
+    // Check if current date is a valid meeting day and not a holiday
+    if (sortedDays.includes(dayOfWeek) && !holidayStrings.has(currentDateStr)) {
       sessions.push({
         date: new Date(currentDate),
         sessionNumber: sessionCount + 1,

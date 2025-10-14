@@ -14,6 +14,10 @@
     "selectDays": "Pilih hari dalam seminggu untuk sesi Anda",
     "startTime": "Waktu Mulai",
     "endTime": "Waktu Selesai",
+    "holidays": "Hari Libur / Hari Off",
+    "holidaysDescription": "Pilih tanggal yang akan dikecualikan dari jadwal",
+    "selectHolidays": "Pilih hari libur",
+    "holidaysSelected": "{{count}} hari libur dipilih",
     "generateButton": "Buat Jadwal",
     "validation": {
       "eventNameRequired": "Silakan masukkan nama aktivitas",

@@ -26,13 +26,15 @@ const Index = () => {
     selectedDays: number[];
     startTime: string;
     endTime: string;
+    holidays: Date[];
   }) => {
     const generatedSessions = generateSchedule(
       data.startDate,
       data.numberOfMeetings,
       data.selectedDays,
       data.startTime,
-      data.endTime
+      data.endTime,
+      data.holidays
     );
     setSessions(generatedSessions);
     setEventName(data.eventName);
