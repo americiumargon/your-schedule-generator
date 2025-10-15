@@ -32,7 +32,7 @@ const scheduleSchema = z.object({
   numberOfMeetings: z.number()
     .int("Number of sessions must be a whole number")
     .min(1, "At least 1 session is required")
-    .max(365, "Maximum 365 sessions allowed"),
+    .max(366, "Maximum 366 sessions allowed"),
   selectedDays: z.array(z.number().min(0).max(6))
     .min(1, "At least one day must be selected"),
   startTime: z.string()
@@ -172,7 +172,7 @@ export function ScheduleForm({ onGenerate }: ScheduleFormProps) {
           id="numberOfMeetings"
           type="number"
           min="1"
-          max="365"
+          max="366"
           value={numberOfMeetings}
           onChange={(e) => setNumberOfMeetings(e.target.value)}
           required
