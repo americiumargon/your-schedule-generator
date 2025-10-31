@@ -19,9 +19,10 @@ interface ScheduleDisplayProps {
   eventName: string;
   sessions: Session[];
   onExport: (format: "csv" | "ics", enabledSessions: Session[], language: string) => void;
+  onClear: () => void;
 }
 
-export function ScheduleDisplay({ eventName, sessions, onExport }: ScheduleDisplayProps) {
+export function ScheduleDisplay({ eventName, sessions, onExport, onClear }: ScheduleDisplayProps) {
   const { t, i18n } = useTranslation();
   const [enabledSessions, setEnabledSessions] = useState<Set<number>>(
     new Set(sessions.map((_, idx) => idx))
@@ -93,6 +94,14 @@ export function ScheduleDisplay({ eventName, sessions, onExport }: ScheduleDispl
           >
             <Calendar className="h-4 w-4" />
             {t('schedule.icsButton')}
+          </Button>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={onClear}
+            className="gap-2"
+          >
+            {t('schedule.clearAll')}
           </Button>
         </div>
       </div>

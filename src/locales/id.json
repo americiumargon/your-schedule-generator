@@ -44,7 +44,8 @@
     "selectAll": "Pilih Semua",
     "deselectAll": "Batalkan Semua",
     "csvButton": "CSV",
-    "icsButton": "ICS"
+    "icsButton": "ICS",
+    "clearAll": "Hapus Semua"
   },
   "export": {
     "successCsv": "Jadwal diekspor sebagai CSV",
@@ -66,6 +67,7 @@
     "text": "Sempurna untuk rutinitas pribadi, jadwal tim, dan acara berulang"
   },
   "toast": {
-    "generated": "Berhasil membuat {{count}} sesi!"
+    "generated": "Berhasil membuat {{count}} sesi!",
+    "cleared": "Jadwal berhasil dihapus"
   }
 }

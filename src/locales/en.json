@@ -45,7 +45,8 @@
     "selectAll": "Select All",
     "deselectAll": "Deselect All",
     "csvButton": "CSV",
-    "icsButton": "ICS"
+    "icsButton": "ICS",
+    "clearAll": "Clear All"
   },
   "export": {
     "successCsv": "Schedule exported as CSV",
@@ -67,6 +68,7 @@
     "text": "Perfect for personal routines, team schedules, and recurring events"
   },
   "toast": {
-    "generated": "Generated {{count}} sessions!"
+    "generated": "Generated {{count}} sessions!",
+    "cleared": "Schedule cleared successfully"
   }
 }

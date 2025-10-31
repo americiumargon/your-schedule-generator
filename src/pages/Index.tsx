@@ -51,6 +51,12 @@ const Index = () => {
     }
   };
 
+  const handleClear = () => {
+    setSessions([]);
+    setEventName("");
+    toast.success(t('toast.cleared'));
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/20">
       {/* Header */}
@@ -92,6 +98,7 @@ const Index = () => {
                   eventName={eventName}
                   sessions={sessions}
                   onExport={handleExport}
+                  onClear={handleClear}
                 />
               ) : (
                 <div className="text-center py-16">
