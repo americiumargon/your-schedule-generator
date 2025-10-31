@@ -2,8 +2,9 @@ import { useState } from "react";
 import { ScheduleForm } from "@/components/ScheduleForm";
 import { ScheduleDisplay } from "@/components/ScheduleDisplay";
 import { LanguageToggle } from "@/components/LanguageToggle";
+import { Button } from "@/components/ui/button";
 import { generateSchedule, exportToCSV, exportToICS } from "@/utils/scheduleGenerator";
-import { Calendar } from "lucide-react";
+import { Calendar, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
@@ -93,6 +94,24 @@ const Index = () => {
           {/* Right Column - Results */}
           <div>
             <div className="bg-card rounded-xl shadow-lg p-6">
+              {/* Header - Always visible */}
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold">
+                  {sessions.length > 0 ? eventName || t('schedule.title') : t('emptyState.title')}
+                </h2>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleClear}
+                  disabled={sessions.length === 0}
+                  className="gap-2"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  {t('schedule.clearAll')}
+                </Button>
+              </div>
+
+              {/* Content */}
               {sessions.length > 0 ? (
                 <ScheduleDisplay
                   eventName={eventName}
@@ -101,11 +120,10 @@ const Index = () => {
                   onClear={handleClear}
                 />
               ) : (
-                <div className="text-center py-16">
+                <div className="text-center py-12">
                   <div className="w-16 h-16 bg-secondary rounded-full flex items-center justify-center mx-auto mb-4">
                     <Calendar className="h-8 w-8 text-muted-foreground" />
                   </div>
-                  <h3 className="text-lg font-semibold mb-2">{t('emptyState.title')}</h3>
                   <p className="text-sm text-muted-foreground">
                     {t('emptyState.description')}
                   </p>

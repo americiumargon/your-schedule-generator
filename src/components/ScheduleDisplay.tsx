@@ -70,12 +70,9 @@ export function ScheduleDisplay({ eventName, sessions, onExport, onClear }: Sche
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">{eventName || t('schedule.title')}</h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            {t('schedule.sessionsSelected', { count: enabledCount, total: sessions.length })}
-          </p>
-        </div>
+        <p className="text-sm text-muted-foreground">
+          {t('schedule.sessionsSelected', { count: enabledCount, total: sessions.length })}
+        </p>
         <div className="flex gap-2">
           <Button
             variant="outline"
@@ -94,14 +91,6 @@ export function ScheduleDisplay({ eventName, sessions, onExport, onClear }: Sche
           >
             <Calendar className="h-4 w-4" />
             {t('schedule.icsButton')}
-          </Button>
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={onClear}
-            className="gap-2"
-          >
-            {t('schedule.clearAll')}
           </Button>
         </div>
       </div>
