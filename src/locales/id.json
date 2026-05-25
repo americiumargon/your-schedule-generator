@@ -53,8 +53,13 @@
     "deselectAll": "Batalkan Semua",
     "csvButton": "CSV",
     "icsButton": "ICS",
+    "copyButton": "Salin",
     "clearAll": "Hapus Semua"
   },
+  "summary": {
+    "totalSessions": "Sesi",
+    "dateSpan": "Rentang tanggal",
+    "weeks": "Minggu"
   "export": {
     "successCsv": "Jadwal diekspor sebagai CSV",
     "successIcs": "Jadwal diekspor sebagai ICS",
@@ -76,6 +81,8 @@
   },
   "toast": {
     "generated": "Berhasil membuat {{count}} sesi!",
-    "cleared": "Jadwal berhasil dihapus"
+    "cleared": "Jadwal berhasil dihapus",
+    "copied": "Jadwal disalin ke clipboard",
+    "copyFailed": "Gagal menyalin jadwal"
   }
 }
