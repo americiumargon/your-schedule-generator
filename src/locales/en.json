@@ -86,6 +86,7 @@
     "generated": "Generated {{count}} sessions!",
     "cleared": "Schedule cleared successfully",
     "copied": "Schedule copied to clipboard",
-    "copyFailed": "Failed to copy schedule"
+    "copyFailed": "Failed to copy schedule",
+    "undo": "Undo"
   }
 }
