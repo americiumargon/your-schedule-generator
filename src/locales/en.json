@@ -54,8 +54,14 @@
     "deselectAll": "Deselect All",
     "csvButton": "CSV",
     "icsButton": "ICS",
+    "copyButton": "Copy",
     "clearAll": "Clear All"
   },
+  "summary": {
+    "totalSessions": "Sessions",
+    "dateSpan": "Date range",
+    "weeks": "Week",
+    "weeks_other": "Weeks"
   "export": {
     "successCsv": "Schedule exported as CSV",
     "successIcs": "Schedule exported as ICS",
