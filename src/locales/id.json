@@ -10,6 +10,11 @@
     "startDate": "Tanggal Mulai",
     "pickDate": "Pilih tanggal",
     "numberOfMeetings": "Jumlah Sesi",
+    "generateBy": "Buat berdasarkan",
+    "modeByCount": "Jumlah sesi",
+    "modeByEndDate": "Tanggal selesai",
+    "endDate": "Tanggal Selesai",
+    "pickEndDate": "Pilih tanggal selesai",
     "meetingDays": "Hari Berulang",
     "selectDays": "Pilih hari dalam seminggu untuk sesi Anda",
     "startTime": "Waktu Mulai",
@@ -25,6 +30,9 @@
       "meetingsRequired": "Jumlah sesi minimal 1",
       "daysRequired": "Silakan pilih setidaknya satu hari dalam seminggu",
       "timeRequired": "Silakan masukkan waktu mulai dan selesai",
+      "endDateRequired": "Silakan pilih tanggal selesai",
+      "endDateAfterStart": "Tanggal selesai harus sama dengan atau setelah tanggal mulai",
+      "noSessionsInRange": "Tidak ada sesi dalam rentang yang dipilih",
       "invalid": "Silakan periksa input Anda dan coba lagi"
     }
   },

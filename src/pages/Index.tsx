@@ -23,20 +23,28 @@ const Index = () => {
   const handleGenerate = (data: {
     eventName: string;
     startDate: Date;
-    numberOfMeetings: number;
     selectedDays: number[];
     startTime: string;
     endTime: string;
     holidays: Date[];
+    mode: "count" | "endDate";
+    numberOfMeetings?: number;
+    endDate?: Date;
   }) => {
-    const generatedSessions = generateSchedule(
-      data.startDate,
-      data.numberOfMeetings,
-      data.selectedDays,
-      data.startTime,
-      data.endTime,
-      data.holidays
-    );
+    const generatedSessions = generateSchedule({
+      startDate: data.startDate,
+      selectedDays: data.selectedDays,
+      startTime: data.startTime,
+      endTime: data.endTime,
+      holidays: data.holidays,
+      mode: data.mode,
+      numberOfMeetings: data.numberOfMeetings,
+      endDate: data.endDate,
+    });
+    if (generatedSessions.length === 0) {
+      toast.error(t('form.validation.noSessionsInRange'));
+      return;
+    }
     setSessions(generatedSessions);
     setEventName(data.eventName);
     toast.success(t('toast.generated', { count: generatedSessions.length }));
