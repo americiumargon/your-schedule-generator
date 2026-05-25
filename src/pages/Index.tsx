@@ -61,9 +61,21 @@ const Index = () => {
   };
 
   const handleClear = () => {
+    if (sessions.length === 0) return;
+    const prevSessions = sessions;
+    const prevName = eventName;
     setSessions([]);
     setEventName("");
-    toast.success(t('toast.cleared'));
+    toast.success(t('toast.cleared'), {
+      action: {
+        label: t('toast.undo'),
+        onClick: () => {
+          setSessions(prevSessions);
+          setEventName(prevName);
+        },
+      },
+      duration: 6000,
+    });
   };
 
   return (
