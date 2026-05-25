@@ -62,6 +62,7 @@
     "dateSpan": "Date range",
     "weeks": "Week",
     "weeks_other": "Weeks"
+  },
   "export": {
     "successCsv": "Schedule exported as CSV",
     "successIcs": "Schedule exported as ICS",
