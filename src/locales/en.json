@@ -1,7 +1,7 @@
 {
   "header": {
     "title": "Schedule Generator",
-    "subtitle": "Create recurring schedules for any activity"
+    "subtitle": "Generate a schedule of sessions for any activity"
   },
   "form": {
     "title": "Schedule Details",
