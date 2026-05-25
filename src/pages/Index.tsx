@@ -78,6 +78,24 @@ const Index = () => {
     });
   };
 
+  const handleUpdateSession = (
+    index: number,
+    updated: { date: Date; startTime: string; endTime: string }
+  ) => {
+    const prev = sessions;
+    const next = sessions.map((s, i) =>
+      i === index ? { ...s, ...updated } : s
+    );
+    setSessions(next);
+    toast.success(t('toast.sessionUpdated'), {
+      action: {
+        label: t('toast.undo'),
+        onClick: () => setSessions(prev),
+      },
+      duration: 6000,
+    });
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/20">
       {/* Header */}
@@ -138,6 +156,7 @@ const Index = () => {
                   sessions={sessions}
                   onExport={handleExport}
                   onClear={handleClear}
+                  onUpdateSession={handleUpdateSession}
                 />
               ) : (
                 <div className="text-center py-12">

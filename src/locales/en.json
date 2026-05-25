@@ -55,7 +55,11 @@
     "csvButton": "CSV",
     "icsButton": "ICS",
     "copyButton": "Copy",
-    "clearAll": "Clear All"
+    "clearAll": "Clear All",
+    "editSession": "Edit session",
+    "editedBadge": "edited",
+    "save": "Save",
+    "cancel": "Cancel"
   },
   "summary": {
     "totalSessions": "Sessions",
@@ -87,6 +91,7 @@
     "cleared": "Schedule cleared successfully",
     "copied": "Schedule copied to clipboard",
     "copyFailed": "Failed to copy schedule",
-    "undo": "Undo"
+    "undo": "Undo",
+    "sessionUpdated": "Session updated"
   }
 }

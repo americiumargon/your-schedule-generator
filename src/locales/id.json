@@ -54,7 +54,11 @@
     "csvButton": "CSV",
     "icsButton": "ICS",
     "copyButton": "Salin",
-    "clearAll": "Hapus Semua"
+    "clearAll": "Hapus Semua",
+    "editSession": "Ubah sesi",
+    "editedBadge": "diubah",
+    "save": "Simpan",
+    "cancel": "Batal"
   },
   "summary": {
     "totalSessions": "Sesi",
@@ -85,6 +89,7 @@
     "cleared": "Jadwal berhasil dihapus",
     "copied": "Jadwal disalin ke clipboard",
     "copyFailed": "Gagal menyalin jadwal",
-    "undo": "Batalkan"
+    "undo": "Batalkan",
+    "sessionUpdated": "Sesi diperbarui"
   }
 }

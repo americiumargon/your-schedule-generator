@@ -4,7 +4,15 @@ import { enUS, id as idLocale } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Download, Calendar, FileText, Copy } from "lucide-react";
+import { Calendar as CalendarUI } from "@/components/ui/calendar";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Download, Calendar, FileText, Copy, Pencil, CalendarIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
@@ -20,13 +28,107 @@ interface ScheduleDisplayProps {
   sessions: Session[];
   onExport: (format: "csv" | "ics", enabledSessions: Session[], language: string) => void;
   onClear: () => void;
+  onUpdateSession?: (
+    index: number,
+    updated: { date: Date; startTime: string; endTime: string }
+  ) => void;
 }
 
-export function ScheduleDisplay({ eventName, sessions, onExport, onClear }: ScheduleDisplayProps) {
+function sessionKey(s: Session) {
+  return `${format(s.date, "yyyy-MM-dd")}|${s.startTime}|${s.endTime}`;
+}
+
+function EditSessionPopover({
+  session,
+  onSave,
+}: {
+  session: Session;
+  onSave: (u: { date: Date; startTime: string; endTime: string }) => void;
+}) {
+  const { t, i18n } = useTranslation();
+  const dateLocale = i18n.language === 'id' ? idLocale : enUS;
+  const [open, setOpen] = useState(false);
+  const [date, setDate] = useState<Date>(session.date);
+  const [startTime, setStartTime] = useState(session.startTime);
+  const [endTime, setEndTime] = useState(session.endTime);
+
+  const handleOpenChange = (next: boolean) => {
+    if (next) {
+      setDate(session.date);
+      setStartTime(session.startTime);
+      setEndTime(session.endTime);
+    }
+    setOpen(next);
+  };
+
+  const handleSave = () => {
+    if (!date || !startTime || !endTime) return;
+    onSave({ date, startTime, endTime });
+    setOpen(false);
+  };
+
+  return (
+    <Popover open={open} onOpenChange={handleOpenChange}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8"
+          aria-label={t('schedule.editSession')}
+        >
+          <Pencil className="h-4 w-4" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-80 space-y-4" align="end">
+        <div className="space-y-2">
+          <Label>{t('form.startDate')}</Label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="w-full justify-start text-left font-normal">
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {format(date, "PPP", { locale: dateLocale })}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <CalendarUI
+                mode="single"
+                selected={date}
+                onSelect={(d) => d && setDate(d)}
+                initialFocus
+                className="p-3 pointer-events-auto"
+              />
+            </PopoverContent>
+          </Popover>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-2">
+            <Label>{t('form.startTime')}</Label>
+            <Input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label>{t('form.endTime')}</Label>
+            <Input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
+          </div>
+        </div>
+        <div className="flex justify-end gap-2">
+          <Button variant="ghost" size="sm" onClick={() => setOpen(false)}>
+            {t('schedule.cancel')}
+          </Button>
+          <Button size="sm" onClick={handleSave}>
+            {t('schedule.save')}
+          </Button>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+export function ScheduleDisplay({ eventName, sessions, onExport, onClear, onUpdateSession }: ScheduleDisplayProps) {
   const { t, i18n } = useTranslation();
   const [enabledSessions, setEnabledSessions] = useState<Set<number>>(
     new Set(sessions.map((_, idx) => idx))
   );
+  const [originalKeys] = useState<string[]>(() => sessions.map(sessionKey));
 
   const dateLocale = i18n.language === 'id' ? idLocale : enUS;
 
@@ -164,30 +266,46 @@ export function ScheduleDisplay({ eventName, sessions, onExport, onClear }: Sche
       <div className="space-y-2 max-h-[600px] overflow-y-auto pr-2">
         {sessions.map((session, index) => {
           const isEnabled = enabledSessions.has(index);
+          const isEdited =
+            originalKeys[index] !== undefined &&
+            originalKeys[index] !== sessionKey(session);
           return (
             <Card
               key={index}
               className={cn(
-                "p-4 flex items-center justify-between transition-all hover:shadow-md",
+                "p-4 flex items-center justify-between transition-all hover:shadow-md gap-3",
                 !isEnabled && "opacity-50"
               )}
             >
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4 min-w-0">
                 <Checkbox
                   checked={isEnabled}
                   onCheckedChange={() => toggleSession(index)}
                 />
-                <div>
-                  <div className="font-medium">
-                    {t('schedule.session')} {session.sessionNumber}
+                <div className="min-w-0">
+                  <div className="font-medium flex items-center gap-2 flex-wrap">
+                    <span>{t('schedule.session')} {session.sessionNumber}</span>
+                    {isEdited && (
+                      <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded bg-accent/20 text-accent-foreground border border-accent/30">
+                        {t('schedule.editedBadge')}
+                      </span>
+                    )}
                   </div>
                   <div className="text-sm text-muted-foreground">
                     {format(session.date, "EEEE, MMMM d, yyyy", { locale: dateLocale })}
                   </div>
                 </div>
               </div>
-              <div className="text-sm text-muted-foreground">
-                {session.startTime} - {session.endTime}
+              <div className="flex items-center gap-2 shrink-0">
+                <div className="text-sm text-muted-foreground">
+                  {session.startTime} - {session.endTime}
+                </div>
+                {onUpdateSession && (
+                  <EditSessionPopover
+                    session={session}
+                    onSave={(u) => onUpdateSession(index, u)}
+                  />
+                )}
               </div>
             </Card>
           );
