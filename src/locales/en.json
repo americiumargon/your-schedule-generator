@@ -91,6 +91,7 @@
     "cleared": "Schedule cleared successfully",
     "copied": "Schedule copied to clipboard",
     "copyFailed": "Failed to copy schedule",
-    "undo": "Undo"
+    "undo": "Undo",
+    "sessionUpdated": "Session updated"
   }
 }
