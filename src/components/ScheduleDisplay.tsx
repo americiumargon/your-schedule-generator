@@ -55,9 +55,32 @@ export function ScheduleDisplay({ eventName, sessions, onExport, onClear }: Sche
     onExport(format, enabled, i18n.language);
   };
 
+  const handleCopy = async () => {
+    const enabled = getEnabledSessions();
+    if (enabled.length === 0) {
+      toast.error(t('export.errorNoSessions'));
+      return;
+    }
+    const lines = enabled.map(s =>
+      `${eventName} - ${t('schedule.session')} ${s.sessionNumber}: ${format(s.date, "EEEE, MMMM d, yyyy", { locale: dateLocale })}, ${s.startTime} - ${s.endTime}`
+    );
+    try {
+      await navigator.clipboard.writeText(lines.join("\n"));
+      toast.success(t('toast.copied'));
+    } catch {
+      toast.error(t('toast.copyFailed'));
+    }
+  };
+
   const enabledCount = enabledSessions.size;
   const allSelected = enabledCount === sessions.length;
   const someSelected = enabledCount > 0 && enabledCount < sessions.length;
+
+  const enabledList = getEnabledSessions();
+  const firstDate = enabledList[0]?.date;
+  const lastDate = enabledList[enabledList.length - 1]?.date;
+  const spanDays = firstDate && lastDate ? differenceInCalendarDays(lastDate, firstDate) + 1 : 0;
+  const spanWeeks = spanDays > 0 ? Math.ceil(spanDays / 7) : 0;
 
   const toggleAll = () => {
     if (allSelected) {
@@ -69,11 +92,20 @@ export function ScheduleDisplay({ eventName, sessions, onExport, onClear }: Sche
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <p className="text-sm text-muted-foreground">
           {t('schedule.sessionsSelected', { count: enabledCount, total: sessions.length })}
         </p>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleCopy}
+            className="gap-2"
+          >
+            <Copy className="h-4 w-4" />
+            {t('schedule.copyButton')}
+          </Button>
           <Button
             variant="outline"
             size="sm"
@@ -94,6 +126,25 @@ export function ScheduleDisplay({ eventName, sessions, onExport, onClear }: Sche
           </Button>
         </div>
       </div>
+
+      {enabledList.length > 0 && firstDate && lastDate && (
+        <Card className="p-4 bg-secondary/30 grid grid-cols-3 gap-3 text-center">
+          <div>
+            <div className="text-2xl font-semibold">{enabledList.length}</div>
+            <div className="text-xs text-muted-foreground">{t('summary.totalSessions')}</div>
+          </div>
+          <div>
+            <div className="text-sm font-medium">
+              {format(firstDate, "MMM d", { locale: dateLocale })} – {format(lastDate, "MMM d, yyyy", { locale: dateLocale })}
+            </div>
+            <div className="text-xs text-muted-foreground">{t('summary.dateSpan')}</div>
+          </div>
+          <div>
+            <div className="text-2xl font-semibold">{spanWeeks}</div>
+            <div className="text-xs text-muted-foreground">{t('summary.weeks', { count: spanWeeks })}</div>
+          </div>
+        </Card>
+      )}
 
       <div className="flex items-center gap-2 pb-2 border-b">
         <Checkbox
