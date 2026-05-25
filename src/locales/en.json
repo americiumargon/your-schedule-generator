@@ -62,6 +62,7 @@
     "dateSpan": "Date range",
     "weeks": "Week",
     "weeks_other": "Weeks"
+  },
   "export": {
     "successCsv": "Schedule exported as CSV",
     "successIcs": "Schedule exported as ICS",
@@ -85,6 +86,7 @@
     "generated": "Generated {{count}} sessions!",
     "cleared": "Schedule cleared successfully",
     "copied": "Schedule copied to clipboard",
-    "copyFailed": "Failed to copy schedule"
+    "copyFailed": "Failed to copy schedule",
+    "undo": "Undo"
   }
 }
