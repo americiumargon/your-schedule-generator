@@ -60,6 +60,7 @@
     "totalSessions": "Sesi",
     "dateSpan": "Rentang tanggal",
     "weeks": "Minggu"
+  },
   "export": {
     "successCsv": "Jadwal diekspor sebagai CSV",
     "successIcs": "Jadwal diekspor sebagai ICS",
