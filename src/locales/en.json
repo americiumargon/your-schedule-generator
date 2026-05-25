@@ -55,7 +55,11 @@
     "csvButton": "CSV",
     "icsButton": "ICS",
     "copyButton": "Copy",
-    "clearAll": "Clear All"
+    "clearAll": "Clear All",
+    "editSession": "Edit session",
+    "editedBadge": "edited",
+    "save": "Save",
+    "cancel": "Cancel"
   },
   "summary": {
     "totalSessions": "Sessions",
