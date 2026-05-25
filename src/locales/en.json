@@ -10,6 +10,11 @@
     "startDate": "Start Date",
     "pickDate": "Pick a date",
     "numberOfMeetings": "Number of Sessions",
+    "generateBy": "Generate by",
+    "modeByCount": "Number of sessions",
+    "modeByEndDate": "End date",
+    "endDate": "End Date",
+    "pickEndDate": "Pick an end date",
     "meetingDays": "Recurring Days",
     "selectDays": "Select the days of the week for your sessions",
     "startTime": "Start Time",
@@ -26,6 +31,9 @@
       "meetingsRequired": "Number of sessions must be at least 1",
       "daysRequired": "Please select at least one day of the week",
       "timeRequired": "Please enter both start and end times",
+      "endDateRequired": "Please select an end date",
+      "endDateAfterStart": "End date must be on or after the start date",
+      "noSessionsInRange": "No sessions fall within the selected range",
       "invalid": "Please check your input and try again"
     }
   },

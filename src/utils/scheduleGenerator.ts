@@ -10,42 +10,80 @@ interface Session {
   endTime: string;
 }
 
-export function generateSchedule(
-  startDate: Date,
-  numberOfMeetings: number,
-  selectedDays: number[], // 0 = Sunday, 1 = Monday, etc.
-  startTime: string,
-  endTime: string,
-  holidays: Date[] = []
-): Session[] {
+const MAX_SESSIONS = 1000;
+
+interface GenerateScheduleOptions {
+  startDate: Date;
+  selectedDays: number[]; // 0 = Sunday, 1 = Monday, etc.
+  startTime: string;
+  endTime: string;
+  holidays?: Date[];
+  mode: "count" | "endDate";
+  numberOfMeetings?: number;
+  endDate?: Date;
+}
+
+export function generateSchedule(options: GenerateScheduleOptions): Session[] {
+  const {
+    startDate,
+    selectedDays,
+    startTime,
+    endTime,
+    holidays = [],
+    mode,
+    numberOfMeetings,
+    endDate,
+  } = options;
+
   const sessions: Session[] = [];
   let currentDate = new Date(startDate);
   let sessionCount = 0;
 
-  // Sort selected days to ensure consistent ordering
   const sortedDays = [...selectedDays].sort();
-  
-  // Create a Set of holiday date strings for fast lookup
   const holidayStrings = new Set(
     holidays.map(date => format(date, "yyyy-MM-dd"))
   );
 
-  while (sessionCount < numberOfMeetings) {
-    const dayOfWeek = getDay(currentDate);
-    const currentDateStr = format(currentDate, "yyyy-MM-dd");
-    
-    // Check if current date is a valid meeting day and not a holiday
-    if (sortedDays.includes(dayOfWeek) && !holidayStrings.has(currentDateStr)) {
-      sessions.push({
-        date: new Date(currentDate),
-        sessionNumber: sessionCount + 1,
-        startTime,
-        endTime,
-      });
-      sessionCount++;
+  if (mode === "count") {
+    const target = Math.min(numberOfMeetings ?? 0, MAX_SESSIONS);
+    while (sessionCount < target) {
+      const dayOfWeek = getDay(currentDate);
+      const currentDateStr = format(currentDate, "yyyy-MM-dd");
+
+      if (sortedDays.includes(dayOfWeek) && !holidayStrings.has(currentDateStr)) {
+        sessions.push({
+          date: new Date(currentDate),
+          sessionNumber: sessionCount + 1,
+          startTime,
+          endTime,
+        });
+        sessionCount++;
+      }
+
+      currentDate = addDays(currentDate, 1);
     }
-    
-    currentDate = addDays(currentDate, 1);
+  } else {
+    // endDate mode
+    if (!endDate) return [];
+    const endStr = format(endDate, "yyyy-MM-dd");
+
+    while (sessionCount < MAX_SESSIONS) {
+      const currentDateStr = format(currentDate, "yyyy-MM-dd");
+      if (currentDateStr > endStr) break;
+
+      const dayOfWeek = getDay(currentDate);
+      if (sortedDays.includes(dayOfWeek) && !holidayStrings.has(currentDateStr)) {
+        sessions.push({
+          date: new Date(currentDate),
+          sessionNumber: sessionCount + 1,
+          startTime,
+          endTime,
+        });
+        sessionCount++;
+      }
+
+      currentDate = addDays(currentDate, 1);
+    }
   }
 
   return sessions;
@@ -60,8 +98,7 @@ function convertTo12Hour(time24: string): string {
 
 export function exportToCSV(sessions: Session[], eventName: string, language: string = 'en'): void {
   const t = language === 'id' ? id : en;
-  
-  // Google Calendar CSV format headers
+
   const headers = [
     "Subject",
     "Start Date",
@@ -73,12 +110,12 @@ export function exportToCSV(sessions: Session[], eventName: string, language: st
     "Location",
     "Private"
   ];
-  
+
   const rows = sessions.map(session => {
-    const dateStr = format(session.date, "MM/dd/yyyy"); // Always use MM/DD/YYYY for Google Calendar
+    const dateStr = format(session.date, "MM/dd/yyyy");
     const subject = `${eventName} - ${t.schedule.session} ${session.sessionNumber}`;
     const description = `${t.schedule.session} ${session.sessionNumber} ${t.export.description.split(' ')[0]} ${eventName}`;
-    
+
     return [
       subject,
       dateStr,
@@ -112,14 +149,14 @@ export function exportToICS(sessions: Session[], eventName: string, language: st
   const events = sessions.map(session => {
     const startDateTime = formatICSDate(session.date, session.startTime);
     const endDateTime = formatICSDate(session.date, session.endTime);
-    
+
     const summary = t.export.summary
       .replace('{{eventName}}', eventName)
       .replace('{{sessionNumber}}', session.sessionNumber.toString());
     const description = t.export.description
       .replace('{{sessionNumber}}', session.sessionNumber.toString())
       .replace('{{eventName}}', eventName);
-    
+
     return [
       "BEGIN:VEVENT",
       `DTSTART:${startDateTime}`,
