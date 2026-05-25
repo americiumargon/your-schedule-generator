@@ -81,6 +81,8 @@
   },
   "toast": {
     "generated": "Berhasil membuat {{count}} sesi!",
-    "cleared": "Jadwal berhasil dihapus"
+    "cleared": "Jadwal berhasil dihapus",
+    "copied": "Jadwal disalin ke clipboard",
+    "copyFailed": "Gagal menyalin jadwal"
   }
 }
