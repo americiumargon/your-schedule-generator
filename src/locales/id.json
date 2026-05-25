@@ -54,7 +54,11 @@
     "csvButton": "CSV",
     "icsButton": "ICS",
     "copyButton": "Salin",
-    "clearAll": "Hapus Semua"
+    "clearAll": "Hapus Semua",
+    "editSession": "Ubah sesi",
+    "editedBadge": "diubah",
+    "save": "Simpan",
+    "cancel": "Batal"
   },
   "summary": {
     "totalSessions": "Sesi",
