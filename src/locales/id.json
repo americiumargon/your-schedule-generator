@@ -84,6 +84,7 @@
     "generated": "Berhasil membuat {{count}} sesi!",
     "cleared": "Jadwal berhasil dihapus",
     "copied": "Jadwal disalin ke clipboard",
-    "copyFailed": "Gagal menyalin jadwal"
+    "copyFailed": "Gagal menyalin jadwal",
+    "undo": "Batalkan"
   }
 }
