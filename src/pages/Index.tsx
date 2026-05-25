@@ -156,6 +156,7 @@ const Index = () => {
                   sessions={sessions}
                   onExport={handleExport}
                   onClear={handleClear}
+                  onUpdateSession={handleUpdateSession}
                 />
               ) : (
                 <div className="text-center py-12">
