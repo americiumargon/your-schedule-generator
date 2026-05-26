@@ -1031,13 +1031,15 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
         </CollapsibleContent>
       </Collapsible>
 
-      <Button
-        type="submit"
-        className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity"
-        size="lg"
-      >
-        {t('form.generateButton')}
-      </Button>
+      <div className="sticky bottom-0 -mx-4 px-4 py-3 bg-card/95 backdrop-blur border-t border-border lg:static lg:bg-transparent lg:border-0 lg:p-0 lg:mx-0 lg:backdrop-blur-none z-10">
+        <Button
+          type="submit"
+          className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity"
+          size="lg"
+        >
+          {t('form.generateButton')}
+        </Button>
+      </div>
     </form>
   );
 }
