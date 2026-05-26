@@ -7,6 +7,7 @@ export interface CopySession {
   sessionNumber: number;
   startTime: string;
   endTime: string;
+  slotLabel?: string;
 }
 
 export type CopyFormat = "plain" | "markdown" | "rich";
@@ -25,11 +26,10 @@ export function formatPlain(
 ): string {
   const locale = getLocale(language);
   const lines = sessions.map((s) => {
-    const base = `${eventName} - ${t("schedule.session")} ${s.sessionNumber}: ${format(
-      s.date,
-      "EEEE, MMMM d, yyyy",
-      { locale },
-    )}, ${s.startTime} - ${s.endTime}`;
+    const title = s.slotLabel
+      ? `${eventName} - ${t("schedule.session")} ${s.sessionNumber} (${s.slotLabel})`
+      : `${eventName} - ${t("schedule.session")} ${s.sessionNumber}`;
+    const base = `${title}: ${format(s.date, "EEEE, MMMM d, yyyy", { locale })}, ${s.startTime} - ${s.endTime}`;
     return location ? `${base} @ ${location}` : base;
   });
   return notes ? `${lines.join("\n")}\n\n${notes}` : lines.join("\n");
@@ -52,7 +52,7 @@ export function formatMarkdown(
   const sep = `|---|------|------|`;
   const rows = sessions.map(
     (s) =>
-      `| ${s.sessionNumber} | ${format(s.date, "EEE, MMM d, yyyy", { locale })} | ${s.startTime} – ${s.endTime} |`,
+      `| ${s.sessionNumber}${s.slotLabel ? ` (${s.slotLabel})` : ""} | ${format(s.date, "EEE, MMM d, yyyy", { locale })} | ${s.startTime} – ${s.endTime} |`,
   );
   parts.push([header, sep, ...rows].join("\n"));
 
@@ -86,7 +86,7 @@ export function formatHtml(
   const rows = sessions
     .map(
       (s) =>
-        `<tr><td>${s.sessionNumber}</td><td>${escapeHtml(
+        `<tr><td>${s.sessionNumber}${s.slotLabel ? ` <small>(${escapeHtml(s.slotLabel)})</small>` : ""}</td><td>${escapeHtml(
           format(s.date, "EEE, MMM d, yyyy", { locale }),
         )}</td><td>${s.startTime} – ${s.endTime}</td></tr>`,
     )

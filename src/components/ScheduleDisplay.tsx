@@ -38,6 +38,7 @@ interface Session {
   sessionNumber: number;
   startTime: string;
   endTime: string;
+  slotLabel?: string;
 }
 
 interface ScheduleDisplayProps {
@@ -440,8 +441,13 @@ export function ScheduleDisplay({ eventName, sessions, location, notes, timezone
                 </div>
               </div>
               <div className="flex items-center gap-2 shrink-0">
-                <div className="text-sm text-muted-foreground">
-                  {session.startTime} - {session.endTime}
+                <div className="text-sm text-muted-foreground flex items-center gap-2">
+                  {session.slotLabel && (
+                    <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded bg-primary/15 text-primary border border-primary/30 font-medium">
+                      {session.slotLabel}
+                    </span>
+                  )}
+                  <span>{session.startTime} - {session.endTime}</span>
                 </div>
                 {onUpdateSession && (
                   <EditSessionPopover

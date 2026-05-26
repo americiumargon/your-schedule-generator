@@ -2,6 +2,7 @@ interface GCalSession {
   date: Date;
   startTime: string;
   endTime: string;
+  slotLabel?: string;
 }
 
 function pad(n: number, w = 2) {
@@ -49,7 +50,8 @@ export function buildGoogleCalendarUrl(
 
   const params = new URLSearchParams();
   params.set("action", "TEMPLATE");
-  params.set("text", eventName || "Event");
+  const titleBase = eventName || "Event";
+  params.set("text", anchor.slotLabel ? `${titleBase} (${anchor.slotLabel})` : titleBase);
   params.set("dates", `${startStr}/${endStr}`);
   if (useTz) params.set("ctz", tz);
   if (location) params.set("location", location);
