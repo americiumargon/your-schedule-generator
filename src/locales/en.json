@@ -24,6 +24,10 @@
     "selectHolidays": "Select holidays",
     "holidaysSelected": "{{count}} holiday selected",
     "holidaysSelected_other": "{{count}} holidays selected",
+    "location": "Location (optional)",
+    "locationPlaceholder": "e.g., Zoom link, Conference Room B",
+    "notes": "Notes (optional)",
+    "notesPlaceholder": "Add details, agenda, or links",
     "generateButton": "Generate Schedule",
     "validation": {
       "eventNameRequired": "Please enter an activity name",

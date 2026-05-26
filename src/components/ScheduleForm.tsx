@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -36,6 +37,8 @@ const baseSchema = {
   endTime: z.string()
     .regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid end time format"),
   holidays: z.array(z.date()),
+  location: z.string().trim().max(200, "Location must be less than 200 characters").optional(),
+  notes: z.string().trim().max(2000, "Notes must be less than 2000 characters").optional(),
 };
 
 const countSchema = z.object({
@@ -76,6 +79,8 @@ interface ScheduleFormProps {
     mode: Mode;
     numberOfMeetings?: number;
     endDate?: Date;
+    location?: string;
+    notes?: string;
   }) => void;
 }
 
@@ -90,6 +95,8 @@ export function ScheduleForm({ onGenerate }: ScheduleFormProps) {
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [holidays, setHolidays] = useState<Date[]>([]);
+  const [location, setLocation] = useState("");
+  const [notes, setNotes] = useState("");
 
   const dateLocale = i18n.language === 'id' ? idLocale : enUS;
 
@@ -126,6 +133,8 @@ export function ScheduleForm({ onGenerate }: ScheduleFormProps) {
           startTime,
           endTime,
           holidays,
+          location: location.trim() || undefined,
+          notes: notes.trim() || undefined,
         });
         const sanitizedEventName = validated.eventName.replace(/[",\n\r]/g, ' ');
         onGenerate({
@@ -137,6 +146,8 @@ export function ScheduleForm({ onGenerate }: ScheduleFormProps) {
           holidays: validated.holidays,
           mode: "count",
           numberOfMeetings: validated.numberOfMeetings,
+          location: validated.location,
+          notes: validated.notes,
         });
       } else {
         if (!endDate) {
@@ -152,6 +163,8 @@ export function ScheduleForm({ onGenerate }: ScheduleFormProps) {
           startTime,
           endTime,
           holidays,
+          location: location.trim() || undefined,
+          notes: notes.trim() || undefined,
         });
         const sanitizedEventName = validated.eventName.replace(/[",\n\r]/g, ' ');
         onGenerate({
@@ -163,6 +176,8 @@ export function ScheduleForm({ onGenerate }: ScheduleFormProps) {
           holidays: validated.holidays,
           mode: "endDate",
           endDate: validated.endDate,
+          location: validated.location,
+          notes: validated.notes,
         });
       }
     } catch (error) {
@@ -344,6 +359,33 @@ export function ScheduleForm({ onGenerate }: ScheduleFormProps) {
           </PopoverContent>
         </Popover>
       </div>
+
+      <div>
+        <Label htmlFor="location">{t('form.location')}</Label>
+        <Input
+          id="location"
+          value={location}
+          onChange={(e) => setLocation(e.target.value)}
+          placeholder={t('form.locationPlaceholder')}
+          maxLength={200}
+          className="mt-2"
+        />
+      </div>
+
+      <div>
+        <Label htmlFor="notes">{t('form.notes')}</Label>
+        <Textarea
+          id="notes"
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder={t('form.notesPlaceholder')}
+          maxLength={2000}
+          rows={3}
+          className="mt-2"
+        />
+      </div>
+
+
 
       <Button
         type="submit"

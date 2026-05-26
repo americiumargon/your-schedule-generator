@@ -96,7 +96,16 @@ function convertTo12Hour(time24: string): string {
   return `${hours12.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')} ${period}`;
 }
 
-export function exportToCSV(sessions: Session[], eventName: string, language: string = 'en'): void {
+export interface ExportOptions {
+  location?: string;
+  notes?: string;
+}
+
+function escapeICS(text: string): string {
+  return text.replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n");
+}
+
+export function exportToCSV(sessions: Session[], eventName: string, language: string = 'en', opts: ExportOptions = {}): void {
   const t = language === 'id' ? id : en;
 
   const headers = [
@@ -111,10 +120,14 @@ export function exportToCSV(sessions: Session[], eventName: string, language: st
     "Private"
   ];
 
+  const baseLocation = opts.location ?? "";
+  const notes = opts.notes ?? "";
+
   const rows = sessions.map(session => {
     const dateStr = format(session.date, "MM/dd/yyyy");
     const subject = `${eventName} - ${t.schedule.session} ${session.sessionNumber}`;
-    const description = `${t.schedule.session} ${session.sessionNumber} ${t.export.description.split(' ')[0]} ${eventName}`;
+    const baseDescription = `${t.schedule.session} ${session.sessionNumber} ${t.export.description.split(' ')[0]} ${eventName}`;
+    const description = notes ? `${baseDescription}\n\n${notes}` : baseDescription;
 
     return [
       subject,
@@ -124,20 +137,23 @@ export function exportToCSV(sessions: Session[], eventName: string, language: st
       convertTo12Hour(session.endTime),
       "False",
       description,
-      "",
+      baseLocation,
       ""
     ];
   });
 
+  // Escape CSV cells: double internal quotes, wrap in quotes
+  const escapeCSV = (cell: string) => `"${String(cell).replace(/"/g, '""')}"`;
+
   const csvContent = [
     headers.join(","),
-    ...rows.map(row => row.map(cell => `"${cell}"`).join(",")),
+    ...rows.map(row => row.map(escapeCSV).join(",")),
   ].join("\n");
 
   downloadFile(csvContent, `${eventName || "schedule"}.csv`, "text/csv");
 }
 
-export function exportToICS(sessions: Session[], eventName: string, language: string = 'en'): void {
+export function exportToICS(sessions: Session[], eventName: string, language: string = 'en', opts: ExportOptions = {}): void {
   const t = language === 'id' ? id : en;
   const formatICSDate = (date: Date, time: string): string => {
     const [hours, minutes] = time.split(":");
@@ -146,6 +162,8 @@ export function exportToICS(sessions: Session[], eventName: string, language: st
     return dateWithTime.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
   };
 
+  const locationLine = opts.location ? `LOCATION:${escapeICS(opts.location)}` : null;
+
   const events = sessions.map(session => {
     const startDateTime = formatICSDate(session.date, session.startTime);
     const endDateTime = formatICSDate(session.date, session.endTime);
@@ -153,19 +171,26 @@ export function exportToICS(sessions: Session[], eventName: string, language: st
     const summary = t.export.summary
       .replace('{{eventName}}', eventName)
       .replace('{{sessionNumber}}', session.sessionNumber.toString());
-    const description = t.export.description
+    const baseDescription = t.export.description
       .replace('{{sessionNumber}}', session.sessionNumber.toString())
       .replace('{{eventName}}', eventName);
+    const fullDescription = opts.notes
+      ? `${baseDescription}\n\n${opts.notes}`
+      : baseDescription;
 
-    return [
+    const lines = [
       "BEGIN:VEVENT",
       `DTSTART:${startDateTime}`,
       `DTEND:${endDateTime}`,
-      `SUMMARY:${summary}`,
-      `DESCRIPTION:${description}`,
+      `SUMMARY:${escapeICS(summary)}`,
+      `DESCRIPTION:${escapeICS(fullDescription)}`,
+    ];
+    if (locationLine) lines.push(locationLine);
+    lines.push(
       `UID:${Date.now()}-${session.sessionNumber}@schedule-generator.com`,
       "END:VEVENT",
-    ].join("\r\n");
+    );
+    return lines.join("\r\n");
   }).join("\r\n");
 
   const icsContent = [

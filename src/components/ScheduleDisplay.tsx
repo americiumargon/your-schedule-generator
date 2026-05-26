@@ -26,6 +26,8 @@ interface Session {
 interface ScheduleDisplayProps {
   eventName: string;
   sessions: Session[];
+  location?: string;
+  notes?: string;
   onExport: (format: "csv" | "ics", enabledSessions: Session[], language: string) => void;
   onClear: () => void;
   onUpdateSession?: (
@@ -123,7 +125,7 @@ function EditSessionPopover({
   );
 }
 
-export function ScheduleDisplay({ eventName, sessions, onExport, onClear, onUpdateSession }: ScheduleDisplayProps) {
+export function ScheduleDisplay({ eventName, sessions, location, notes, onExport, onClear, onUpdateSession }: ScheduleDisplayProps) {
   const { t, i18n } = useTranslation();
   const [enabledSessions, setEnabledSessions] = useState<Set<number>>(
     new Set(sessions.map((_, idx) => idx))
@@ -163,11 +165,13 @@ export function ScheduleDisplay({ eventName, sessions, onExport, onClear, onUpda
       toast.error(t('export.errorNoSessions'));
       return;
     }
-    const lines = enabled.map(s =>
-      `${eventName} - ${t('schedule.session')} ${s.sessionNumber}: ${format(s.date, "EEEE, MMMM d, yyyy", { locale: dateLocale })}, ${s.startTime} - ${s.endTime}`
-    );
+    const lines = enabled.map(s => {
+      const base = `${eventName} - ${t('schedule.session')} ${s.sessionNumber}: ${format(s.date, "EEEE, MMMM d, yyyy", { locale: dateLocale })}, ${s.startTime} - ${s.endTime}`;
+      return location ? `${base} @ ${location}` : base;
+    });
+    const text = notes ? `${lines.join("\n")}\n\n${notes}` : lines.join("\n");
     try {
-      await navigator.clipboard.writeText(lines.join("\n"));
+      await navigator.clipboard.writeText(text);
       toast.success(t('toast.copied'));
     } catch {
       toast.error(t('toast.copyFailed'));

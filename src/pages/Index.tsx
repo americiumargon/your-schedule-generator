@@ -19,6 +19,8 @@ const Index = () => {
   const { t } = useTranslation();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [eventName, setEventName] = useState("");
+  const [location, setLocation] = useState("");
+  const [notes, setNotes] = useState("");
 
   const handleGenerate = (data: {
     eventName: string;
@@ -30,6 +32,8 @@ const Index = () => {
     mode: "count" | "endDate";
     numberOfMeetings?: number;
     endDate?: Date;
+    location?: string;
+    notes?: string;
   }) => {
     const generatedSessions = generateSchedule({
       startDate: data.startDate,
@@ -47,15 +51,18 @@ const Index = () => {
     }
     setSessions(generatedSessions);
     setEventName(data.eventName);
+    setLocation(data.location ?? "");
+    setNotes(data.notes ?? "");
     toast.success(t('toast.generated', { count: generatedSessions.length }));
   };
 
   const handleExport = (format: "csv" | "ics", enabledSessions: Session[], language: string) => {
+    const opts = { location, notes };
     if (format === "csv") {
-      exportToCSV(enabledSessions, eventName, language);
+      exportToCSV(enabledSessions, eventName, language, opts);
       toast.success(t('export.successCsv'));
     } else {
-      exportToICS(enabledSessions, eventName, language);
+      exportToICS(enabledSessions, eventName, language, opts);
       toast.success(t('export.successIcs'));
     }
   };
@@ -64,14 +71,20 @@ const Index = () => {
     if (sessions.length === 0) return;
     const prevSessions = sessions;
     const prevName = eventName;
+    const prevLocation = location;
+    const prevNotes = notes;
     setSessions([]);
     setEventName("");
+    setLocation("");
+    setNotes("");
     toast.success(t('toast.cleared'), {
       action: {
         label: t('toast.undo'),
         onClick: () => {
           setSessions(prevSessions);
           setEventName(prevName);
+          setLocation(prevLocation);
+          setNotes(prevNotes);
         },
       },
       duration: 6000,
@@ -153,6 +166,8 @@ const Index = () => {
               {sessions.length > 0 ? (
                 <ScheduleDisplay
                   eventName={eventName}
+                  location={location}
+                  notes={notes}
                   sessions={sessions}
                   onExport={handleExport}
                   onClear={handleClear}

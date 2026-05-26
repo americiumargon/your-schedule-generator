@@ -23,6 +23,10 @@
     "holidaysDescription": "Pilih tanggal yang akan dikecualikan dari jadwal",
     "selectHolidays": "Pilih hari libur",
     "holidaysSelected": "{{count}} hari libur dipilih",
+    "location": "Lokasi (opsional)",
+    "locationPlaceholder": "contoh: Tautan Zoom, Ruang Rapat B",
+    "notes": "Catatan (opsional)",
+    "notesPlaceholder": "Tambahkan detail, agenda, atau tautan",
     "generateButton": "Buat Jadwal",
     "validation": {
       "eventNameRequired": "Silakan masukkan nama aktivitas",
