@@ -204,8 +204,8 @@ export function exportToICS(sessions: Session[], eventName: string, language: st
 
     const lines = [
       "BEGIN:VEVENT",
-      `DTSTART:${startDateTime}`,
-      `DTEND:${endDateTime}`,
+      `DTSTART${dtPrefix}:${startDateTime}`,
+      `DTEND${dtPrefix}:${endDateTime}`,
       `SUMMARY:${escapeICS(summary)}`,
       `DESCRIPTION:${escapeICS(fullDescription)}`,
     ];
