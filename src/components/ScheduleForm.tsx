@@ -266,6 +266,22 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
       return;
     }
 
+    // Recurrence-specific validation
+    if (needsWeekdays && selectedDays.length === 0) {
+      toast.error(t('form.validation.daysRequired'));
+      return;
+    }
+    if (recurrenceType === "monthlyByWeekday" && ordinals.length === 0) {
+      toast.error(t('form.validation.ordinalsRequired'));
+      return;
+    }
+    if (recurrenceType === "monthlyByDate" && daysOfMonth.length === 0) {
+      toast.error(t('form.validation.daysOfMonthRequired'));
+      return;
+    }
+
+    const recurrence = buildRecurrence();
+
     try {
       const trimmedName = eventName.trim();
       const normalizedSlots = timeSlots.map((s) => ({
@@ -295,6 +311,7 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
           timeSlots: normalizedSlots,
           holidays: validated.holidays,
           holidayBehavior,
+          recurrence,
           mode: "count",
           numberOfMeetings: validated.numberOfMeetings,
           location: validated.location,
@@ -328,6 +345,7 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
           timeSlots: normalizedSlots,
           holidays: validated.holidays,
           holidayBehavior,
+          recurrence,
           mode: "endDate",
           endDate: validated.endDate,
           location: validated.location,
