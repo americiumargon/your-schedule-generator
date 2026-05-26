@@ -60,6 +60,7 @@ const Index = () => {
     setLocation(data.location ?? "");
     setNotes(data.notes ?? "");
     setReminderMinutes(data.reminderMinutes ?? 0);
+    if (data.timezone) setTimezone(data.timezone);
     toast.success(t('toast.generated', { count: generatedSessions.length }));
   };
 
