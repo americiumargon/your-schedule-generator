@@ -39,6 +39,7 @@ interface Session {
   startTime: string;
   endTime: string;
   slotLabel?: string;
+  rolledFrom?: Date;
 }
 
 interface ScheduleDisplayProps {
