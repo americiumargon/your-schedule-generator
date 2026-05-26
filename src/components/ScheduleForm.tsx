@@ -133,6 +133,8 @@ export function ScheduleForm({ onGenerate }: ScheduleFormProps) {
           startTime,
           endTime,
           holidays,
+          location: location.trim() || undefined,
+          notes: notes.trim() || undefined,
         });
         const sanitizedEventName = validated.eventName.replace(/[",\n\r]/g, ' ');
         onGenerate({
@@ -144,6 +146,8 @@ export function ScheduleForm({ onGenerate }: ScheduleFormProps) {
           holidays: validated.holidays,
           mode: "count",
           numberOfMeetings: validated.numberOfMeetings,
+          location: validated.location,
+          notes: validated.notes,
         });
       } else {
         if (!endDate) {
@@ -159,6 +163,8 @@ export function ScheduleForm({ onGenerate }: ScheduleFormProps) {
           startTime,
           endTime,
           holidays,
+          location: location.trim() || undefined,
+          notes: notes.trim() || undefined,
         });
         const sanitizedEventName = validated.eventName.replace(/[",\n\r]/g, ' ');
         onGenerate({
@@ -170,6 +176,8 @@ export function ScheduleForm({ onGenerate }: ScheduleFormProps) {
           holidays: validated.holidays,
           mode: "endDate",
           endDate: validated.endDate,
+          location: validated.location,
+          notes: validated.notes,
         });
       }
     } catch (error) {
