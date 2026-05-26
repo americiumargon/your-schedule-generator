@@ -1,142 +1,84 @@
 
-# Copy polish + weekday layout fix
+# Inline validation, recent schedules, mobile polish, dark mode
 
-Two things: (1) tighten the copy across the app with a neutral, clear voice (not chatty), and (2) restructure the weekday picker so column 1 = Mon to Thu and column 2 = Fri to Sun. No em dashes anywhere in the copy.
+Four focused improvements. None change the schedule generation logic or share-link payload.
 
-## 1. Weekday picker layout
+## 1. Inline validation (replace error toasts)
 
-Currently the grid is `grid-cols-2` which fills row by row (Mon/Tue, Wed/Thu, Fri/Sat, Sun). You want column-major:
+Today every validation problem fires a toast. Move to field-level errors so users see what to fix without dismissing popups.
 
-```
-Monday      Friday
-Tuesday     Saturday
-Wednesday   Sunday
-Thursday
-```
+- Track an `errors` state object in `ScheduleForm` (e.g. `{ eventName?: string; startDate?: string; numberOfMeetings?: string; endDate?: string; selectedDays?: string; ordinals?: string; daysOfMonth?: string; timeSlots?: string }`).
+- On submit, run the existing Zod + manual checks but collect errors instead of returning on the first one. Show each one as a small red helper line under the field (use shadcn pattern: red border + `text-sm text-destructive` message).
+- Clear a field's error as soon as the user edits that field.
+- Auto-scroll to and focus the first invalid field on submit.
+- Keep ONE toast for the catch-all "no sessions fit in this date range" case (it's a result, not a field error).
+- Auto-expand the "More options" section if any error lives inside it so users can see what's wrong.
+- Add translation keys for the same messages already under `form.validation.*` (no new copy needed).
 
-Change `src/components/ScheduleForm.tsx` (line 529):
-- Replace `grid grid-cols-2 gap-2` with `grid grid-rows-4 grid-flow-col gap-x-6 gap-y-2` so items flow down then across, producing two columns of 4 + 3.
+## 2. Recent schedules history
 
-No data changes. The `WEEKDAYS` array order stays Mon to Sun.
+Save the last 5 generated schedules locally so users can reload or duplicate them.
 
-## 2. Copywriting pass
+- New util `src/utils/recentSchedules.ts` with `loadRecent()`, `saveRecent(state)`, `removeRecent(id)`, `clearRecent()`. Stored in `localStorage` under key `schedule-generator:recent`, JSON array of `{ id, name, createdAt, formState }` where `formState` is the existing `ShareFormState` shape. Cap at 5; new entries push the oldest out.
+- On successful generate in `Index.tsx`, append the current `lastFormState` plus the activity name and timestamp.
+- New component `src/components/RecentSchedules.tsx` rendered in the empty-state area of the right column (only when there are saved entries and no current schedule). Shows a compact list: name, "3 days ago" via `date-fns/formatDistanceToNow`, plus "Load" and remove (×) buttons. A small "Clear history" link at the bottom.
+- Clicking Load sets `initialFormState` on `ScheduleForm` (same path the share-link decoder uses) and scrolls the form into view. The form already supports rehydration from this shape, so no extra wiring.
+- New i18n keys under `recent.*`: `title`, `empty`, `load`, `remove`, `clearAll`, `createdAgo` (e.g. "Created {{ago}}").
 
-Goal: neutral, concise, consistent. Remove "Please" filler, avoid em dashes (use periods, commas, or parentheses instead), keep a calm utilitarian tone.
+Dates inside the JSON serialize via `toISOString()` and parse back with `new Date(...)`. Use the same logic the share-link util uses to keep behavior consistent.
 
-### Header & shell
+## 3. Mobile polish
 
-| Key | Before | After |
-|---|---|---|
-| `header.title` | Schedule Generator | Schedule Generator |
-| `header.subtitle` | Generate a schedule of sessions for any activity | Create recurring schedules for classes, meetings, and events |
-| `footer.text` | Perfect for personal routines, team schedules, and recurring events | For personal routines, team schedules, and recurring events |
+Tighten the small-screen experience without redesigning anything.
 
-### Form, main labels & placeholders
+- `src/pages/Index.tsx`: switch the main grid gap from `gap-8` to `gap-4 lg:gap-8`, reduce card padding to `p-4 lg:p-6`, and make the header `py-4 lg:py-6`. The right-column card currently stacks under the form on mobile, which is fine; just give it a bit less vertical padding.
+- `src/components/ScheduleForm.tsx`: wrap the Generate button in a sticky container on mobile only:
+  ```
+  <div className="sticky bottom-0 -mx-4 px-4 py-3 bg-card/95 backdrop-blur border-t border-border lg:static lg:bg-transparent lg:border-0 lg:p-0 lg:mx-0">
+    <Button type="submit" className="w-full">{t('form.generateButton')}</Button>
+  </div>
+  ```
+  Add `pb-20 lg:pb-0` to the form so the sticky bar never covers the last field.
+- Add `min-h-[44px]` to the weekday checkbox rows and to the recurrence ordinal pill buttons so taps are comfortable.
+- `src/components/ScheduleDisplay.tsx`: make the action button row wrap (`flex-wrap`) and use `flex-1 sm:flex-none` on each so they stack neatly on narrow screens. (Read this file first before editing to confirm current button layout.)
 
-| Key | Before | After |
-|---|---|---|
-| `form.title` | Schedule Details | Schedule details |
-| `form.eventName` | Activity Name | Activity name |
-| `form.eventNamePlaceholder` | e.g., Morning Workout, Team Standup, Study Session | e.g. Morning workout, Team standup, Study session |
-| `form.startDate` | Start Date | First session date |
-| `form.generateBy` | Generate by | End the schedule |
-| `form.modeByCount` | Number of sessions | After N sessions |
-| `form.modeByEndDate` | End date | On a specific date |
-| `form.numberOfMeetings` | Number of Sessions | Number of sessions |
-| `form.meetingDays` | Recurring Days | Days of the week |
-| `form.selectDays` | Select the days of the week for your sessions | Choose one or more days |
-| `form.sections.time` | Session Time | Session time |
-| `form.helper.time` | When does each session start and end? | Applies to every session unless you add more slots below |
-| `form.generateButton` | Generate Schedule | Generate schedule |
+## 4. Dark mode toggle
 
-### Form, advanced section
+Wire up a header toggle using the existing tokens.
 
-| Key | Before | After |
-|---|---|---|
-| `form.advanced.title` | Advanced options | More options |
-| `form.advanced.customizedBadge` | {{count}} customized | {{count}} changed |
-| `form.sections.repeat` | Repeat pattern | Repeat pattern |
-| `form.helper.repeat` | Change how often sessions recur — every week, every few weeks, or specific dates of the month. | Set how often sessions recur. |
-| `form.sections.slotsHolidays` | Time slots & holidays | Time slots and days off |
-| `form.helper.slotsHolidays` | Add multiple sessions per day and exclude specific dates. | Add more sessions per day or exclude specific dates. |
-| `form.sections.details` | Event details & calendar | Calendar details |
-| `form.helper.details` | Add location, notes, a reminder, and pick a timezone for ICS exports. | Location, notes, reminder, and timezone (used for exports). |
-
-### Form, time slots, holidays, recurrence helpers
-
-| Key | Before | After |
-|---|---|---|
-| `form.timeSlots.title` | Time Slots | Time slots |
-| `form.timeSlots.add` | Add slot | Add slot |
-| `form.timeSlots.labelForFirst` | Name this session (optional) | Slot label (optional) |
-| `form.timeSlots.description` | Each selected day generates one session per slot. | Each selected day creates one session per slot. |
-| `form.holidays` | Holidays / Days Off | Days to skip |
-| `form.holidaysDescription` | Select dates to exclude from the schedule | Dates that should never have a session |
-| `form.selectHolidays` | Select holidays | Pick dates |
-| `form.holidayBehavior.label` | When a session falls on a holiday | If a session lands on one of these dates |
-| `form.holidayBehavior.skip` | Skip the session | Skip the session |
-| `form.holidayBehavior.rollForward` | Move to the next available weekday | Move to the next available weekday |
-| `form.holidayBehavior.description` | Roll-forward looks up to 14 days ahead for a matching weekday that isn't a holiday. | Looks up to 14 days ahead for a matching weekday that is not a day off. |
-| `form.recurrence.daysOfMonthHint` | Days past the end of a shorter month are clamped (e.g. 31 → Feb 28). | Dates past the end of a shorter month use that month's last day (e.g. 31 becomes Feb 28). |
-| `form.timezoneDescription` | Used for ICS exports. CSV uses your calendar's local time. | Used for ICS exports. CSV uses your calendar's local time. |
-| `form.reminder` | Reminder (ICS only) | Reminder (ICS exports only) |
-
-### Validation toasts
-
-| Key | Before | After |
-|---|---|---|
-| `form.validation.eventNameRequired` | Please enter an activity name | Enter an activity name |
-| `form.validation.dateRequired` | Please select a start date | Select a start date |
-| `form.validation.meetingsRequired` | Number of sessions must be at least 1 | Number of sessions must be at least 1 |
-| `form.validation.daysRequired` | Please select at least one day of the week | Select at least one day of the week |
-| `form.validation.ordinalsRequired` | Please select at least one occurrence (e.g. 1st, 2nd) | Select at least one occurrence (e.g. 1st, 2nd) |
-| `form.validation.daysOfMonthRequired` | Please select at least one day of the month | Select at least one day of the month |
-| `form.validation.timeRequired` | Please enter both start and end times | Enter a start and end time for every slot |
-| `form.validation.endDateRequired` | Please select an end date | Select an end date |
-| `form.validation.noSessionsInRange` | No sessions fall within the selected range | No sessions fit in this date range |
-| `form.validation.invalid` | Please check your input and try again | Check the form and try again |
-
-### Schedule display & empty state
-
-| Key | Before | After |
-|---|---|---|
-| `schedule.title` | Your Schedule | Schedule |
-| `schedule.sessionsSelected` | {{count}} of {{total}} sessions selected | {{count}} of {{total}} sessions selected |
-| `schedule.clearAll` | Clear All | Clear |
-| `schedule.shareButton` | Share link | Copy share link |
-| `schedule.googleButton` | Add to Google | Add to Google Calendar |
-| `emptyState.title` | No Schedule Yet | No schedule yet |
-| `emptyState.description` | Fill in the form and click "Generate Schedule" to create your event calendar | Fill in the form and click Generate schedule to see your sessions here. |
-
-### Toasts
-
-| Key | Before | After |
-|---|---|---|
-| `toast.generated` | Generated {{count}} sessions! | Generated {{count}} sessions |
-| `toast.cleared` | Schedule cleared successfully | Schedule cleared |
-| `toast.copied` | Schedule copied to clipboard | Copied to clipboard |
-| `toast.linkCopied` | Link copied to clipboard | Share link copied |
-| `toast.loadedFromLink` | Schedule loaded from link | Loaded from shared link |
-| `toast.linkInvalid` | Shared link is invalid or outdated | Shared link is invalid or outdated |
-| `toast.gcalTooMany` | Too many sessions for one Google Calendar link. Use ICS instead. | Too many sessions for one Google Calendar link. Use ICS instead. |
-| `toast.gcalTimeConflicts` | Some sessions have different times — they'll use the first session's time. Use ICS for full fidelity. | Sessions have different times. Google Calendar will use the first session's time. Use ICS for full fidelity. |
-
-### Indonesian translations
-
-Mirror every key in `src/locales/id.json` with the same neutral tone. Drop "Silakan" where the English drops "Please", and avoid em dashes (use periods, commas, or parentheses).
+- Install `next-themes` (already common in shadcn projects) and wrap `App` in `<ThemeProvider attribute="class" defaultTheme="system" enableSystem>`.
+- New component `src/components/ThemeToggle.tsx` with a sun/moon lucide icon button that flips between `light` and `dark`. Place it in the header next to `<LanguageToggle />`.
+- `tailwind.config.ts`: confirm `darkMode: ["class"]` is set (shadcn default); if not, add it.
+- `src/index.css`: verify `.dark` variables exist for `--background`, `--foreground`, `--card`, `--primary`, etc. If any are missing or thin, fill them with appropriate dark values mirrored from light. Avoid hardcoded colors anywhere; everything must read from tokens.
+- The header gradient on the calendar icon (`from-primary to-accent`) already uses tokens so it carries over.
+- One small fix needed: the icon block uses `text-white` (literal). Replace with `text-primary-foreground` so it stays correct in both themes.
+- Persist choice via `next-themes` default (uses localStorage).
+- New i18n keys: `theme.toggleLight`, `theme.toggleDark`, `theme.toggleSystem` (only used in aria-labels).
 
 ## Technical details
 
-Files changed:
-- `src/components/ScheduleForm.tsx`: single line change for the weekday grid classes.
-- `src/locales/en.json`: value updates only, no key additions or removals.
-- `src/locales/id.json`: parallel value updates.
+Files touched:
+- `src/components/ScheduleForm.tsx` (inline errors, sticky button, tap targets)
+- `src/components/ScheduleDisplay.tsx` (responsive action row)
+- `src/components/ThemeToggle.tsx` (new)
+- `src/components/RecentSchedules.tsx` (new)
+- `src/utils/recentSchedules.ts` (new)
+- `src/pages/Index.tsx` (history wiring, padding, ThemeToggle slot, fix text-white)
+- `src/App.tsx` (ThemeProvider)
+- `src/locales/en.json` and `src/locales/id.json` (recent.* and theme.* keys)
+- `tailwind.config.ts` (only if darkMode key is missing)
+- `src/index.css` (top up .dark tokens if thin)
+- `package.json` (add `next-themes`)
 
-No logic, schema, share link, or export format changes.
+No changes to:
+- `scheduleGenerator.ts`, `shareLink.ts`, `googleCalendar.ts`, `copyFormats.ts`
+- Zod schemas, share-link payload, export formats
 
-## Out of scope
+## Out of scope (next time)
 
-- Restructuring sections, presets, live preview, or wizard flow.
-- Renaming i18n keys.
+- Smart presets
+- Live preview of upcoming sessions
+- Better empty state with sample
+- Keyboard shortcuts
 
 Approve to implement.

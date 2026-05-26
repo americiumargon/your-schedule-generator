@@ -246,6 +246,23 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
   const [tzOpen, setTzOpen] = useState(false);
   const timezones = useMemo(() => getTimezoneList(), []);
 
+  interface FormErrors {
+    eventName?: string;
+    startDate?: string;
+    numberOfMeetings?: string;
+    endDate?: string;
+    selectedDays?: string;
+    ordinals?: string;
+    daysOfMonth?: string;
+    timeSlots?: string;
+  }
+  const [errors, setErrors] = useState<FormErrors>({});
+  const clearError = (key: keyof FormErrors) => {
+    setErrors((prev) => (prev[key] ? { ...prev, [key]: undefined } : prev));
+  };
+  const fieldError = (msg?: string) =>
+    msg ? <p className="text-sm font-medium text-destructive mt-1">{msg}</p> : null;
+
   // Customization count for the advanced badge + auto-expand
   const customizedCount = useMemo(() => {
     let n = 0;
@@ -278,9 +295,11 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
 
   const toggleOrdinal = (o: number) => {
     setOrdinals((prev) => (prev.includes(o) ? prev.filter((x) => x !== o) : [...prev, o]));
+    setErrors((prev) => (prev.ordinals ? { ...prev, ordinals: undefined } : prev));
   };
   const toggleDayOfMonth = (d: number) => {
     setDaysOfMonth((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]));
+    setErrors((prev) => (prev.daysOfMonth ? { ...prev, daysOfMonth: undefined } : prev));
   };
 
   const needsWeekdays = recurrenceType === "weekly" || recurrenceType === "monthlyByWeekday";
@@ -310,33 +329,54 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!startDate) {
-      toast.error(t('form.validation.dateRequired'));
-      return;
-    }
+    const next: FormErrors = {};
+    const trimmedName = eventName.trim();
+    if (!trimmedName) next.eventName = t('form.validation.eventNameRequired');
+    if (!startDate) next.startDate = t('form.validation.dateRequired');
 
-    if (timeSlots.some((s) => !s.startTime || !s.endTime)) {
-      toast.error(t('form.validation.timeRequired'));
-      return;
+    if (mode === "count") {
+      const parsed = parseInt(numberOfMeetings);
+      if (!numberOfMeetings || isNaN(parsed) || parsed < 1) {
+        next.numberOfMeetings = t('form.validation.meetingsRequired');
+      }
+    } else if (!endDate) {
+      next.endDate = t('form.validation.endDateRequired');
+    } else if (startDate && endDate < startDate) {
+      next.endDate = t('form.validation.endDateAfterStart');
     }
 
     if (needsWeekdays && selectedDays.length === 0) {
-      toast.error(t('form.validation.daysRequired'));
-      return;
+      next.selectedDays = t('form.validation.daysRequired');
     }
     if (recurrenceType === "monthlyByWeekday" && ordinals.length === 0) {
-      toast.error(t('form.validation.ordinalsRequired'));
-      return;
+      next.ordinals = t('form.validation.ordinalsRequired');
     }
     if (recurrenceType === "monthlyByDate" && daysOfMonth.length === 0) {
-      toast.error(t('form.validation.daysOfMonthRequired'));
+      next.daysOfMonth = t('form.validation.daysOfMonthRequired');
+    }
+    if (timeSlots.some((s) => !s.startTime || !s.endTime)) {
+      next.timeSlots = t('form.validation.timeRequired');
+    } else if (timeSlots.some((s) => s.startTime >= s.endTime)) {
+      next.timeSlots = t('form.validation.timeRequired');
+    }
+
+    if (Object.values(next).some(Boolean)) {
+      setErrors(next);
+      // Auto-expand advanced if errors live inside it
+      if (next.ordinals || next.daysOfMonth) setAdvancedOpen(true);
+      // Scroll first invalid field into view
+      requestAnimationFrame(() => {
+        const firstInvalid = document.querySelector<HTMLElement>('[data-invalid="true"]');
+        firstInvalid?.scrollIntoView({ behavior: "smooth", block: "center" });
+        firstInvalid?.focus?.();
+      });
       return;
     }
 
+    setErrors({});
     const recurrence = buildRecurrence();
 
     try {
-      const trimmedName = eventName.trim();
       const normalizedSlots = timeSlots.map((s) => ({
         startTime: s.startTime,
         endTime: s.endTime,
@@ -359,7 +399,7 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
         const sanitizedEventName = validated.eventName.replace(/[",\n\r]/g, ' ');
         onGenerate({
           eventName: sanitizedEventName,
-          startDate,
+          startDate: startDate!,
           selectedDays: validated.selectedDays,
           timeSlots: normalizedSlots,
           holidays: validated.holidays,
@@ -373,15 +413,11 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
           timezone: validated.timezone,
         });
       } else {
-        if (!endDate) {
-          toast.error(t('form.validation.endDateRequired'));
-          return;
-        }
         const validated = endDateSchema.parse({
           eventName: trimmedName,
           mode: "endDate",
-          endDate,
-          startDate,
+          endDate: endDate!,
+          startDate: startDate!,
           selectedDays,
           timeSlots: normalizedSlots,
           holidays,
@@ -393,7 +429,7 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
         const sanitizedEventName = validated.eventName.replace(/[",\n\r]/g, ' ');
         onGenerate({
           eventName: sanitizedEventName,
-          startDate,
+          startDate: startDate!,
           selectedDays: validated.selectedDays,
           timeSlots: normalizedSlots,
           holidays: validated.holidays,
@@ -420,7 +456,7 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
   const extraSlots = timeSlots.slice(1);
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8">
+    <form onSubmit={handleSubmit} className="space-y-8 pb-4 lg:pb-0">
       {/* ===================== ESSENTIALS ===================== */}
       <div className="space-y-5">
         {/* Activity name */}
@@ -429,11 +465,13 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
           <Input
             id="eventName"
             value={eventName}
-            onChange={(e) => setEventName(e.target.value)}
+            onChange={(e) => { setEventName(e.target.value); clearError('eventName'); }}
             placeholder={t('form.eventNamePlaceholder')}
-            required
-            className="mt-2"
+            data-invalid={!!errors.eventName}
+            aria-invalid={!!errors.eventName}
+            className={cn("mt-2", errors.eventName && "border-destructive focus-visible:ring-destructive")}
           />
+          {fieldError(errors.eventName)}
         </div>
 
         {/* Start date */}
@@ -443,9 +481,11 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
+                data-invalid={!!errors.startDate}
                 className={cn(
                   "w-full justify-start text-left font-normal mt-2",
-                  !startDate && "text-muted-foreground"
+                  !startDate && "text-muted-foreground",
+                  errors.startDate && "border-destructive"
                 )}
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
@@ -456,13 +496,14 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
               <Calendar
                 mode="single"
                 selected={startDate}
-                onSelect={setStartDate}
+                onSelect={(d) => { setStartDate(d); clearError('startDate'); }}
                 initialFocus
                 className="pointer-events-auto"
                 locale={dateLocale}
               />
             </PopoverContent>
           </Popover>
+          {fieldError(errors.startDate)}
         </div>
 
         {/* Mode tabs */}
@@ -485,10 +526,12 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
               min="1"
               max="366"
               value={numberOfMeetings}
-              onChange={(e) => setNumberOfMeetings(e.target.value)}
-              required
-              className="mt-2"
+              onChange={(e) => { setNumberOfMeetings(e.target.value); clearError('numberOfMeetings'); }}
+              data-invalid={!!errors.numberOfMeetings}
+              aria-invalid={!!errors.numberOfMeetings}
+              className={cn("mt-2", errors.numberOfMeetings && "border-destructive focus-visible:ring-destructive")}
             />
+            {fieldError(errors.numberOfMeetings)}
           </div>
         ) : (
           <div>
@@ -497,9 +540,11 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
+                  data-invalid={!!errors.endDate}
                   className={cn(
                     "w-full justify-start text-left font-normal mt-2",
-                    !endDate && "text-muted-foreground"
+                    !endDate && "text-muted-foreground",
+                    errors.endDate && "border-destructive"
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
@@ -510,7 +555,7 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
                 <Calendar
                   mode="single"
                   selected={endDate}
-                  onSelect={setEndDate}
+                  onSelect={(d) => { setEndDate(d); clearError('endDate'); }}
                   initialFocus
                   className="pointer-events-auto"
                   locale={dateLocale}
@@ -518,21 +563,22 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
                 />
               </PopoverContent>
             </Popover>
+            {fieldError(errors.endDate)}
           </div>
         )}
 
         {/* Weekdays — shown for weekly recurrence (most users) */}
         {needsWeekdays && (
-          <div>
+          <div data-invalid={!!errors.selectedDays} tabIndex={-1}>
             <Label className="mb-1 block">{t('form.meetingDays')}</Label>
             <p className="text-xs text-muted-foreground mb-3">{t('form.selectDays')}</p>
             <div className="grid grid-rows-4 grid-flow-col gap-x-6 gap-y-2">
               {WEEKDAYS.map((day) => (
-                <div key={day.id} className="flex items-center space-x-2">
+                <div key={day.id} className="flex items-center space-x-2 min-h-[36px]">
                   <Checkbox
                     id={`day-${day.id}`}
                     checked={selectedDays.includes(day.id)}
-                    onCheckedChange={() => handleDayToggle(day.id)}
+                    onCheckedChange={() => { handleDayToggle(day.id); clearError('selectedDays'); }}
                   />
                   <Label
                     htmlFor={`day-${day.id}`}
@@ -543,6 +589,7 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
                 </div>
               ))}
             </div>
+            {fieldError(errors.selectedDays)}
           </div>
         )}
 
@@ -559,9 +606,10 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
                 id="slot-start-0"
                 type="time"
                 value={firstSlot?.startTime ?? ""}
-                onChange={(e) => updateSlot(0, { startTime: e.target.value })}
-                required
-                className="mt-1"
+                onChange={(e) => { updateSlot(0, { startTime: e.target.value }); clearError('timeSlots'); }}
+                data-invalid={!!errors.timeSlots}
+                aria-invalid={!!errors.timeSlots}
+                className={cn("mt-1", errors.timeSlots && "border-destructive focus-visible:ring-destructive")}
               />
             </div>
             <div>
@@ -572,12 +620,13 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
                 id="slot-end-0"
                 type="time"
                 value={firstSlot?.endTime ?? ""}
-                onChange={(e) => updateSlot(0, { endTime: e.target.value })}
-                required
-                className="mt-1"
+                onChange={(e) => { updateSlot(0, { endTime: e.target.value }); clearError('timeSlots'); }}
+                aria-invalid={!!errors.timeSlots}
+                className={cn("mt-1", errors.timeSlots && "border-destructive focus-visible:ring-destructive")}
               />
             </div>
           </div>
+          {fieldError(errors.timeSlots)}
         </div>
       </div>
 
@@ -667,6 +716,7 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
                       </button>
                     ))}
                   </div>
+                  {fieldError(errors.ordinals)}
                 </div>
               )}
 
@@ -703,6 +753,7 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
                     </button>
                   </div>
                   <p className="text-xs text-muted-foreground mt-2">{t('form.recurrence.daysOfMonthHint')}</p>
+                  {fieldError(errors.daysOfMonth)}
                 </div>
               )}
             </div>
@@ -980,13 +1031,15 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
         </CollapsibleContent>
       </Collapsible>
 
-      <Button
-        type="submit"
-        className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity"
-        size="lg"
-      >
-        {t('form.generateButton')}
-      </Button>
+      <div className="sticky bottom-0 -mx-4 px-4 py-3 bg-card/95 backdrop-blur border-t border-border lg:static lg:bg-transparent lg:border-0 lg:p-0 lg:mx-0 lg:backdrop-blur-none z-10">
+        <Button
+          type="submit"
+          className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity"
+          size="lg"
+        >
+          {t('form.generateButton')}
+        </Button>
+      </div>
     </form>
   );
 }

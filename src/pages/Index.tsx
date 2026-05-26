@@ -1,7 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ScheduleForm, type FormTimeSlot } from "@/components/ScheduleForm";
 import { ScheduleDisplay } from "@/components/ScheduleDisplay";
 import { LanguageToggle } from "@/components/LanguageToggle";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { RecentSchedules } from "@/components/RecentSchedules";
 import { Button } from "@/components/ui/button";
 import { generateSchedule, exportToCSV, exportToICS } from "@/utils/scheduleGenerator";
 import { Calendar, Trash2 } from "lucide-react";
@@ -13,6 +15,7 @@ import {
   readShareTokenFromHash,
   type ShareFormState,
 } from "@/utils/shareLink";
+import { saveRecent } from "@/utils/recentSchedules";
 
 interface Session {
   date: Date;
@@ -36,6 +39,8 @@ const Index = () => {
   const [lastFormState, setLastFormState] = useState<ShareFormState | null>(null);
   const [initialFormState, setInitialFormState] = useState<ShareFormState | undefined>(undefined);
   const [hydrated, setHydrated] = useState(false);
+  const [recentRefresh, setRecentRefresh] = useState(0);
+  const formColumnRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const token = readShareTokenFromHash();
@@ -98,7 +103,7 @@ const Index = () => {
     setNotes(data.notes ?? "");
     setReminderMinutes(data.reminderMinutes ?? 0);
     if (data.timezone) setTimezone(data.timezone);
-    setLastFormState({
+    const newFormState: ShareFormState = {
       eventName: data.eventName,
       startDate: data.startDate,
       mode: data.mode,
@@ -113,8 +118,19 @@ const Index = () => {
       notes: data.notes,
       reminderMinutes: data.reminderMinutes ?? 0,
       timezone: tz,
-    });
+    };
+    setLastFormState(newFormState);
+    saveRecent(data.eventName, newFormState);
+    setRecentRefresh((n) => n + 1);
     toast.success(t('toast.generated', { count: generatedSessions.length }));
+  };
+
+  const handleLoadRecent = (state: ShareFormState) => {
+    setInitialFormState({ ...state });
+    setSessions([]);
+    requestAnimationFrame(() => {
+      formColumnRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
   };
 
   const handleExport = (format: "csv" | "ics", enabledSessions: Session[], language: string) => {
@@ -188,30 +204,33 @@ const Index = () => {
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/20">
       {/* Header */}
       <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10 print:hidden">
-        <div className="container mx-auto px-4 py-6">
+        <div className="container mx-auto px-4 py-4 lg:py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-gradient-to-br from-primary to-accent">
-                <Calendar className="h-6 w-6 text-white" />
+                <Calendar className="h-6 w-6 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold">{t('header.title')}</h1>
-                <p className="text-sm text-muted-foreground">
+                <h1 className="text-xl lg:text-2xl font-bold">{t('header.title')}</h1>
+                <p className="text-xs lg:text-sm text-muted-foreground">
                   {t('header.subtitle')}
                 </p>
               </div>
             </div>
-            <LanguageToggle />
+            <div className="flex items-center gap-1">
+              <ThemeToggle />
+              <LanguageToggle />
+            </div>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
-        <div className="grid lg:grid-cols-2 gap-8 print:block">
+      <main className="container mx-auto px-4 py-4 lg:py-8">
+        <div className="grid lg:grid-cols-2 gap-4 lg:gap-8 print:block">
           {/* Left Column - Form */}
-          <div className="print:hidden">
-            <div className="bg-card rounded-xl shadow-lg p-6 sticky top-24">
+          <div className="print:hidden" ref={formColumnRef}>
+            <div className="bg-card rounded-xl shadow-lg p-4 lg:p-6 lg:sticky lg:top-24">
               <h2 className="text-xl font-semibold mb-6">{t('form.title')}</h2>
               {hydrated && (
                 <ScheduleForm onGenerate={handleGenerate} initialState={initialFormState} />
@@ -221,7 +240,7 @@ const Index = () => {
 
           {/* Right Column - Results */}
           <div>
-            <div className="bg-card rounded-xl shadow-lg p-6 print:shadow-none print:p-0">
+            <div className="bg-card rounded-xl shadow-lg p-4 lg:p-6 print:shadow-none print:p-0">
               {/* Header - Always visible */}
               <div className="flex items-center justify-between mb-6 print:hidden">
                 <h2 className="text-xl font-semibold">
@@ -253,19 +272,23 @@ const Index = () => {
                   onShare={lastFormState ? handleShare : undefined}
                 />
               ) : (
-                <div className="text-center py-12">
-                  <div className="w-16 h-16 bg-secondary rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Calendar className="h-8 w-8 text-muted-foreground" />
+                <div>
+                  <div className="text-center py-12">
+                    <div className="w-16 h-16 bg-secondary rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Calendar className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      {t('emptyState.description')}
+                    </p>
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    {t('emptyState.description')}
-                  </p>
+                  <RecentSchedules onLoad={handleLoadRecent} refreshKey={recentRefresh} />
                 </div>
               )}
             </div>
           </div>
         </div>
       </main>
+
 
       {/* Footer */}
       <footer className="border-t mt-16 py-8 bg-card/50 print:hidden">
