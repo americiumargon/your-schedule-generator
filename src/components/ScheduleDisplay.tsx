@@ -246,7 +246,8 @@ export function ScheduleDisplay({ eventName, sessions, location, notes, onExport
   };
 
   return (
-    <div className="space-y-6">
+    <>
+    <div className="space-y-6 print:hidden">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <p className="text-sm text-muted-foreground">
           {t('schedule.sessionsSelected', { count: enabledCount, total: sessions.length })}
