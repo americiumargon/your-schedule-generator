@@ -182,5 +182,16 @@
     "sessionUpdated": "Session updated",
     "gcalTooMany": "Too many sessions for one Google Calendar link. Use ICS instead.",
     "gcalTimeConflicts": "Sessions have different times. Google Calendar will use the first session's time. Use ICS for full fidelity."
+  },
+  "recent": {
+    "title": "Recent schedules",
+    "load": "Load",
+    "remove": "Remove",
+    "clearAll": "Clear all",
+    "createdAgo": "Created {{ago}}"
+  },
+  "theme": {
+    "toggleLight": "Switch to light mode",
+    "toggleDark": "Switch to dark mode"
   }
 }
