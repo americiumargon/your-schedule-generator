@@ -20,6 +20,7 @@ interface Session {
   startTime: string;
   endTime: string;
   slotLabel?: string;
+  rolledFrom?: Date;
 }
 
 const Index = () => {
