@@ -179,7 +179,7 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/20">
       {/* Header */}
-      <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
+      <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10 print:hidden">
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -200,9 +200,9 @@ const Index = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
-        <div className="grid lg:grid-cols-2 gap-8">
+        <div className="grid lg:grid-cols-2 gap-8 print:block">
           {/* Left Column - Form */}
-          <div>
+          <div className="print:hidden">
             <div className="bg-card rounded-xl shadow-lg p-6 sticky top-24">
               <h2 className="text-xl font-semibold mb-6">{t('form.title')}</h2>
               {hydrated && (
@@ -213,9 +213,9 @@ const Index = () => {
 
           {/* Right Column - Results */}
           <div>
-            <div className="bg-card rounded-xl shadow-lg p-6">
+            <div className="bg-card rounded-xl shadow-lg p-6 print:shadow-none print:p-0">
               {/* Header - Always visible */}
-              <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center justify-between mb-6 print:hidden">
                 <h2 className="text-xl font-semibold">
                   {sessions.length > 0 ? eventName || t('schedule.title') : t('emptyState.title')}
                 </h2>
@@ -259,7 +259,7 @@ const Index = () => {
       </main>
 
       {/* Footer */}
-      <footer className="border-t mt-16 py-8 bg-card/50">
+      <footer className="border-t mt-16 py-8 bg-card/50 print:hidden">
         <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
           <p>{t('footer.text')}</p>
         </div>
