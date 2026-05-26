@@ -91,6 +91,7 @@ interface ScheduleFormProps {
     endDate?: Date;
     location?: string;
     notes?: string;
+    reminderMinutes?: number;
   }) => void;
 }
 
