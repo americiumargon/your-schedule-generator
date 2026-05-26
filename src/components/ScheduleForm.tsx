@@ -295,9 +295,11 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
 
   const toggleOrdinal = (o: number) => {
     setOrdinals((prev) => (prev.includes(o) ? prev.filter((x) => x !== o) : [...prev, o]));
+    setErrors((prev) => (prev.ordinals ? { ...prev, ordinals: undefined } : prev));
   };
   const toggleDayOfMonth = (d: number) => {
     setDaysOfMonth((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]));
+    setErrors((prev) => (prev.daysOfMonth ? { ...prev, daysOfMonth: undefined } : prev));
   };
 
   const needsWeekdays = recurrenceType === "weekly" || recurrenceType === "monthlyByWeekday";
