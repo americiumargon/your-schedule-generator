@@ -229,6 +229,14 @@ export function ScheduleDisplay({ eventName, sessions, location, notes, onExport
   const spanDays = firstDate && lastDate ? differenceInCalendarDays(lastDate, firstDate) + 1 : 0;
   const spanWeeks = spanDays > 0 ? Math.ceil(spanDays / 7) : 0;
 
+  const handlePrint = () => {
+    if (enabledList.length === 0) {
+      toast.error(t('export.errorNoSessions'));
+      return;
+    }
+    window.print();
+  };
+
   const toggleAll = () => {
     if (allSelected) {
       setEnabledSessions(new Set());
