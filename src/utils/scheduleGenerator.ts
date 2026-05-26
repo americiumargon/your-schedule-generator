@@ -193,10 +193,17 @@ export function exportToICS(sessions: Session[], eventName: string, language: st
       `DESCRIPTION:${escapeICS(fullDescription)}`,
     ];
     if (locationLine) lines.push(locationLine);
-    lines.push(
-      `UID:${Date.now()}-${session.sessionNumber}@schedule-generator.com`,
-      "END:VEVENT",
-    );
+    lines.push(`UID:${Date.now()}-${session.sessionNumber}@schedule-generator.com`);
+    if (opts.reminderMinutes && opts.reminderMinutes > 0) {
+      lines.push(
+        "BEGIN:VALARM",
+        "ACTION:DISPLAY",
+        `DESCRIPTION:${escapeICS(summary)}`,
+        `TRIGGER:${buildTrigger(opts.reminderMinutes)}`,
+        "END:VALARM",
+      );
+    }
+    lines.push("END:VEVENT");
     return lines.join("\r\n");
   }).join("\r\n");
 
