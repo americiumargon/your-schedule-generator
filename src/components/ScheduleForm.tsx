@@ -133,6 +133,11 @@ export interface FormTimeSlot {
 
 export type HolidayBehavior = "skip" | "rollForward";
 
+export type FormRecurrence =
+  | { type: "weekly"; interval: number }
+  | { type: "monthlyByWeekday"; ordinals: number[] }
+  | { type: "monthlyByDate"; daysOfMonth: number[] };
+
 interface ScheduleFormProps {
   onGenerate: (data: {
     eventName: string;
@@ -141,6 +146,7 @@ interface ScheduleFormProps {
     timeSlots: FormTimeSlot[];
     holidays: Date[];
     holidayBehavior: HolidayBehavior;
+    recurrence: FormRecurrence;
     mode: Mode;
     numberOfMeetings?: number;
     endDate?: Date;
@@ -159,6 +165,7 @@ interface ScheduleFormProps {
     timeSlots: FormTimeSlot[];
     holidays: Date[];
     holidayBehavior?: HolidayBehavior;
+    recurrence?: FormRecurrence;
     location?: string;
     notes?: string;
     reminderMinutes: number;
