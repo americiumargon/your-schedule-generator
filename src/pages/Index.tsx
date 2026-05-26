@@ -166,6 +166,8 @@ const Index = () => {
               {sessions.length > 0 ? (
                 <ScheduleDisplay
                   eventName={eventName}
+                  location={location}
+                  notes={notes}
                   sessions={sessions}
                   onExport={handleExport}
                   onClear={handleClear}
