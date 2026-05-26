@@ -1,41 +1,32 @@
-## Per-session editing
+## Custom location & notes
 
-Let users click any generated session to adjust its date, start time, and end time individually — useful when a single session gets rescheduled without regenerating the whole list.
+Add optional **Location** and **Notes** fields to the form and pipe them through to CSV (Location, Description columns) and ICS (LOCATION, DESCRIPTION).
 
 ### UX
+- Two new optional inputs at the bottom of `ScheduleForm`, above the Generate button:
+  - **Location** — single-line `Input` (e.g., "Zoom link", "Conference Room B").
+  - **Notes** — multi-line `Textarea` (3 rows). Used as the event description; appended to the existing per-session description text.
+- Both are optional. Empty values keep the current behavior.
 
-- Each session card in `ScheduleDisplay` gets an Edit (pencil) icon button on the right, next to the time text.
-- Clicking it opens a Popover containing:
-  - Date picker (shadcn Calendar in a popover, like the form)
-  - Start time input (`type="time"`)
-  - End time input (`type="time"`)
-  - Save / Cancel buttons
-- Saving updates that one session in place. The session list re-sorts by date so it stays chronological. Session numbers are reassigned 1..N after sorting so order stays consistent.
-- A small "edited" badge appears on any session whose date/time differs from the originally generated values (subtle visual cue).
-- Toast confirmation on save: "Session updated" (with undo to restore prior values, matching the existing Undo pattern).
+### Data flow
+- `ScheduleForm` adds `location` and `notes` state, validates max length (e.g. 200 / 2000 chars), sanitizes line breaks for CSV, and passes them in `onGenerate`.
+- `Index.tsx` stores `location` and `notes` alongside `eventName`, and forwards them into `handleExport` → `exportToCSV` / `exportToICS`.
+- Also include them in the copy-to-clipboard output in `ScheduleDisplay` (one line per session, location appended after time; notes added as a trailing block if non-empty).
 
-### Technical changes
+### Export changes (`src/utils/scheduleGenerator.ts`)
+- `exportToCSV(sessions, eventName, language, { location, notes })`:
+  - Put `location` into the Location column.
+  - Append `notes` to the existing Description (newline-separated, escaped for CSV).
+- `exportToICS(sessions, eventName, language, { location, notes })`:
+  - Emit `LOCATION:<escaped>` when set.
+  - Append `notes` to `DESCRIPTION` (escape `,`, `;`, `\n` per RFC 5545).
+- Add a small `escapeICS` helper.
 
-**`src/pages/Index.tsx`**
-- Add `handleUpdateSession(index, { date, startTime, endTime })` that:
-  - Replaces the session at that index, re-sorts the array by date+startTime, reassigns `sessionNumber`.
-  - Shows a toast with Undo restoring the previous `sessions` array.
-- Pass `onUpdateSession` to `ScheduleDisplay`.
-
-**`src/components/ScheduleDisplay.tsx`**
-- Extend `Session` type usage to track an optional `edited: boolean` flag (set by parent when an update happens). Alternative: keep a `Set<number>` of edited session indexes locally — simpler, no type change. Use the local Set approach.
-- Add `EditSessionPopover` subcomponent (or inline Popover) rendered per card with a `Pencil` icon trigger.
-- On save, call `onUpdateSession(index, ...)` and mark that session as edited.
-- Keep checkbox + existing layout; place edit button between time text and (now) end of row.
-
-**`src/locales/en.json` & `src/locales/id.json`** — add keys:
-- `schedule.editSession`: "Edit session" / "Ubah sesi"
-- `schedule.editedBadge`: "edited" / "diubah"
-- `schedule.save`: "Save" / "Simpan"
-- `schedule.cancel`: "Cancel" / "Batal"
-- `toast.sessionUpdated`: "Session updated" / "Sesi diperbarui"
+### i18n (`en.json` / `id.json`)
+- `form.location` / `form.locationPlaceholder`
+- `form.notes` / `form.notesPlaceholder`
+- Validation messages for max length.
 
 ### Out of scope
-
-- Adding/deleting individual sessions (only editing existing ones).
-- Bulk edits or drag-to-reschedule.
+- Per-session overrides for location/notes (single global value for now).
+- Reminders and timezone (separate upcoming tasks).
