@@ -753,6 +753,7 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
                     </button>
                   </div>
                   <p className="text-xs text-muted-foreground mt-2">{t('form.recurrence.daysOfMonthHint')}</p>
+                  {fieldError(errors.daysOfMonth)}
                 </div>
               )}
             </div>
