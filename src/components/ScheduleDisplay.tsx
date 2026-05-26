@@ -20,7 +20,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Download, Calendar, FileText, Copy, Pencil, CalendarIcon, ChevronDown } from "lucide-react";
+import { Download, Calendar, FileText, Copy, Pencil, CalendarIcon, ChevronDown, Printer } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import {
