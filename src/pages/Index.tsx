@@ -21,6 +21,7 @@ const Index = () => {
   const [eventName, setEventName] = useState("");
   const [location, setLocation] = useState("");
   const [notes, setNotes] = useState("");
+  const [reminderMinutes, setReminderMinutes] = useState<number>(0);
 
   const handleGenerate = (data: {
     eventName: string;
