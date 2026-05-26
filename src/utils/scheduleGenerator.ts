@@ -179,7 +179,13 @@ export function exportToCSV(sessions: Session[], eventName: string, language: st
     const dateStr = format(session.date, "MM/dd/yyyy");
     const subject = subjectFor(eventName, session.sessionNumber, t.schedule.session, session.slotLabel);
     const baseDescription = `${t.schedule.session} ${session.sessionNumber} ${t.export.description.split(' ')[0]} ${eventName}`;
-    const description = notes ? `${baseDescription}\n\n${notes}` : baseDescription;
+    const rolledNote = session.rolledFrom
+      ? `${t.schedule.rolledFromBadge} ${format(session.rolledFrom, "MMM d, yyyy")}`
+      : "";
+    const descParts = [baseDescription];
+    if (rolledNote) descParts.push(rolledNote);
+    if (notes) descParts.push(notes);
+    const description = descParts.join("\n\n");
 
     return [
       subject,
