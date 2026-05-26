@@ -42,6 +42,7 @@ const baseSchema = {
   location: z.string().trim().max(200, "Location must be less than 200 characters").optional(),
   notes: z.string().trim().max(2000, "Notes must be less than 2000 characters").optional(),
   reminderMinutes: z.number().refine(v => [0, 5, 15, 30, 60, 1440].includes(v), "Invalid reminder"),
+  timezone: z.string().min(1, "Timezone is required"),
 };
 
 const REMINDER_OPTIONS = [0, 5, 15, 30, 60, 1440] as const;
@@ -50,6 +51,40 @@ function reminderLabel(t: (k: string, o?: any) => string, minutes: number): stri
   if (minutes === 1440) return t('form.reminderDays', { count: 1 });
   if (minutes >= 60) return t('form.reminderHours', { count: minutes / 60 });
   return t('form.reminderMinutes', { count: minutes });
+}
+
+const FALLBACK_TIMEZONES = [
+  "UTC",
+  "Africa/Cairo", "Africa/Johannesburg", "Africa/Lagos",
+  "America/Anchorage", "America/Chicago", "America/Denver", "America/Los_Angeles",
+  "America/Mexico_City", "America/New_York", "America/Sao_Paulo", "America/Toronto",
+  "Asia/Bangkok", "Asia/Dubai", "Asia/Hong_Kong", "Asia/Jakarta", "Asia/Kolkata",
+  "Asia/Manila", "Asia/Seoul", "Asia/Shanghai", "Asia/Singapore", "Asia/Tokyo",
+  "Australia/Melbourne", "Australia/Sydney",
+  "Europe/Amsterdam", "Europe/Berlin", "Europe/Istanbul", "Europe/London",
+  "Europe/Madrid", "Europe/Moscow", "Europe/Paris", "Europe/Rome",
+  "Pacific/Auckland", "Pacific/Honolulu",
+];
+
+function getTimezoneList(): string[] {
+  try {
+    const anyIntl = Intl as any;
+    if (typeof anyIntl.supportedValuesOf === "function") {
+      const list = anyIntl.supportedValuesOf("timeZone") as string[];
+      if (Array.isArray(list) && list.length > 0) return list;
+    }
+  } catch {
+    // fall through
+  }
+  return FALLBACK_TIMEZONES;
+}
+
+function getBrowserTimezone(): string {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+  } catch {
+    return "UTC";
+  }
 }
 
 const countSchema = z.object({
