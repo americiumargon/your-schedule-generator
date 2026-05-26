@@ -69,6 +69,7 @@
     "copyButton": "Salin",
     "printButton": "Cetak",
     "shareButton": "Bagikan tautan",
+    "googleButton": "Tambah ke Google",
     "copyAs": "Salin sebagai",
     "copyFormatPlain": "Teks biasa",
     "copyFormatMarkdown": "Markdown",
@@ -119,6 +120,8 @@
     "loadedFromLink": "Jadwal dimuat dari tautan",
     "linkInvalid": "Tautan tidak valid atau kedaluwarsa",
     "undo": "Batalkan",
-    "sessionUpdated": "Sesi diperbarui"
+    "sessionUpdated": "Sesi diperbarui",
+    "gcalTooMany": "Terlalu banyak sesi untuk satu tautan Google Calendar. Gunakan ICS sebagai gantinya.",
+    "gcalTimeConflicts": "Beberapa sesi memiliki waktu berbeda — akan memakai waktu sesi pertama. Pakai ICS untuk presisi penuh."
   }
 }

@@ -20,7 +20,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Download, Calendar, FileText, Copy, Pencil, CalendarIcon, ChevronDown, Printer, Link2 } from "lucide-react";
+import { Download, Calendar, FileText, Copy, Pencil, CalendarIcon, ChevronDown, Printer, Link2, CalendarPlus } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import {
@@ -30,6 +30,7 @@ import {
   writeToClipboard,
   type CopyFormat,
 } from "@/utils/copyFormats";
+import { buildGoogleCalendarUrl } from "@/utils/googleCalendar";
 
 
 interface Session {
@@ -44,6 +45,7 @@ interface ScheduleDisplayProps {
   sessions: Session[];
   location?: string;
   notes?: string;
+  timezone?: string;
   onExport: (format: "csv" | "ics", enabledSessions: Session[], language: string) => void;
   onClear: () => void;
   onUpdateSession?: (
@@ -142,7 +144,7 @@ function EditSessionPopover({
   );
 }
 
-export function ScheduleDisplay({ eventName, sessions, location, notes, onExport, onClear, onUpdateSession, onShare }: ScheduleDisplayProps) {
+export function ScheduleDisplay({ eventName, sessions, location, notes, timezone, onExport, onClear, onUpdateSession, onShare }: ScheduleDisplayProps) {
   const { t, i18n } = useTranslation();
   const [enabledSessions, setEnabledSessions] = useState<Set<number>>(
     new Set(sessions.map((_, idx) => idx))
