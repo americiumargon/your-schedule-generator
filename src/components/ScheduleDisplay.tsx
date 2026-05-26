@@ -439,6 +439,11 @@ export function ScheduleDisplay({ eventName, sessions, location, notes, timezone
                   <div className="text-sm text-muted-foreground">
                     {format(session.date, "EEEE, MMMM d, yyyy", { locale: dateLocale })}
                   </div>
+                  {session.rolledFrom && (
+                    <div className="text-xs text-muted-foreground/80 italic mt-0.5">
+                      {t('schedule.rolledFromBadge')} {format(session.rolledFrom, "MMM d", { locale: dateLocale })}
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="flex items-center gap-2 shrink-0">
