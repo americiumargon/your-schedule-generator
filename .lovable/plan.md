@@ -1,38 +1,77 @@
-## Timezone selector
+## Copy as Markdown / Plain text
 
-Today the ICS export converts every event to UTC (`...Z`), which silently shifts times for anyone not in UTC. Add a timezone picker so the ICS file represents events in the user's chosen IANA timezone.
+Today the Copy button writes one plain-text format to the clipboard. We'll turn it into a split control so users can pick the shape that fits where they're pasting (Notion, Slack, email, docs).
 
-### UX
-- New **Timezone** field in `ScheduleForm`, placed right after the time inputs (above Reminder).
-- Searchable Combobox (shadcn `Command` inside a `Popover`) populated from `Intl.supportedValuesOf('timeZone')`, with a fallback to a curated list (~30 common zones) if the runtime doesn't support it.
-- Default value = `Intl.DateTimeFormat().resolvedOptions().timeZone` (the user's browser tz), shown on first render.
-- A small helper line: "Used for ICS exports. CSV uses local time in your calendar."
+### UX (`src/components/ScheduleDisplay.tsx`)
 
-### Data flow
-- `ScheduleForm` adds `timezone` state (string IANA name), validates non-empty via Zod, passes through `onGenerate`.
-- `Index.tsx` stores `timezone`, resets on clear (with undo), forwards via `handleExport` → `exportToICS`.
+Replace the single Copy button with a small **split button**:
+- Left side: primary `Copy` button — copies in the **last-used format** (defaults to Markdown).
+- Right side: a chevron that opens a `DropdownMenu` with three options:
+  - **Plain text** — current behavior, unchanged.
+  - **Markdown** — for Notion / GitHub / Slack code-formatting.
+  - **Rich text (HTML)** — for email and Google Docs; copied via the Clipboard API with both `text/html` and `text/plain` so paste targets pick the best one.
 
-### ICS changes (`src/utils/scheduleGenerator.ts`)
-- Extend `ExportOptions` with `timezone?: string`.
-- When `timezone` is set and not `"UTC"`:
-  - Emit `DTSTART;TZID=<iana>:YYYYMMDDTHHMMSS` and `DTEND;TZID=<iana>:YYYYMMDDTHHMMSS` (no `Z` suffix).
-  - The local datetime string is built directly from the session date + the chosen `startTime`/`endTime` — no UTC conversion happens. This matches what the user actually picked in the form.
-  - Prepend a minimal `VTIMEZONE` block inside `VCALENDAR`:
-    ```
-    BEGIN:VTIMEZONE
-    TZID:<iana>
-    END:VTIMEZONE
-    ```
-    Most modern clients (Google, Apple, Outlook 365) resolve the IANA name directly without needing full DST rules. This keeps the file small and avoids bundling tzdata.
-- When `timezone === "UTC"` (or unset for back-compat): keep current behavior (`...Z`). The default will be the user's tz, but exporting in UTC stays available.
+Last choice persists in `localStorage` (`schedule.copyFormat`) so repeat users get one-click copy in their preferred format.
 
-### CSV
-- Unchanged. Google Calendar's CSV import interprets times in the target calendar's timezone, so we leave times as-is.
+Toast message updates to `Copied as Markdown` / `Copied as plain text` / `Copied as rich text`.
 
-### i18n (`en.json` / `id.json`)
-- `form.timezone`, `form.timezoneDescription`, `form.timezonePlaceholder`, `form.timezoneSearchPlaceholder`, `form.timezoneEmpty`.
+### Format specs
+
+All formats include: event name as title, optional location, each enabled session (number, date, time range), and optional notes block at the end.
+
+**Plain text** (unchanged):
+```
+Event Name - Session 1: Monday, May 26, 2026, 09:00 - 11:00 @ Studio A
+Event Name - Session 2: Wednesday, May 28, 2026, 09:00 - 11:00 @ Studio A
+
+Notes go here
+```
+
+**Markdown**:
+```
+# Event Name
+
+📍 Studio A
+
+| # | Date | Time |
+|---|------|------|
+| 1 | Mon, May 26, 2026 | 09:00 – 11:00 |
+| 2 | Wed, May 28, 2026 | 09:00 – 11:00 |
+
+> Notes go here
+```
+
+**Rich text (HTML)** — same structure as Markdown but as a real `<h1>` + `<table>` + `<blockquote>`, so it pastes formatted into Gmail / Docs / Outlook. Plain-text fallback is the plain format above.
+
+### Clipboard write
+
+Plain and Markdown use `navigator.clipboard.writeText(...)`.
+Rich uses `navigator.clipboard.write([new ClipboardItem({ 'text/html': htmlBlob, 'text/plain': textBlob })])` with a try/catch fallback to `writeText(html)` on browsers without `ClipboardItem` (rare; mostly older Firefox).
+
+### Code organization
+
+New file `src/utils/copyFormats.ts` exports:
+- `formatPlain(eventName, sessions, location, notes, t, locale): string`
+- `formatMarkdown(...): string`
+- `formatHtml(...): string`
+
+`ScheduleDisplay` imports these, removes its inline string-building, and calls the right one based on the chosen format. Keeps the component lean and the formats unit-testable later.
+
+### i18n (`src/locales/en.json` / `id.json`)
+
+Add under `schedule`:
+- `copyAs` — "Copy as"
+- `copyFormatPlain` — "Plain text" / "Teks biasa"
+- `copyFormatMarkdown` — "Markdown"
+- `copyFormatRich` — "Rich text" / "Teks kaya"
+
+Add under `toast`:
+- `copiedPlain`, `copiedMarkdown`, `copiedRich` (replaces the single `copied` for these paths; old key kept as fallback).
+
+The table header labels (`#`, `Date`, `Time`) use existing keys where possible (`schedule.session` → "Session", reused as column header is awkward, so add `schedule.colNumber`, `schedule.colDate`, `schedule.colTime`).
 
 ### Out of scope
-- Per-session timezone overrides.
-- Full DST-aware VTIMEZONE rules (relying on client IANA resolution).
-- Recomputing already-generated sessions when the tz changes — tz only affects export, not the generated date/time values.
+
+- CSV/ICS/PDF copy variants — handled by their dedicated buttons / future PDF task.
+- Per-session selection inside the copied output — already respected via `enabledSessions`, no change.
+- Customizable templates.
