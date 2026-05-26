@@ -76,10 +76,12 @@ const Index = () => {
     const prevName = eventName;
     const prevLocation = location;
     const prevNotes = notes;
+    const prevReminder = reminderMinutes;
     setSessions([]);
     setEventName("");
     setLocation("");
     setNotes("");
+    setReminderMinutes(0);
     toast.success(t('toast.cleared'), {
       action: {
         label: t('toast.undo'),
@@ -88,6 +90,7 @@ const Index = () => {
           setEventName(prevName);
           setLocation(prevLocation);
           setNotes(prevNotes);
+          setReminderMinutes(prevReminder);
         },
       },
       duration: 6000,
