@@ -461,25 +461,121 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
       )}
 
       <div>
-        <Label className="mb-3 block">{t('form.meetingDays')}</Label>
-        <div className="space-y-2">
-          {WEEKDAYS.map((day) => (
-            <div key={day.id} className="flex items-center space-x-2">
-              <Checkbox
-                id={`day-${day.id}`}
-                checked={selectedDays.includes(day.id)}
-                onCheckedChange={() => handleDayToggle(day.id)}
-              />
-              <Label
-                htmlFor={`day-${day.id}`}
-                className="text-sm font-normal cursor-pointer"
-              >
-                {t(`weekdays.${day.key}`)}
-              </Label>
-            </div>
-          ))}
-        </div>
+        <Label className="mb-2 block">{t('form.recurrence.label')}</Label>
+        <Select
+          value={
+            recurrenceType === "weekly"
+              ? `weekly-${weeklyInterval}`
+              : recurrenceType
+          }
+          onValueChange={(v) => {
+            if (v.startsWith("weekly-")) {
+              setRecurrenceType("weekly");
+              setWeeklyInterval(Number(v.split("-")[1]));
+            } else {
+              setRecurrenceType(v as FormRecurrence["type"]);
+            }
+          }}
+        >
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="weekly-1">{t('form.recurrence.weekly')}</SelectItem>
+            <SelectItem value="weekly-2">{t('form.recurrence.every2Weeks')}</SelectItem>
+            <SelectItem value="weekly-3">{t('form.recurrence.every3Weeks')}</SelectItem>
+            <SelectItem value="weekly-4">{t('form.recurrence.every4Weeks')}</SelectItem>
+            <SelectItem value="monthlyByWeekday">{t('form.recurrence.monthlyByWeekday')}</SelectItem>
+            <SelectItem value="monthlyByDate">{t('form.recurrence.monthlyByDate')}</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
+
+      {recurrenceType === "monthlyByWeekday" && (
+        <div>
+          <Label className="mb-3 block">{t('form.recurrence.ordinalsLabel')}</Label>
+          <div className="flex flex-wrap gap-2">
+            {[
+              { v: 1, k: 'first' },
+              { v: 2, k: 'second' },
+              { v: 3, k: 'third' },
+              { v: 4, k: 'fourth' },
+              { v: -1, k: 'last' },
+            ].map((o) => (
+              <button
+                type="button"
+                key={o.v}
+                onClick={() => toggleOrdinal(o.v)}
+                className={cn(
+                  "px-3 py-1.5 rounded-md text-sm border transition-colors",
+                  ordinals.includes(o.v)
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-background border-border hover:bg-secondary"
+                )}
+              >
+                {t(`form.recurrence.ordinal.${o.k}`)}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {needsWeekdays && (
+        <div>
+          <Label className="mb-3 block">{t('form.meetingDays')}</Label>
+          <div className="space-y-2">
+            {WEEKDAYS.map((day) => (
+              <div key={day.id} className="flex items-center space-x-2">
+                <Checkbox
+                  id={`day-${day.id}`}
+                  checked={selectedDays.includes(day.id)}
+                  onCheckedChange={() => handleDayToggle(day.id)}
+                />
+                <Label
+                  htmlFor={`day-${day.id}`}
+                  className="text-sm font-normal cursor-pointer"
+                >
+                  {t(`weekdays.${day.key}`)}
+                </Label>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {recurrenceType === "monthlyByDate" && (
+        <div>
+          <Label className="mb-3 block">{t('form.recurrence.daysOfMonthLabel')}</Label>
+          <div className="grid grid-cols-7 gap-1.5">
+            {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
+              <button
+                type="button"
+                key={d}
+                onClick={() => toggleDayOfMonth(d)}
+                className={cn(
+                  "h-9 rounded-md text-sm border transition-colors",
+                  daysOfMonth.includes(d)
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-background border-border hover:bg-secondary"
+                )}
+              >
+                {d}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => toggleDayOfMonth(-1)}
+              className={cn(
+                "col-span-2 h-9 rounded-md text-sm border transition-colors",
+                daysOfMonth.includes(-1)
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-background border-border hover:bg-secondary"
+              )}
+            >
+              {t('form.recurrence.lastDay')}
+            </button>
+          </div>
+          <p className="text-xs text-muted-foreground mt-2">{t('form.recurrence.daysOfMonthHint')}</p>
+        </div>
+      )}
 
       <div>
         <div className="flex items-center justify-between mb-3">
