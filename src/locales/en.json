@@ -19,6 +19,14 @@
     "selectDays": "Select the days of the week for your sessions",
     "startTime": "Start Time",
     "endTime": "End Time",
+    "timeSlots": {
+      "title": "Time Slots",
+      "add": "Add slot",
+      "remove": "Remove slot",
+      "labelOptional": "Slot label (optional)",
+      "labelPlaceholder": "e.g., Morning, Evening",
+      "description": "Each selected day generates one session per slot."
+    },
     "holidays": "Holidays / Days Off",
     "holidaysDescription": "Select dates to exclude from the schedule",
     "selectHolidays": "Select holidays",
