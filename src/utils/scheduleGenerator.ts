@@ -247,9 +247,13 @@ export function exportToICS(sessions: Session[], eventName: string, language: st
     const baseDescription = t.export.description
       .replace('{{sessionNumber}}', session.sessionNumber.toString())
       .replace('{{eventName}}', eventName);
-    const fullDescription = opts.notes
-      ? `${baseDescription}\n\n${opts.notes}`
-      : baseDescription;
+    const rolledNote = session.rolledFrom
+      ? `${t.schedule.rolledFromBadge} ${format(session.rolledFrom, "MMM d, yyyy")}`
+      : "";
+    const descParts = [baseDescription];
+    if (rolledNote) descParts.push(rolledNote);
+    if (opts.notes) descParts.push(opts.notes);
+    const fullDescription = descParts.join("\n\n");
 
     const lines = [
       "BEGIN:VEVENT",
