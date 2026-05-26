@@ -55,6 +55,7 @@ const Index = () => {
     setEventName(data.eventName);
     setLocation(data.location ?? "");
     setNotes(data.notes ?? "");
+    setReminderMinutes(data.reminderMinutes ?? 0);
     toast.success(t('toast.generated', { count: generatedSessions.length }));
   };
 
