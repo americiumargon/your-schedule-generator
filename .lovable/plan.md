@@ -1,93 +1,52 @@
-# Three upgrades, shipped one at a time
+# Make the schedule form easier for everyone
 
-I'll build these in priority order. After each one ships and you confirm it works, I'll start the next. This keeps each change small, reviewable, and easy to roll back.
+Restructure the form so casual users see only what they need, while power users can expand "Advanced" to access the deeper controls. Pair with visual polish: clear section headings, icons, and consistent spacing.
 
-## Priority order (and why)
+## What users will see
 
-1. **Multiple time slots per day** — highest ROI. Unlocks a real-world use case (morning + evening classes) that today forces users to generate two separate schedules. Touches the most files but each touch is small.
-2. **Auto-reschedule on holiday (roll forward)** — small surface area, big UX win. Most users *want* the session moved, not deleted. Easy to add once we're already in the generator.
-3. **Recurrence patterns beyond weekly** — biggest UI surface (new selector + ordinal/day-of-month controls). Power-user feature. Worth doing last so the first two ship fast.
+**Always visible (the essentials):**
+1. Activity name
+2. Start date
+3. Generate by: number of sessions **or** end date
+4. Recurring days (the weekday picker)
+5. One time slot (start + end time)
+6. Big "Generate Schedule" button
 
-Each step preserves today's defaults so existing share links and the current UX don't change unless the user opts in.
+**Collapsible: "Advanced options" (closed by default)**
+Grouped into 3 labeled sub-sections with icons:
 
----
+- **Repeat pattern** — recurrence selector (weekly / every N weeks / monthly by weekday / monthly by date) and its dependent controls (ordinals grid, days-of-month grid). Default stays "Every week".
+- **Time slots & holidays** — add multiple slots per day, pick holidays, choose skip vs. roll-forward.
+- **Event details & calendar** — location, notes, reminder, timezone.
 
-## Step 1 — Multiple time slots per day
+If a user has set any non-default value in a section (e.g. picked holidays, switched recurrence), that section auto-expands on load so nothing feels hidden.
 
-**Form**
-- Replace the single Start/End time row with a `<TimeSlotList>`: each slot is `{ startTime, endTime, label? }`. Buttons: `+ Add time slot`, trash to remove. Min 1, max 6.
-- Validate each slot with the existing time regex; require `start < end` per slot.
+## Visual polish
 
-**Generator (`scheduleGenerator.ts`)**
-- Replace `startTime`/`endTime` in `GenerateScheduleOptions` with `timeSlots: Array<{ startTime, endTime, label? }>`.
-- For every accepted date, emit one `Session` per slot. `sessionNumber` stays globally sequential. Add `slotLabel?: string` to `Session`.
-- In `count` mode, the target counts sessions (not dates), so 10 sessions × 2 slots = 5 dates.
+- Section headings with small lucide icons (`Calendar`, `Repeat`, `Clock`, `MapPin`) and a thin divider above each.
+- Consistent vertical rhythm (`space-y-5` inside sections, `space-y-8` between sections).
+- Helper text under each label in `text-xs text-muted-foreground` explaining the field in one sentence.
+- "Advanced options" uses shadcn `Collapsible` with a chevron and a subtle badge showing how many advanced settings are customized (e.g. "Advanced options · 2 customized").
+- Mobile: form already stacks; tighten padding and make the Generate button sticky at the bottom on small screens.
 
-**Display + exports**
-- `ScheduleDisplay`: show the slot label as a small `<Badge>` next to the time range when present.
-- CSV/ICS/Google/Copy: append slot label to the subject/summary when present (e.g. `Yoga - Session 3 (Morning)`).
+## Technical details
 
-**Share link**
-- Add `timeSlots` to `ShareFormState` + token (`ts: [{s,e,l?}]`). Backward compat: if a link only has `st`/`et`, synthesize a single slot.
+Files to change:
+- `src/components/ScheduleForm.tsx` — restructure JSX into `<EssentialsSection />`, `<AdvancedSection />` with three `<Collapsible>` sub-groups. No changes to state shape, Zod schemas, or `onGenerate` payload — purely presentational refactor.
+- `src/locales/en.json` & `src/locales/id.json` — add keys: `form.advanced.title`, `form.advanced.customizedBadge`, `form.sections.repeat`, `form.sections.slotsHolidays`, `form.sections.details`, and short helper-text strings per field.
+- `src/index.css` — no changes expected; rely on existing tokens.
 
-**i18n** — new keys: `form.timeSlots.title/add/remove/labelPlaceholder`, `schedule.slotBadge`.
+Auto-expand logic: a small helper `hasCustomValues(section)` checks against defaults (e.g. recurrence !== weekly/1, holidays.length > 0, timeSlots.length > 1, location/notes/reminder/timezone changed). Used both for the initial open state and the badge count.
 
----
+No changes to:
+- `scheduleGenerator.ts`, `shareLink.ts`, `googleCalendar.ts`, `copyFormats.ts`
+- `ScheduleDisplay.tsx`
+- Share links (full backward compatibility preserved since payload is unchanged)
 
-## Step 2 — Auto-reschedule on holiday
+## Out of scope (can come later)
 
-**Form**
-- In the Holidays section, add a `<RadioGroup>` "When a session falls on a holiday":
-  - Skip the session (default — current behavior)
-  - Move to the next available weekday
+- Smart presets ("Weekly class", "Daily standup")
+- Live preview of next 3 sessions as you type
+- Wizard / multi-step flow
 
-**Generator**
-- Add `holidayBehavior: "skip" | "rollForward"` to options.
-- On `rollForward`: when a candidate date is a holiday, walk forward up to 14 days, accept the first date that is in `selectedDays` and not a holiday. If none found, fall back to skip and surface a toast warning. Attach `rolledFrom: Date` to the session.
-
-**Display + exports**
-- `ScheduleDisplay`: small muted "moved from MMM d" line under the date when `rolledFrom` is set.
-- ICS/CSV `DESCRIPTION` includes "Moved from {date}" when applicable.
-
-**Share link** — add `hb: "skip" | "rollForward"`; default `skip` for legacy links.
-
-**i18n** — `form.holidayBehavior.label/skip/rollForward/description`, `schedule.rolledFromBadge`, `toast.rollForwardFailed`.
-
----
-
-## Step 3 — Recurrence patterns beyond weekly
-
-**Form**
-- Add a Recurrence `<Select>` above the weekday list:
-  - Every week (default)
-  - Every 2 / 3 / 4 weeks
-  - Monthly by weekday (1st / 2nd / 3rd / 4th / Last + chosen weekday(s))
-  - Monthly by date (chip grid 1–31 + "Last day")
-- The weekday checkboxes stay visible for weekly + monthlyByWeekday; for monthlyByDate they're replaced by the day-of-month chip grid.
-
-**Generator**
-- Add discriminated union:
-  ```ts
-  recurrence:
-    | { type: "weekly"; interval: 1 | 2 | 3 | 4 }
-    | { type: "monthlyByWeekday"; ordinals: number[] }   // 1..4, -1 for Last
-    | { type: "monthlyByDate"; daysOfMonth: number[] }   // 1..31, -1 for Last
-  ```
-- Build a date-candidate generator per recurrence type, then run the existing holiday + slot-expansion pipeline on it.
-- `weekly` with `interval > 1`: accept date if it falls on a selected weekday AND `weekIndex % interval === 0` measured from `startDate`'s week.
-- `monthlyByWeekday`: for each month in range, compute the ordinal occurrences of each selected weekday and keep those whose ordinal is in `ordinals`.
-- `monthlyByDate`: for each month, take `daysOfMonth`; clamp values > the month's last day (so "31" becomes Feb 28/29).
-
-**Share link** — add `rec` to the token; legacy links default to `{ type: "weekly", interval: 1 }`.
-
-**i18n** — `form.recurrence.*` for all labels.
-
----
-
-## Out of scope (across all three)
-
-- Drag-to-reschedule, per-session slot overrides (edit pencil already handles that), RRULE-style ICS output (we already expand to discrete events for max portability), backward-walking holiday rollover.
-
----
-
-Reply "go" (or "start with step 1") and I'll implement step 1 only, verify it, and pause for your sign-off before moving on.
+Approve to implement.
