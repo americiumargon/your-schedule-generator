@@ -1,13 +1,19 @@
 import { addDays, getDay, format } from "date-fns";
-import { enUS, id as idLocale } from "date-fns/locale";
 import en from "@/locales/en.json";
 import id from "@/locales/id.json";
+
+export interface TimeSlot {
+  startTime: string;
+  endTime: string;
+  label?: string;
+}
 
 interface Session {
   date: Date;
   sessionNumber: number;
   startTime: string;
   endTime: string;
+  slotLabel?: string;
 }
 
 const MAX_SESSIONS = 1000;
@@ -15,8 +21,7 @@ const MAX_SESSIONS = 1000;
 interface GenerateScheduleOptions {
   startDate: Date;
   selectedDays: number[]; // 0 = Sunday, 1 = Monday, etc.
-  startTime: string;
-  endTime: string;
+  timeSlots: TimeSlot[];
   holidays?: Date[];
   mode: "count" | "endDate";
   numberOfMeetings?: number;
@@ -27,8 +32,7 @@ export function generateSchedule(options: GenerateScheduleOptions): Session[] {
   const {
     startDate,
     selectedDays,
-    startTime,
-    endTime,
+    timeSlots,
     holidays = [],
     mode,
     numberOfMeetings,
@@ -40,48 +44,45 @@ export function generateSchedule(options: GenerateScheduleOptions): Session[] {
   let sessionCount = 0;
 
   const sortedDays = [...selectedDays].sort();
-  const holidayStrings = new Set(
-    holidays.map(date => format(date, "yyyy-MM-dd"))
-  );
+  const holidayStrings = new Set(holidays.map((d) => format(d, "yyyy-MM-dd")));
+  const slots: TimeSlot[] = timeSlots.length > 0 ? timeSlots : [{ startTime: "", endTime: "" }];
+
+  const target = mode === "count" ? Math.min(numberOfMeetings ?? 0, MAX_SESSIONS) : MAX_SESSIONS;
+
+  const pushDate = (d: Date): boolean => {
+    for (const slot of slots) {
+      if (sessionCount >= target) return true;
+      sessions.push({
+        date: new Date(d),
+        sessionNumber: sessionCount + 1,
+        startTime: slot.startTime,
+        endTime: slot.endTime,
+        slotLabel: slot.label?.trim() ? slot.label.trim() : undefined,
+      });
+      sessionCount++;
+    }
+    return sessionCount >= target;
+  };
 
   if (mode === "count") {
-    const target = Math.min(numberOfMeetings ?? 0, MAX_SESSIONS);
     while (sessionCount < target) {
-      const dayOfWeek = getDay(currentDate);
-      const currentDateStr = format(currentDate, "yyyy-MM-dd");
-
-      if (sortedDays.includes(dayOfWeek) && !holidayStrings.has(currentDateStr)) {
-        sessions.push({
-          date: new Date(currentDate),
-          sessionNumber: sessionCount + 1,
-          startTime,
-          endTime,
-        });
-        sessionCount++;
+      const dow = getDay(currentDate);
+      const dStr = format(currentDate, "yyyy-MM-dd");
+      if (sortedDays.includes(dow) && !holidayStrings.has(dStr)) {
+        if (pushDate(currentDate)) break;
       }
-
       currentDate = addDays(currentDate, 1);
     }
   } else {
-    // endDate mode
     if (!endDate) return [];
     const endStr = format(endDate, "yyyy-MM-dd");
-
     while (sessionCount < MAX_SESSIONS) {
-      const currentDateStr = format(currentDate, "yyyy-MM-dd");
-      if (currentDateStr > endStr) break;
-
-      const dayOfWeek = getDay(currentDate);
-      if (sortedDays.includes(dayOfWeek) && !holidayStrings.has(currentDateStr)) {
-        sessions.push({
-          date: new Date(currentDate),
-          sessionNumber: sessionCount + 1,
-          startTime,
-          endTime,
-        });
-        sessionCount++;
+      const dStr = format(currentDate, "yyyy-MM-dd");
+      if (dStr > endStr) break;
+      const dow = getDay(currentDate);
+      if (sortedDays.includes(dow) && !holidayStrings.has(dStr)) {
+        pushDate(currentDate);
       }
-
       currentDate = addDays(currentDate, 1);
     }
   }
@@ -113,6 +114,11 @@ function buildTrigger(minutes: number): string {
   return `-PT${minutes}M`;
 }
 
+function subjectFor(eventName: string, sessionNumber: number, sessionWord: string, slotLabel?: string): string {
+  const base = `${eventName} - ${sessionWord} ${sessionNumber}`;
+  return slotLabel ? `${base} (${slotLabel})` : base;
+}
+
 export function exportToCSV(sessions: Session[], eventName: string, language: string = 'en', opts: ExportOptions = {}): void {
   const t = language === 'id' ? id : en;
 
@@ -133,7 +139,7 @@ export function exportToCSV(sessions: Session[], eventName: string, language: st
 
   const rows = sessions.map(session => {
     const dateStr = format(session.date, "MM/dd/yyyy");
-    const subject = `${eventName} - ${t.schedule.session} ${session.sessionNumber}`;
+    const subject = subjectFor(eventName, session.sessionNumber, t.schedule.session, session.slotLabel);
     const baseDescription = `${t.schedule.session} ${session.sessionNumber} ${t.export.description.split(' ')[0]} ${eventName}`;
     const description = notes ? `${baseDescription}\n\n${notes}` : baseDescription;
 
@@ -150,7 +156,6 @@ export function exportToCSV(sessions: Session[], eventName: string, language: st
     ];
   });
 
-  // Escape CSV cells: double internal quotes, wrap in quotes
   const escapeCSV = (cell: string) => `"${String(cell).replace(/"/g, '""')}"`;
 
   const csvContent = [
@@ -166,7 +171,6 @@ export function exportToICS(sessions: Session[], eventName: string, language: st
   const tz = opts.timezone && opts.timezone.trim() ? opts.timezone : "UTC";
   const useFloatingTzid = tz !== "UTC";
 
-  // Local floating datetime: YYYYMMDDTHHMMSS, interpreted in TZID
   const formatLocalICS = (date: Date, time: string): string => {
     const [h, m] = time.split(":");
     const y = date.getFullYear().toString().padStart(4, "0");
@@ -192,9 +196,10 @@ export function exportToICS(sessions: Session[], eventName: string, language: st
     const startDateTime = formatDT(session.date, session.startTime);
     const endDateTime = formatDT(session.date, session.endTime);
 
-    const summary = t.export.summary
+    const baseSummary = t.export.summary
       .replace('{{eventName}}', eventName)
       .replace('{{sessionNumber}}', session.sessionNumber.toString());
+    const summary = session.slotLabel ? `${baseSummary} (${session.slotLabel})` : baseSummary;
     const baseDescription = t.export.description
       .replace('{{sessionNumber}}', session.sessionNumber.toString())
       .replace('{{eventName}}', eventName);
@@ -210,7 +215,7 @@ export function exportToICS(sessions: Session[], eventName: string, language: st
       `DESCRIPTION:${escapeICS(fullDescription)}`,
     ];
     if (locationLine) lines.push(locationLine);
-    lines.push(`UID:${Date.now()}-${session.sessionNumber}@schedule-generator.com`);
+    lines.push(`UID:${Date.now()}-${session.sessionNumber}-${session.slotLabel ?? ''}@schedule-generator.com`);
     if (opts.reminderMinutes && opts.reminderMinutes > 0) {
       lines.push(
         "BEGIN:VALARM",
