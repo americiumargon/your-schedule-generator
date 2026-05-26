@@ -161,6 +161,7 @@ export function ScheduleForm({ onGenerate }: ScheduleFormProps) {
           numberOfMeetings: validated.numberOfMeetings,
           location: validated.location,
           notes: validated.notes,
+          reminderMinutes: validated.reminderMinutes,
         });
       } else {
         if (!endDate) {
