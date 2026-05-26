@@ -1,7 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ScheduleForm, type FormTimeSlot } from "@/components/ScheduleForm";
 import { ScheduleDisplay } from "@/components/ScheduleDisplay";
 import { LanguageToggle } from "@/components/LanguageToggle";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { RecentSchedules } from "@/components/RecentSchedules";
 import { Button } from "@/components/ui/button";
 import { generateSchedule, exportToCSV, exportToICS } from "@/utils/scheduleGenerator";
 import { Calendar, Trash2 } from "lucide-react";
@@ -13,6 +15,7 @@ import {
   readShareTokenFromHash,
   type ShareFormState,
 } from "@/utils/shareLink";
+import { saveRecent } from "@/utils/recentSchedules";
 
 interface Session {
   date: Date;
