@@ -40,7 +40,16 @@ const baseSchema = {
   holidays: z.array(z.date()),
   location: z.string().trim().max(200, "Location must be less than 200 characters").optional(),
   notes: z.string().trim().max(2000, "Notes must be less than 2000 characters").optional(),
+  reminderMinutes: z.number().refine(v => [0, 5, 15, 30, 60, 1440].includes(v), "Invalid reminder"),
 };
+
+const REMINDER_OPTIONS = [0, 5, 15, 30, 60, 1440] as const;
+function reminderLabel(t: (k: string, o?: any) => string, minutes: number): string {
+  if (minutes === 0) return t('form.reminderNone');
+  if (minutes === 1440) return t('form.reminderDays', { count: 1 });
+  if (minutes >= 60) return t('form.reminderHours', { count: minutes / 60 });
+  return t('form.reminderMinutes', { count: minutes });
+}
 
 const countSchema = z.object({
   ...baseSchema,
