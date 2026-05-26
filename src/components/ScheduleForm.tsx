@@ -193,6 +193,7 @@ export function ScheduleForm({ onGenerate }: ScheduleFormProps) {
           endDate: validated.endDate,
           location: validated.location,
           notes: validated.notes,
+          reminderMinutes: validated.reminderMinutes,
         });
       }
     } catch (error) {
