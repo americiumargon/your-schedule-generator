@@ -52,8 +52,7 @@ const baseSchema = {
     .trim()
     .min(1, "Activity name is required")
     .max(100, "Activity name must be less than 100 characters"),
-  selectedDays: z.array(z.number().min(0).max(6))
-    .min(1, "At least one day must be selected"),
+  selectedDays: z.array(z.number().min(0).max(6)),
   timeSlots: z.array(slotSchema).min(1, "At least one time slot is required").max(MAX_SLOTS),
   holidays: z.array(z.date()),
   location: z.string().trim().max(200, "Location must be less than 200 characters").optional(),
