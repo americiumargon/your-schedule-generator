@@ -1,22 +1,22 @@
 {
   "header": {
     "title": "Schedule Generator",
-    "subtitle": "Generate a schedule of sessions for any activity"
+    "subtitle": "Create recurring schedules for classes, meetings, and events"
   },
   "form": {
-    "title": "Schedule Details",
-    "eventName": "Activity Name",
-    "eventNamePlaceholder": "e.g., Morning Workout, Team Standup, Study Session",
-    "startDate": "Start Date",
+    "title": "Schedule details",
+    "eventName": "Activity name",
+    "eventNamePlaceholder": "e.g. Morning workout, Team standup, Study session",
+    "startDate": "First session date",
     "pickDate": "Pick a date",
-    "numberOfMeetings": "Number of Sessions",
-    "generateBy": "Generate by",
-    "modeByCount": "Number of sessions",
-    "modeByEndDate": "End date",
-    "endDate": "End Date",
+    "numberOfMeetings": "Number of sessions",
+    "generateBy": "End the schedule",
+    "modeByCount": "After N sessions",
+    "modeByEndDate": "On a specific date",
+    "endDate": "End date",
     "pickEndDate": "Pick an end date",
-    "meetingDays": "Recurring Days",
-    "selectDays": "Select the days of the week for your sessions",
+    "meetingDays": "Days of the week",
+    "selectDays": "Choose one or more days",
     "recurrence": {
       "label": "Recurrence",
       "weekly": "Every week",
@@ -34,52 +34,52 @@
         "last": "Last"
       },
       "daysOfMonthLabel": "Days of the month",
-      "daysOfMonthHint": "Days past the end of a shorter month are clamped (e.g. 31 → Feb 28).",
+      "daysOfMonthHint": "Dates past the end of a shorter month use that month's last day (e.g. 31 becomes Feb 28).",
       "lastDay": "Last day"
     },
-    "startTime": "Start Time",
-    "endTime": "End Time",
+    "startTime": "Start time",
+    "endTime": "End time",
     "timeSlots": {
-      "title": "Time Slots",
+      "title": "Time slots",
       "add": "Add slot",
       "remove": "Remove slot",
       "labelOptional": "Slot label (optional)",
-      "labelForFirst": "Name this session (optional)",
-      "labelPlaceholder": "e.g., Morning, Evening",
-      "description": "Each selected day generates one session per slot."
+      "labelForFirst": "Slot label (optional)",
+      "labelPlaceholder": "e.g. Morning, Evening",
+      "description": "Each selected day creates one session per slot."
     },
     "sections": {
-      "time": "Session Time",
+      "time": "Session time",
       "repeat": "Repeat pattern",
-      "slotsHolidays": "Time slots & holidays",
-      "details": "Event details & calendar"
+      "slotsHolidays": "Time slots and days off",
+      "details": "Calendar details"
     },
     "helper": {
-      "time": "When does each session start and end?",
-      "repeat": "Change how often sessions recur — every week, every few weeks, or specific dates of the month.",
-      "slotsHolidays": "Add multiple sessions per day and exclude specific dates.",
-      "details": "Add location, notes, a reminder, and pick a timezone for ICS exports."
+      "time": "Applies to every session unless you add more slots below",
+      "repeat": "Set how often sessions recur.",
+      "slotsHolidays": "Add more sessions per day or exclude specific dates.",
+      "details": "Location, notes, reminder, and timezone (used for exports)."
     },
     "advanced": {
-      "title": "Advanced options",
-      "customizedBadge": "{{count}} customized"
+      "title": "More options",
+      "customizedBadge": "{{count}} changed"
     },
-    "holidays": "Holidays / Days Off",
-    "holidaysDescription": "Select dates to exclude from the schedule",
-    "selectHolidays": "Select holidays",
-    "holidaysSelected": "{{count}} holiday selected",
-    "holidaysSelected_other": "{{count}} holidays selected",
+    "holidays": "Days to skip",
+    "holidaysDescription": "Dates that should never have a session",
+    "selectHolidays": "Pick dates",
+    "holidaysSelected": "{{count}} day selected",
+    "holidaysSelected_other": "{{count}} days selected",
     "holidayBehavior": {
-      "label": "When a session falls on a holiday",
+      "label": "If a session lands on one of these dates",
       "skip": "Skip the session",
       "rollForward": "Move to the next available weekday",
-      "description": "Roll-forward looks up to 14 days ahead for a matching weekday that isn't a holiday."
+      "description": "Looks up to 14 days ahead for a matching weekday that is not a day off."
     },
     "location": "Location (optional)",
-    "locationPlaceholder": "e.g., Zoom link, Conference Room B",
+    "locationPlaceholder": "e.g. Zoom link, Conference Room B",
     "notes": "Notes (optional)",
     "notesPlaceholder": "Add details, agenda, or links",
-    "reminder": "Reminder (ICS only)",
+    "reminder": "Reminder (ICS exports only)",
     "timezone": "Timezone",
     "timezoneDescription": "Used for ICS exports. CSV uses your calendar's local time.",
     "timezoneSearchPlaceholder": "Search timezones…",
@@ -91,19 +91,19 @@
     "reminderHours_one": "{{count}} hour before",
     "reminderDays": "{{count}} day before",
     "reminderDays_other": "{{count}} days before",
-    "generateButton": "Generate Schedule",
+    "generateButton": "Generate schedule",
     "validation": {
-      "eventNameRequired": "Please enter an activity name",
-      "dateRequired": "Please select a start date",
+      "eventNameRequired": "Enter an activity name",
+      "dateRequired": "Select a start date",
       "meetingsRequired": "Number of sessions must be at least 1",
-      "daysRequired": "Please select at least one day of the week",
-      "ordinalsRequired": "Please select at least one occurrence (e.g. 1st, 2nd)",
-      "daysOfMonthRequired": "Please select at least one day of the month",
-      "timeRequired": "Please enter both start and end times",
-      "endDateRequired": "Please select an end date",
+      "daysRequired": "Select at least one day of the week",
+      "ordinalsRequired": "Select at least one occurrence (e.g. 1st, 2nd)",
+      "daysOfMonthRequired": "Select at least one day of the month",
+      "timeRequired": "Enter a start and end time for every slot",
+      "endDateRequired": "Select an end date",
       "endDateAfterStart": "End date must be on or after the start date",
-      "noSessionsInRange": "No sessions fall within the selected range",
-      "invalid": "Please check your input and try again"
+      "noSessionsInRange": "No sessions fit in this date range",
+      "invalid": "Check the form and try again"
     }
   },
   "weekdays": {
@@ -116,7 +116,7 @@
     "saturday": "Saturday"
   },
   "schedule": {
-    "title": "Your Schedule",
+    "title": "Schedule",
     "sessionsSelected": "{{count}} of {{total}} sessions selected",
     "session": "Session",
     "selectAll": "Select All",
@@ -125,8 +125,8 @@
     "icsButton": "ICS",
     "copyButton": "Copy",
     "printButton": "Print",
-    "shareButton": "Share link",
-    "googleButton": "Add to Google",
+    "shareButton": "Copy share link",
+    "googleButton": "Add to Google Calendar",
     "copyAs": "Copy as",
     "copyFormatPlain": "Plain text",
     "copyFormatMarkdown": "Markdown",
@@ -134,7 +134,7 @@
     "colNumber": "#",
     "colDate": "Date",
     "colTime": "Time",
-    "clearAll": "Clear All",
+    "clearAll": "Clear",
     "editSession": "Edit session",
     "editedBadge": "edited",
     "rolledFromBadge": "Moved from",
@@ -150,7 +150,7 @@
   "export": {
     "successCsv": "Schedule exported as CSV",
     "successIcs": "Schedule exported as ICS",
-    "errorNoSessions": "Please select at least one session to export",
+    "errorNoSessions": "Select at least one session to export",
     "sessionNumber": "Session Number",
     "date": "Date",
     "day": "Day",
@@ -160,27 +160,27 @@
     "description": "Session {{sessionNumber}} of {{eventName}}"
   },
   "emptyState": {
-    "title": "No Schedule Yet",
-    "description": "Fill in the form and click \"Generate Schedule\" to create your event calendar"
+    "title": "No schedule yet",
+    "description": "Fill in the form and click Generate schedule to see your sessions here."
   },
   "footer": {
-    "text": "Perfect for personal routines, team schedules, and recurring events"
+    "text": "For personal routines, team schedules, and recurring events"
   },
   "toast": {
-    "generated": "Generated {{count}} sessions!",
-    "cleared": "Schedule cleared successfully",
-    "copied": "Schedule copied to clipboard",
+    "generated": "Generated {{count}} sessions",
+    "cleared": "Schedule cleared",
+    "copied": "Copied to clipboard",
     "copiedPlain": "Copied as plain text",
     "copiedMarkdown": "Copied as Markdown",
     "copiedRich": "Copied as rich text",
     "copyFailed": "Failed to copy schedule",
-    "linkCopied": "Link copied to clipboard",
+    "linkCopied": "Share link copied",
     "linkCopyFailed": "Failed to copy link",
-    "loadedFromLink": "Schedule loaded from link",
+    "loadedFromLink": "Loaded from shared link",
     "linkInvalid": "Shared link is invalid or outdated",
     "undo": "Undo",
     "sessionUpdated": "Session updated",
     "gcalTooMany": "Too many sessions for one Google Calendar link. Use ICS instead.",
-    "gcalTimeConflicts": "Some sessions have different times — they'll use the first session's time. Use ICS for full fidelity."
+    "gcalTimeConflicts": "Sessions have different times. Google Calendar will use the first session's time. Use ICS for full fidelity."
   }
 }
