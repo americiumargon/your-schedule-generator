@@ -14,15 +14,20 @@ interface Session {
   startTime: string;
   endTime: string;
   slotLabel?: string;
+  rolledFrom?: Date;
 }
 
 const MAX_SESSIONS = 1000;
+const ROLL_FORWARD_MAX_DAYS = 14;
+
+export type HolidayBehavior = "skip" | "rollForward";
 
 interface GenerateScheduleOptions {
   startDate: Date;
   selectedDays: number[]; // 0 = Sunday, 1 = Monday, etc.
   timeSlots: TimeSlot[];
   holidays?: Date[];
+  holidayBehavior?: HolidayBehavior;
   mode: "count" | "endDate";
   numberOfMeetings?: number;
   endDate?: Date;
@@ -34,6 +39,7 @@ export function generateSchedule(options: GenerateScheduleOptions): Session[] {
     selectedDays,
     timeSlots,
     holidays = [],
+    holidayBehavior = "skip",
     mode,
     numberOfMeetings,
     endDate,
@@ -48,8 +54,9 @@ export function generateSchedule(options: GenerateScheduleOptions): Session[] {
   const slots: TimeSlot[] = timeSlots.length > 0 ? timeSlots : [{ startTime: "", endTime: "" }];
 
   const target = mode === "count" ? Math.min(numberOfMeetings ?? 0, MAX_SESSIONS) : MAX_SESSIONS;
+  const usedRolledDates = new Set<string>(); // prevent rolling onto a date already produced
 
-  const pushDate = (d: Date): boolean => {
+  const pushDate = (d: Date, rolledFrom?: Date): boolean => {
     for (const slot of slots) {
       if (sessionCount >= target) return true;
       sessions.push({
@@ -58,19 +65,53 @@ export function generateSchedule(options: GenerateScheduleOptions): Session[] {
         startTime: slot.startTime,
         endTime: slot.endTime,
         slotLabel: slot.label?.trim() ? slot.label.trim() : undefined,
+        ...(rolledFrom ? { rolledFrom: new Date(rolledFrom) } : {}),
       });
       sessionCount++;
     }
     return sessionCount >= target;
   };
 
+  // For a candidate date that's a holiday, find the next valid date within ROLL_FORWARD_MAX_DAYS.
+  // Returns null if no replacement found.
+  const findRollForward = (from: Date): Date | null => {
+    let probe = addDays(from, 1);
+    for (let i = 0; i < ROLL_FORWARD_MAX_DAYS; i++) {
+      const probeStr = format(probe, "yyyy-MM-dd");
+      const probeDow = getDay(probe);
+      if (
+        sortedDays.includes(probeDow) &&
+        !holidayStrings.has(probeStr) &&
+        !usedRolledDates.has(probeStr)
+      ) {
+        return probe;
+      }
+      probe = addDays(probe, 1);
+    }
+    return null;
+  };
+
+  const handleCandidate = (d: Date): boolean => {
+    const dStr = format(d, "yyyy-MM-dd");
+    const dow = getDay(d);
+    if (!sortedDays.includes(dow)) return false;
+
+    if (!holidayStrings.has(dStr)) {
+      usedRolledDates.add(dStr);
+      return pushDate(d);
+    }
+    // Holiday hit
+    if (holidayBehavior === "skip") return false;
+    const replacement = findRollForward(d);
+    if (!replacement) return false;
+    const repStr = format(replacement, "yyyy-MM-dd");
+    usedRolledDates.add(repStr);
+    return pushDate(replacement, d);
+  };
+
   if (mode === "count") {
     while (sessionCount < target) {
-      const dow = getDay(currentDate);
-      const dStr = format(currentDate, "yyyy-MM-dd");
-      if (sortedDays.includes(dow) && !holidayStrings.has(dStr)) {
-        if (pushDate(currentDate)) break;
-      }
+      if (handleCandidate(currentDate)) break;
       currentDate = addDays(currentDate, 1);
     }
   } else {
@@ -79,10 +120,7 @@ export function generateSchedule(options: GenerateScheduleOptions): Session[] {
     while (sessionCount < MAX_SESSIONS) {
       const dStr = format(currentDate, "yyyy-MM-dd");
       if (dStr > endStr) break;
-      const dow = getDay(currentDate);
-      if (sortedDays.includes(dow) && !holidayStrings.has(dStr)) {
-        pushDate(currentDate);
-      }
+      handleCandidate(currentDate);
       currentDate = addDays(currentDate, 1);
     }
   }
