@@ -73,6 +73,7 @@
     "copyButton": "Copy",
     "printButton": "Print",
     "shareButton": "Share link",
+    "googleButton": "Add to Google",
     "copyAs": "Copy as",
     "copyFormatPlain": "Plain text",
     "copyFormatMarkdown": "Markdown",
@@ -124,6 +125,8 @@
     "loadedFromLink": "Schedule loaded from link",
     "linkInvalid": "Shared link is invalid or outdated",
     "undo": "Undo",
-    "sessionUpdated": "Session updated"
+    "sessionUpdated": "Session updated",
+    "gcalTooMany": "Too many sessions for one Google Calendar link. Use ICS instead.",
+    "gcalTimeConflicts": "Some sessions have different times — they'll use the first session's time. Use ICS for full fidelity."
   }
 }
