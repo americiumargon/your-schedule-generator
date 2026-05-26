@@ -100,6 +100,7 @@ export interface ExportOptions {
   location?: string;
   notes?: string;
   reminderMinutes?: number;
+  timezone?: string;
 }
 
 function escapeICS(text: string): string {
