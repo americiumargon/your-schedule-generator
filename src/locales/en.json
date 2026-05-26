@@ -17,6 +17,26 @@
     "pickEndDate": "Pick an end date",
     "meetingDays": "Recurring Days",
     "selectDays": "Select the days of the week for your sessions",
+    "recurrence": {
+      "label": "Recurrence",
+      "weekly": "Every week",
+      "every2Weeks": "Every 2 weeks",
+      "every3Weeks": "Every 3 weeks",
+      "every4Weeks": "Every 4 weeks",
+      "monthlyByWeekday": "Monthly by weekday",
+      "monthlyByDate": "Monthly by date",
+      "ordinalsLabel": "Which occurrences",
+      "ordinal": {
+        "first": "1st",
+        "second": "2nd",
+        "third": "3rd",
+        "fourth": "4th",
+        "last": "Last"
+      },
+      "daysOfMonthLabel": "Days of the month",
+      "daysOfMonthHint": "Days past the end of a shorter month are clamped (e.g. 31 → Feb 28).",
+      "lastDay": "Last day"
+    },
     "startTime": "Start Time",
     "endTime": "End Time",
     "timeSlots": {
