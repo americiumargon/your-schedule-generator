@@ -360,6 +360,33 @@ export function ScheduleForm({ onGenerate }: ScheduleFormProps) {
         </Popover>
       </div>
 
+      <div>
+        <Label htmlFor="location">{t('form.location')}</Label>
+        <Input
+          id="location"
+          value={location}
+          onChange={(e) => setLocation(e.target.value)}
+          placeholder={t('form.locationPlaceholder')}
+          maxLength={200}
+          className="mt-2"
+        />
+      </div>
+
+      <div>
+        <Label htmlFor="notes">{t('form.notes')}</Label>
+        <Textarea
+          id="notes"
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder={t('form.notesPlaceholder')}
+          maxLength={2000}
+          rows={3}
+          className="mt-2"
+        />
+      </div>
+
+
+
       <Button
         type="submit"
         className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity"
