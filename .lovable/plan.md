@@ -1,53 +1,89 @@
-## PDF / Printable view
+## Shareable link
 
-Add a **Print / Save as PDF** button to the schedule that opens the browser's print dialog with a clean, handout-styled layout. Users get a PDF for free via "Save as PDF" in any modern browser — no jsPDF dependency, no extra bundle weight.
+Encode the form state into the URL hash so any link a user copies can recreate the exact schedule input for someone else — no backend, no account.
 
-### UX (`src/components/ScheduleDisplay.tsx`)
+### Source of truth
 
-- Add a new `Print` button to the action row, next to Copy / CSV / ICS, using the `Printer` icon from lucide-react.
-- Clicking it calls `window.print()`. Only currently **enabled** sessions are included (same filter as other exports).
-- Toast on empty selection mirrors CSV/ICS behavior.
+The **form inputs** are shared, not the generated sessions. Re-running the generator on the recipient's machine produces identical sessions (deterministic) and the recipient can also tweak before re-generating. Per-session edits and the `enabledSessions` selection are deliberately out of scope (they balloon the URL and lose meaning when the recipient regenerates).
 
-### Print layout
+### Encoding (`src/utils/shareLink.ts` — new file)
 
-Build a dedicated print-only block that renders alongside the screen UI but is only visible when printing. Approach: a `<div className="hidden print:block">` containing the handout, and `print:hidden` on the interactive screen content.
+Compact JSON shape (short keys to keep URLs short):
 
-Handout content (top to bottom):
-- Event name as `<h1>`.
-- Location line (if present) with 📍 prefix.
-- Date range + total session count (reuse the summary numbers already computed).
-- Clean table: `#`, `Date` (e.g. `Mon, May 26, 2026`), `Time` (e.g. `09:00 – 11:00`). One row per enabled session.
-- Notes block at the bottom (if present), in a bordered box.
-- Small footer with generation date.
+```
+{
+  v: 1,                  // schema version
+  n: string,             // event name
+  sd: "YYYY-MM-DD",      // start date
+  m: "count" | "endDate",
+  c?: number,            // count (when m=count)
+  ed?: "YYYY-MM-DD",     // end date (when m=endDate)
+  d: number[],           // selected weekday ids (0-6)
+  st: "HH:MM",
+  et: "HH:MM",
+  h: "YYYY-MM-DD"[],     // holidays
+  l?: string,            // location
+  nt?: string,           // notes
+  r: number,             // reminder minutes
+  tz: string             // timezone
+}
+```
 
-### Print stylesheet (`src/index.css`)
+Exports:
+- `encodeShareState(state): string` — JSON.stringify → UTF-8 → base64url (no padding, URL-safe alphabet via `btoa` + `+/=` → `-_` strip).
+- `decodeShareState(token): ShareState | null` — reverse, with Zod validation (`shareStateSchema`); returns `null` and logs on any failure so a bad link never crashes the app.
+- Date strings parsed back into `Date` objects on decode.
 
-Add a `@media print` block:
-- `body { background: white; color: black; }`
-- Hide app chrome: header, language toggle, form, action buttons, edit controls.
-- Set page margins via `@page { margin: 16mm; size: A4; }`.
-- Table: full width, thin borders, `page-break-inside: avoid` on rows, repeating `<thead>`.
-- Avoid page break inside the notes block.
-- Hide URL/date headers/footers is browser-controlled — we don't fight it, but our own footer covers attribution.
+URL hash chosen over query string (`?s=...`) because hash never hits any server, larger payload tolerance, and doesn't get logged by analytics.
 
-Tailwind's `print:` variants handle the show/hide split; only the `@page` rule and a couple of table-print rules need raw CSS.
+URL shape: `https://app.example.com/#s=<token>`
 
-### i18n (`src/locales/en.json` / `id.json`)
+### Reading on load (`src/pages/Index.tsx`)
+
+On mount, check `window.location.hash`. If it starts with `#s=`, decode and:
+1. Pass the decoded state to `ScheduleForm` as an optional `initialState` prop.
+2. Show a small toast: "Schedule loaded from link" (with `toast.loadedFromLink` key).
+3. Strip the hash from the URL (`history.replaceState`) so a later share/print isn't polluted.
+
+If decode fails, show `toast.linkInvalid` and ignore.
+
+### Form prefill (`src/components/ScheduleForm.tsx`)
+
+- New optional prop `initialState?: ShareState`.
+- All `useState` initializers read from `initialState` when present, otherwise their current defaults. Done via lazy initializers so it's a one-shot hydration, not a controlled override (lets the user edit freely after).
+- No new submit logic — same validation runs.
+
+### Share button (`src/components/ScheduleDisplay.tsx`)
+
+Add a new **Share link** button next to Copy / CSV / ICS / Print, using the `Link2` icon. It:
+1. Calls a new prop `onShare()` provided by `Index.tsx`.
+2. `onShare` builds the token from the last-submitted form state (kept in `Index.tsx` alongside `sessions`), builds the URL, writes to clipboard via `navigator.clipboard.writeText`, and toasts `toast.linkCopied`.
+3. Fallback toast `toast.linkCopyFailed` on clipboard error.
+
+For this to work, `Index.tsx` must keep a reference to the **submitted** form state (not just the generated sessions). Add a `lastFormState` state set inside `onGenerate`.
+
+### i18n (`src/locales/en.json` & `id.json`)
 
 Add under `schedule`:
-- `printButton` — "Print" / "Cetak"
-- `printSubtitle` — short tagline shown under the title in the handout, e.g. "Session schedule" / "Jadwal sesi"
-- `printGeneratedOn` — "Generated on {{date}}" / "Dibuat pada {{date}}"
+- `shareButton` — "Share link" / "Bagikan tautan"
 
-Reuse existing `colNumber`, `colDate`, `colTime`, `summary.totalSessions`, etc.
+Add under `toast`:
+- `linkCopied` — "Link copied to clipboard" / "Tautan disalin ke clipboard"
+- `linkCopyFailed` — "Failed to copy link" / "Gagal menyalin tautan"
+- `loadedFromLink` — "Schedule loaded from link" / "Jadwal dimuat dari tautan"
+- `linkInvalid` — "Shared link is invalid or outdated" / "Tautan tidak valid atau kedaluwarsa"
 
-### Code organization
+### Versioning
 
-Keep the print layout inline in `ScheduleDisplay.tsx` — it's tightly coupled to the same `sessions` + `enabledSessions` state and splitting it would just add prop drilling. A small `<PrintableSchedule />` sub-component in the same file keeps JSX readable.
+`v: 1` on every token. `decodeShareState` rejects unknown versions, so future schema changes can ship without breaking existing links (we'd add migration paths if needed).
+
+### URL size
+
+Worst case ~500 chars (long event name + 50 holidays + long notes). Well under browser/social-platform limits (~2000+).
 
 ### Out of scope
 
-- jsPDF / pdfmake generated files (heavier, can come later if browser print proves insufficient).
-- Custom page sizes / per-page customization.
-- Logos / branding upload for the handout header.
-- Multi-column / poster layouts.
+- Per-session edits or `enabledSessions` selection in the link.
+- Short-link / URL shortener (would need backend).
+- QR code generation (easy follow-up; not part of this task).
+- Encryption / private links.
