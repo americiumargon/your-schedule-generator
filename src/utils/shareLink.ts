@@ -9,6 +9,8 @@ export interface ShareTimeSlot {
   label?: string;
 }
 
+export type ShareHolidayBehavior = "skip" | "rollForward";
+
 export interface ShareFormState {
   eventName: string;
   startDate: Date;
@@ -18,6 +20,7 @@ export interface ShareFormState {
   selectedDays: number[];
   timeSlots: ShareTimeSlot[];
   holidays: Date[];
+  holidayBehavior: ShareHolidayBehavior;
   location?: string;
   notes?: string;
   reminderMinutes: number;
@@ -47,6 +50,7 @@ const tokenSchema = z.object({
   st: timeStr.optional(),
   et: timeStr.optional(),
   h: z.array(dateStr).max(366),
+  hb: z.enum(["skip", "rollForward"]).optional(),
   l: z.string().max(200).optional(),
   nt: z.string().max(2000).optional(),
   r: z.number().refine((v) => [0, 5, 15, 30, 60, 1440].includes(v)),
