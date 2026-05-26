@@ -39,6 +39,8 @@ const Index = () => {
   const [lastFormState, setLastFormState] = useState<ShareFormState | null>(null);
   const [initialFormState, setInitialFormState] = useState<ShareFormState | undefined>(undefined);
   const [hydrated, setHydrated] = useState(false);
+  const [recentRefresh, setRecentRefresh] = useState(0);
+  const formColumnRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const token = readShareTokenFromHash();
