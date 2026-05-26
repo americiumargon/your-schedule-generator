@@ -114,3 +114,41 @@ All colors MUST be HSL.
     @apply bg-background text-foreground;
   }
 }
+
+@media print {
+  @page {
+    margin: 16mm;
+    size: A4;
+  }
+
+  html, body {
+    background: white !important;
+    color: black !important;
+  }
+
+  .print-handout table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .print-handout thead {
+    display: table-header-group;
+  }
+
+  .print-handout tr,
+  .print-handout .print-notes {
+    page-break-inside: avoid;
+  }
+
+  .print-handout th,
+  .print-handout td {
+    border: 1px solid #999;
+    padding: 6px 10px;
+    text-align: left;
+    font-size: 12pt;
+  }
+
+  .print-handout th {
+    background: #f0f0f0;
+  }
+}
