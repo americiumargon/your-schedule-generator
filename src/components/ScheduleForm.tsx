@@ -128,6 +128,7 @@ interface ScheduleFormProps {
     location?: string;
     notes?: string;
     reminderMinutes?: number;
+    timezone?: string;
   }) => void;
 }
 
