@@ -72,6 +72,7 @@
     "icsButton": "ICS",
     "copyButton": "Copy",
     "printButton": "Print",
+    "shareButton": "Share link",
     "printSubtitle": "Session schedule",
     "printGeneratedOn": "Generated on {{date}}",
     "printNotes": "Notes",
@@ -121,6 +122,10 @@
     "copiedMarkdown": "Copied as Markdown",
     "copiedRich": "Copied as rich text",
     "copyFailed": "Failed to copy schedule",
+    "linkCopied": "Link copied to clipboard",
+    "linkCopyFailed": "Failed to copy link",
+    "loadedFromLink": "Schedule loaded from link",
+    "linkInvalid": "Shared link is invalid or outdated",
     "undo": "Undo",
     "sessionUpdated": "Session updated"
   }

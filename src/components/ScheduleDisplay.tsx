@@ -21,7 +21,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Download, Calendar, FileText, Copy, Pencil, CalendarIcon, ChevronDown, Printer } from "lucide-react";
+import { Download, Calendar, FileText, Copy, Pencil, CalendarIcon, ChevronDown, Printer, Link2 } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import {
@@ -51,6 +51,7 @@ interface ScheduleDisplayProps {
     index: number,
     updated: { date: Date; startTime: string; endTime: string }
   ) => void;
+  onShare?: () => void;
 }
 
 function sessionKey(s: Session) {
@@ -142,7 +143,7 @@ function EditSessionPopover({
   );
 }
 
-export function ScheduleDisplay({ eventName, sessions, location, notes, onExport, onClear, onUpdateSession }: ScheduleDisplayProps) {
+export function ScheduleDisplay({ eventName, sessions, location, notes, onExport, onClear, onUpdateSession, onShare }: ScheduleDisplayProps) {
   const { t, i18n } = useTranslation();
   const [enabledSessions, setEnabledSessions] = useState<Set<number>>(
     new Set(sessions.map((_, idx) => idx))
@@ -318,6 +319,17 @@ export function ScheduleDisplay({ eventName, sessions, location, notes, onExport
             <Printer className="h-4 w-4" />
             {t('schedule.printButton')}
           </Button>
+          {onShare && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onShare}
+              className="gap-2"
+            >
+              <Link2 className="h-4 w-4" />
+              {t('schedule.shareButton')}
+            </Button>
+          )}
         </div>
       </div>
 

@@ -68,6 +68,7 @@
     "icsButton": "ICS",
     "copyButton": "Salin",
     "printButton": "Cetak",
+    "shareButton": "Bagikan tautan",
     "printSubtitle": "Jadwal sesi",
     "printGeneratedOn": "Dibuat pada {{date}}",
     "printNotes": "Catatan",
@@ -116,6 +117,10 @@
     "copiedMarkdown": "Disalin sebagai Markdown",
     "copiedRich": "Disalin sebagai teks kaya",
     "copyFailed": "Gagal menyalin jadwal",
+    "linkCopied": "Tautan disalin ke clipboard",
+    "linkCopyFailed": "Gagal menyalin tautan",
+    "loadedFromLink": "Jadwal dimuat dari tautan",
+    "linkInvalid": "Tautan tidak valid atau kedaluwarsa",
     "undo": "Batalkan",
     "sessionUpdated": "Sesi diperbarui"
   }

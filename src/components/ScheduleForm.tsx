@@ -130,23 +130,40 @@ interface ScheduleFormProps {
     reminderMinutes?: number;
     timezone?: string;
   }) => void;
+  initialState?: {
+    eventName: string;
+    startDate: Date;
+    mode: Mode;
+    numberOfMeetings?: number;
+    endDate?: Date;
+    selectedDays: number[];
+    startTime: string;
+    endTime: string;
+    holidays: Date[];
+    location?: string;
+    notes?: string;
+    reminderMinutes: number;
+    timezone: string;
+  };
 }
 
-export function ScheduleForm({ onGenerate }: ScheduleFormProps) {
+export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
   const { t, i18n } = useTranslation();
-  const [eventName, setEventName] = useState("");
-  const [startDate, setStartDate] = useState<Date>();
-  const [mode, setMode] = useState<Mode>("count");
-  const [numberOfMeetings, setNumberOfMeetings] = useState("");
-  const [endDate, setEndDate] = useState<Date>();
-  const [selectedDays, setSelectedDays] = useState<number[]>([]);
-  const [startTime, setStartTime] = useState("");
-  const [endTime, setEndTime] = useState("");
-  const [holidays, setHolidays] = useState<Date[]>([]);
-  const [location, setLocation] = useState("");
-  const [notes, setNotes] = useState("");
-  const [reminderMinutes, setReminderMinutes] = useState<number>(0);
-  const [timezone, setTimezone] = useState<string>(() => getBrowserTimezone());
+  const [eventName, setEventName] = useState(() => initialState?.eventName ?? "");
+  const [startDate, setStartDate] = useState<Date | undefined>(() => initialState?.startDate);
+  const [mode, setMode] = useState<Mode>(() => initialState?.mode ?? "count");
+  const [numberOfMeetings, setNumberOfMeetings] = useState(() =>
+    initialState?.numberOfMeetings != null ? String(initialState.numberOfMeetings) : ""
+  );
+  const [endDate, setEndDate] = useState<Date | undefined>(() => initialState?.endDate);
+  const [selectedDays, setSelectedDays] = useState<number[]>(() => initialState?.selectedDays ?? []);
+  const [startTime, setStartTime] = useState(() => initialState?.startTime ?? "");
+  const [endTime, setEndTime] = useState(() => initialState?.endTime ?? "");
+  const [holidays, setHolidays] = useState<Date[]>(() => initialState?.holidays ?? []);
+  const [location, setLocation] = useState(() => initialState?.location ?? "");
+  const [notes, setNotes] = useState(() => initialState?.notes ?? "");
+  const [reminderMinutes, setReminderMinutes] = useState<number>(() => initialState?.reminderMinutes ?? 0);
+  const [timezone, setTimezone] = useState<string>(() => initialState?.timezone ?? getBrowserTimezone());
   const [tzOpen, setTzOpen] = useState(false);
   const timezones = useMemo(() => getTimezoneList(), []);
 
