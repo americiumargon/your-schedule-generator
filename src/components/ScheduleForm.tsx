@@ -246,6 +246,23 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
   const [tzOpen, setTzOpen] = useState(false);
   const timezones = useMemo(() => getTimezoneList(), []);
 
+  interface FormErrors {
+    eventName?: string;
+    startDate?: string;
+    numberOfMeetings?: string;
+    endDate?: string;
+    selectedDays?: string;
+    ordinals?: string;
+    daysOfMonth?: string;
+    timeSlots?: string;
+  }
+  const [errors, setErrors] = useState<FormErrors>({});
+  const clearError = (key: keyof FormErrors) => {
+    setErrors((prev) => (prev[key] ? { ...prev, [key]: undefined } : prev));
+  };
+  const fieldError = (msg?: string) =>
+    msg ? <p className="text-sm font-medium text-destructive mt-1">{msg}</p> : null;
+
   // Customization count for the advanced badge + auto-expand
   const customizedCount = useMemo(() => {
     let n = 0;
