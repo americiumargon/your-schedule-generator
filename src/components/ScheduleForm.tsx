@@ -393,6 +393,55 @@ export function ScheduleForm({ onGenerate }: ScheduleFormProps) {
       </div>
 
       <div>
+        <Label>{t('form.timezone')}</Label>
+        <Popover open={tzOpen} onOpenChange={setTzOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              type="button"
+              variant="outline"
+              role="combobox"
+              aria-expanded={tzOpen}
+              className="w-full justify-between mt-2 font-normal"
+            >
+              <span className="truncate">{timezone}</span>
+              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+            <Command>
+              <CommandInput placeholder={t('form.timezoneSearchPlaceholder')} />
+              <CommandList>
+                <CommandEmpty>{t('form.timezoneEmpty')}</CommandEmpty>
+                <CommandGroup>
+                  {timezones.map((tz) => (
+                    <CommandItem
+                      key={tz}
+                      value={tz}
+                      onSelect={(v) => {
+                        setTimezone(v);
+                        setTzOpen(false);
+                      }}
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          timezone === tz ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                      {tz}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
+        <p className="text-xs text-muted-foreground mt-1">{t('form.timezoneDescription')}</p>
+      </div>
+
+
+
+      <div>
         <Label htmlFor="reminder">{t('form.reminder')}</Label>
         <Select
           value={String(reminderMinutes)}
