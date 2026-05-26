@@ -146,6 +146,9 @@ export function ScheduleForm({ onGenerate }: ScheduleFormProps) {
   const [location, setLocation] = useState("");
   const [notes, setNotes] = useState("");
   const [reminderMinutes, setReminderMinutes] = useState<number>(0);
+  const [timezone, setTimezone] = useState<string>(() => getBrowserTimezone());
+  const [tzOpen, setTzOpen] = useState(false);
+  const timezones = React.useMemo(() => getTimezoneList(), []);
 
   const dateLocale = i18n.language === 'id' ? idLocale : enUS;
 
