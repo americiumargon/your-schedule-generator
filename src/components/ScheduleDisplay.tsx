@@ -125,7 +125,7 @@ function EditSessionPopover({
   );
 }
 
-export function ScheduleDisplay({ eventName, sessions, onExport, onClear, onUpdateSession }: ScheduleDisplayProps) {
+export function ScheduleDisplay({ eventName, sessions, location, notes, onExport, onClear, onUpdateSession }: ScheduleDisplayProps) {
   const { t, i18n } = useTranslation();
   const [enabledSessions, setEnabledSessions] = useState<Set<number>>(
     new Set(sessions.map((_, idx) => idx))
