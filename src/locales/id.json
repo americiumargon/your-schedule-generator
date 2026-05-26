@@ -76,6 +76,8 @@
       "dateRequired": "Silakan pilih tanggal mulai",
       "meetingsRequired": "Jumlah sesi minimal 1",
       "daysRequired": "Silakan pilih setidaknya satu hari dalam seminggu",
+      "ordinalsRequired": "Silakan pilih setidaknya satu kemunculan (mis. ke-1, ke-2)",
+      "daysOfMonthRequired": "Silakan pilih setidaknya satu tanggal dalam bulan",
       "timeRequired": "Silakan masukkan waktu mulai dan selesai",
       "endDateRequired": "Silakan pilih tanggal selesai",
       "endDateAfterStart": "Tanggal selesai harus sama dengan atau setelah tanggal mulai",
