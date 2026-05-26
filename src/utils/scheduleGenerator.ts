@@ -224,11 +224,16 @@ export function exportToICS(sessions: Session[], eventName: string, language: st
     return lines.join("\r\n");
   }).join("\r\n");
 
+  const vtimezone = useFloatingTzid
+    ? ["BEGIN:VTIMEZONE", `TZID:${tz}`, "END:VTIMEZONE"].join("\r\n")
+    : null;
+
   const icsContent = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
     "PRODID:-//Schedule Generator//EN",
     "CALSCALE:GREGORIAN",
+    ...(vtimezone ? [vtimezone] : []),
     events,
     "END:VCALENDAR",
   ].join("\r\n");
