@@ -80,6 +80,8 @@
       "dateRequired": "Please select a start date",
       "meetingsRequired": "Number of sessions must be at least 1",
       "daysRequired": "Please select at least one day of the week",
+      "ordinalsRequired": "Please select at least one occurrence (e.g. 1st, 2nd)",
+      "daysOfMonthRequired": "Please select at least one day of the month",
       "timeRequired": "Please enter both start and end times",
       "endDateRequired": "Please select an end date",
       "endDateAfterStart": "End date must be on or after the start date",
