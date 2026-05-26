@@ -1,4 +1,4 @@
-import { addDays, getDay, format } from "date-fns";
+import { addDays, getDay, getDate, getDaysInMonth, differenceInCalendarWeeks, startOfWeek, format } from "date-fns";
 import en from "@/locales/en.json";
 import id from "@/locales/id.json";
 
@@ -22,15 +22,38 @@ const ROLL_FORWARD_MAX_DAYS = 14;
 
 export type HolidayBehavior = "skip" | "rollForward";
 
+export type Recurrence =
+  | { type: "weekly"; interval: number }
+  | { type: "monthlyByWeekday"; ordinals: number[] } // 1..4, -1 for last
+  | { type: "monthlyByDate"; daysOfMonth: number[] }; // 1..31, -1 for last day
+
 interface GenerateScheduleOptions {
   startDate: Date;
-  selectedDays: number[]; // 0 = Sunday, 1 = Monday, etc.
+  selectedDays: number[]; // 0 = Sunday, 1 = Monday, etc. (used for weekly + monthlyByWeekday)
   timeSlots: TimeSlot[];
   holidays?: Date[];
   holidayBehavior?: HolidayBehavior;
+  recurrence?: Recurrence;
   mode: "count" | "endDate";
   numberOfMeetings?: number;
   endDate?: Date;
+}
+
+function ordinalInMonth(date: Date): number {
+  // 1..5
+  return Math.floor((getDate(date) - 1) / 7) + 1;
+}
+function isLastWeekdayOccurrenceInMonth(date: Date): boolean {
+  return getDate(date) + 7 > getDaysInMonth(date);
+}
+
+function effectiveMonthDays(daysOfMonth: number[], monthLastDay: number): Set<number> {
+  const set = new Set<number>();
+  for (const d of daysOfMonth) {
+    if (d === -1) set.add(monthLastDay);
+    else if (d >= 1 && d <= 31) set.add(Math.min(d, monthLastDay));
+  }
+  return set;
 }
 
 export function generateSchedule(options: GenerateScheduleOptions): Session[] {
@@ -40,6 +63,7 @@ export function generateSchedule(options: GenerateScheduleOptions): Session[] {
     timeSlots,
     holidays = [],
     holidayBehavior = "skip",
+    recurrence = { type: "weekly", interval: 1 },
     mode,
     numberOfMeetings,
     endDate,
@@ -54,7 +78,38 @@ export function generateSchedule(options: GenerateScheduleOptions): Session[] {
   const slots: TimeSlot[] = timeSlots.length > 0 ? timeSlots : [{ startTime: "", endTime: "" }];
 
   const target = mode === "count" ? Math.min(numberOfMeetings ?? 0, MAX_SESSIONS) : MAX_SESSIONS;
-  const usedRolledDates = new Set<string>(); // prevent rolling onto a date already produced
+  const usedRolledDates = new Set<string>();
+
+  const startWeekAnchor = startOfWeek(startDate, { weekStartsOn: 0 });
+
+  // Recurrence-aware predicate: does this date match the recurrence pattern (ignoring holidays)?
+  const isRecurrenceCandidate = (d: Date): boolean => {
+    const dow = getDay(d);
+    if (recurrence.type === "weekly") {
+      if (!sortedDays.includes(dow)) return false;
+      const interval = Math.max(1, recurrence.interval);
+      if (interval === 1) return true;
+      const weeksFromStart = differenceInCalendarWeeks(d, startWeekAnchor, { weekStartsOn: 0 });
+      return weeksFromStart >= 0 && weeksFromStart % interval === 0;
+    }
+    if (recurrence.type === "monthlyByWeekday") {
+      if (!sortedDays.includes(dow)) return false;
+      const ord = ordinalInMonth(d);
+      const hits = recurrence.ordinals.includes(ord);
+      const hitsLast = recurrence.ordinals.includes(-1) && isLastWeekdayOccurrenceInMonth(d);
+      return hits || hitsLast;
+    }
+    // monthlyByDate
+    const lastDay = getDaysInMonth(d);
+    const effective = effectiveMonthDays(recurrence.daysOfMonth, lastDay);
+    return effective.has(getDate(d));
+  };
+
+  // For roll-forward, define "allowed" probe day: non-holiday and matches dow restrictions (if any).
+  const isAllowedDowForRoll = (dow: number): boolean => {
+    if (recurrence.type === "monthlyByDate") return true;
+    return sortedDays.includes(dow);
+  };
 
   const pushDate = (d: Date, rolledFrom?: Date): boolean => {
     for (const slot of slots) {
@@ -72,15 +127,13 @@ export function generateSchedule(options: GenerateScheduleOptions): Session[] {
     return sessionCount >= target;
   };
 
-  // For a candidate date that's a holiday, find the next valid date within ROLL_FORWARD_MAX_DAYS.
-  // Returns null if no replacement found.
   const findRollForward = (from: Date): Date | null => {
     let probe = addDays(from, 1);
     for (let i = 0; i < ROLL_FORWARD_MAX_DAYS; i++) {
       const probeStr = format(probe, "yyyy-MM-dd");
       const probeDow = getDay(probe);
       if (
-        sortedDays.includes(probeDow) &&
+        isAllowedDowForRoll(probeDow) &&
         !holidayStrings.has(probeStr) &&
         !usedRolledDates.has(probeStr)
       ) {
@@ -92,17 +145,14 @@ export function generateSchedule(options: GenerateScheduleOptions): Session[] {
   };
 
   const handleCandidate = (d: Date): boolean => {
+    if (!isRecurrenceCandidate(d)) return false;
     const dStr = format(d, "yyyy-MM-dd");
-    const dow = getDay(d);
-    if (!sortedDays.includes(dow)) return false;
-    // Skip if this date was already produced (either naturally earlier, or as a rollover target)
     if (usedRolledDates.has(dStr)) return false;
 
     if (!holidayStrings.has(dStr)) {
       usedRolledDates.add(dStr);
       return pushDate(d);
     }
-    // Holiday hit
     if (holidayBehavior === "skip") return false;
     const replacement = findRollForward(d);
     if (!replacement) return false;
@@ -111,19 +161,25 @@ export function generateSchedule(options: GenerateScheduleOptions): Session[] {
     return pushDate(replacement, d);
   };
 
+  // Safety cap on day iterations to avoid runaway loops in count mode
+  const MAX_ITER_DAYS = 366 * 10;
+  let iter = 0;
+
   if (mode === "count") {
-    while (sessionCount < target) {
+    while (sessionCount < target && iter < MAX_ITER_DAYS) {
       if (handleCandidate(currentDate)) break;
       currentDate = addDays(currentDate, 1);
+      iter++;
     }
   } else {
     if (!endDate) return [];
     const endStr = format(endDate, "yyyy-MM-dd");
-    while (sessionCount < MAX_SESSIONS) {
+    while (sessionCount < MAX_SESSIONS && iter < MAX_ITER_DAYS) {
       const dStr = format(currentDate, "yyyy-MM-dd");
       if (dStr > endStr) break;
       handleCandidate(currentDate);
       currentDate = addDays(currentDate, 1);
+      iter++;
     }
   }
 

@@ -11,6 +11,11 @@ export interface ShareTimeSlot {
 
 export type ShareHolidayBehavior = "skip" | "rollForward";
 
+export type ShareRecurrence =
+  | { type: "weekly"; interval: number }
+  | { type: "monthlyByWeekday"; ordinals: number[] }
+  | { type: "monthlyByDate"; daysOfMonth: number[] };
+
 export interface ShareFormState {
   eventName: string;
   startDate: Date;
@@ -21,6 +26,7 @@ export interface ShareFormState {
   timeSlots: ShareTimeSlot[];
   holidays: Date[];
   holidayBehavior: ShareHolidayBehavior;
+  recurrence: ShareRecurrence;
   location?: string;
   notes?: string;
   reminderMinutes: number;
@@ -36,6 +42,13 @@ const slotSchema = z.object({
   l: z.string().max(50).optional(),
 });
 
+const recurrenceSchema = z.object({
+  t: z.enum(["weekly", "monthlyByWeekday", "monthlyByDate"]),
+  i: z.number().int().min(1).max(12).optional(),
+  o: z.array(z.number().int().min(-1).max(5)).optional(),
+  dm: z.array(z.number().int().min(-1).max(31)).optional(),
+});
+
 const tokenSchema = z.object({
   v: z.literal(1),
   n: z.string().min(1).max(100),
@@ -43,14 +56,13 @@ const tokenSchema = z.object({
   m: z.enum(["count", "endDate"]),
   c: z.number().int().min(1).max(366).optional(),
   ed: dateStr.optional(),
-  d: z.array(z.number().int().min(0).max(6)).min(1),
-  // New: time slots
+  d: z.array(z.number().int().min(0).max(6)),
   ts: z.array(slotSchema).min(1).max(6).optional(),
-  // Legacy single-slot fields (still accepted for backward compatibility)
   st: timeStr.optional(),
   et: timeStr.optional(),
   h: z.array(dateStr).max(366),
   hb: z.enum(["skip", "rollForward"]).optional(),
+  rec: recurrenceSchema.optional(),
   l: z.string().max(200).optional(),
   nt: z.string().max(2000).optional(),
   r: z.number().refine((v) => [0, 5, 15, 30, 60, 1440].includes(v)),
@@ -79,6 +91,19 @@ function base64UrlDecode(input: string): string {
   return decodeURIComponent(escape(atob(padded)));
 }
 
+function encodeRecurrence(rec: ShareRecurrence): Token["rec"] {
+  if (rec.type === "weekly") return { t: "weekly", i: rec.interval };
+  if (rec.type === "monthlyByWeekday") return { t: "monthlyByWeekday", o: rec.ordinals };
+  return { t: "monthlyByDate", dm: rec.daysOfMonth };
+}
+
+function decodeRecurrence(rec: Token["rec"]): ShareRecurrence {
+  if (!rec) return { type: "weekly", interval: 1 };
+  if (rec.t === "weekly") return { type: "weekly", interval: rec.i ?? 1 };
+  if (rec.t === "monthlyByWeekday") return { type: "monthlyByWeekday", ordinals: rec.o ?? [1] };
+  return { type: "monthlyByDate", daysOfMonth: rec.dm ?? [1] };
+}
+
 export function encodeShareState(state: ShareFormState): string {
   const token: Token = {
     v: 1,
@@ -99,6 +124,7 @@ export function encodeShareState(state: ShareFormState): string {
     })),
     h: state.holidays.map(fmtDate),
     ...(state.holidayBehavior && state.holidayBehavior !== "skip" ? { hb: state.holidayBehavior } : {}),
+    rec: encodeRecurrence(state.recurrence),
     ...(state.location ? { l: state.location } : {}),
     ...(state.notes ? { nt: state.notes } : {}),
     r: state.reminderMinutes,
@@ -130,7 +156,6 @@ export function decodeShareState(token: string): ShareFormState | null {
       holidays.push(d);
     }
 
-    // Resolve slots: prefer new ts, fall back to legacy st/et
     let timeSlots: ShareTimeSlot[];
     if (parsed.ts && parsed.ts.length > 0) {
       timeSlots = parsed.ts.map((s) => ({
@@ -154,6 +179,7 @@ export function decodeShareState(token: string): ShareFormState | null {
       timeSlots,
       holidays,
       holidayBehavior: parsed.hb ?? "skip",
+      recurrence: decodeRecurrence(parsed.rec),
       location: parsed.l,
       notes: parsed.nt,
       reminderMinutes: parsed.r,
