@@ -17,6 +17,26 @@
     "pickEndDate": "Pilih tanggal selesai",
     "meetingDays": "Hari Berulang",
     "selectDays": "Pilih hari dalam seminggu untuk sesi Anda",
+    "recurrence": {
+      "label": "Pengulangan",
+      "weekly": "Setiap minggu",
+      "every2Weeks": "Setiap 2 minggu",
+      "every3Weeks": "Setiap 3 minggu",
+      "every4Weeks": "Setiap 4 minggu",
+      "monthlyByWeekday": "Bulanan berdasarkan hari",
+      "monthlyByDate": "Bulanan berdasarkan tanggal",
+      "ordinalsLabel": "Kemunculan ke",
+      "ordinal": {
+        "first": "ke-1",
+        "second": "ke-2",
+        "third": "ke-3",
+        "fourth": "ke-4",
+        "last": "Terakhir"
+      },
+      "daysOfMonthLabel": "Tanggal dalam bulan",
+      "daysOfMonthHint": "Tanggal yang melebihi akhir bulan akan dipotong (mis. 31 → 28 Feb).",
+      "lastDay": "Hari terakhir"
+    },
     "startTime": "Waktu Mulai",
     "endTime": "Waktu Selesai",
     "timeSlots": {
