@@ -95,6 +95,8 @@ export function ScheduleForm({ onGenerate }: ScheduleFormProps) {
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [holidays, setHolidays] = useState<Date[]>([]);
+  const [location, setLocation] = useState("");
+  const [notes, setNotes] = useState("");
 
   const dateLocale = i18n.language === 'id' ? idLocale : enUS;
 
