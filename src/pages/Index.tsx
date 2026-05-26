@@ -22,6 +22,9 @@ const Index = () => {
   const [location, setLocation] = useState("");
   const [notes, setNotes] = useState("");
   const [reminderMinutes, setReminderMinutes] = useState<number>(0);
+  const [timezone, setTimezone] = useState<string>(() => {
+    try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"; } catch { return "UTC"; }
+  });
 
   const handleGenerate = (data: {
     eventName: string;
