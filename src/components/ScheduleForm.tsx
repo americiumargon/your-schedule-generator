@@ -196,12 +196,40 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
   const [timeSlots, setTimeSlots] = useState<TimeSlotInput[]>(() => initialSlotsFromState(initialState));
   const [holidays, setHolidays] = useState<Date[]>(() => initialState?.holidays ?? []);
   const [holidayBehavior, setHolidayBehavior] = useState<HolidayBehavior>(() => initialState?.holidayBehavior ?? "skip");
+  const [recurrenceType, setRecurrenceType] = useState<FormRecurrence["type"]>(
+    () => initialState?.recurrence?.type ?? "weekly"
+  );
+  const [weeklyInterval, setWeeklyInterval] = useState<number>(() =>
+    initialState?.recurrence?.type === "weekly" ? initialState.recurrence.interval : 1
+  );
+  const [ordinals, setOrdinals] = useState<number[]>(() =>
+    initialState?.recurrence?.type === "monthlyByWeekday" ? initialState.recurrence.ordinals : [1]
+  );
+  const [daysOfMonth, setDaysOfMonth] = useState<number[]>(() =>
+    initialState?.recurrence?.type === "monthlyByDate" ? initialState.recurrence.daysOfMonth : [1]
+  );
   const [location, setLocation] = useState(() => initialState?.location ?? "");
   const [notes, setNotes] = useState(() => initialState?.notes ?? "");
   const [reminderMinutes, setReminderMinutes] = useState<number>(() => initialState?.reminderMinutes ?? 0);
   const [timezone, setTimezone] = useState<string>(() => initialState?.timezone ?? getBrowserTimezone());
   const [tzOpen, setTzOpen] = useState(false);
   const timezones = useMemo(() => getTimezoneList(), []);
+
+  const buildRecurrence = (): FormRecurrence => {
+    if (recurrenceType === "weekly") return { type: "weekly", interval: weeklyInterval };
+    if (recurrenceType === "monthlyByWeekday") return { type: "monthlyByWeekday", ordinals: [...ordinals].sort((a, b) => a - b) };
+    return { type: "monthlyByDate", daysOfMonth: [...daysOfMonth].sort((a, b) => a - b) };
+  };
+
+  const toggleOrdinal = (o: number) => {
+    setOrdinals((prev) => (prev.includes(o) ? prev.filter((x) => x !== o) : [...prev, o]));
+  };
+  const toggleDayOfMonth = (d: number) => {
+    setDaysOfMonth((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]));
+  };
+
+  const needsWeekdays = recurrenceType === "weekly" || recurrenceType === "monthlyByWeekday";
+
 
   const dateLocale = i18n.language === 'id' ? idLocale : enUS;
 
