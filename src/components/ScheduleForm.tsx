@@ -456,7 +456,7 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
   const extraSlots = timeSlots.slice(1);
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8">
+    <form onSubmit={handleSubmit} className="space-y-8 pb-4 lg:pb-0">
       {/* ===================== ESSENTIALS ===================== */}
       <div className="space-y-5">
         {/* Activity name */}
