@@ -64,6 +64,10 @@ const Index = () => {
     timeSlots: FormTimeSlot[];
     holidays: Date[];
     holidayBehavior: "skip" | "rollForward";
+    recurrence:
+      | { type: "weekly"; interval: number }
+      | { type: "monthlyByWeekday"; ordinals: number[] }
+      | { type: "monthlyByDate"; daysOfMonth: number[] };
     mode: "count" | "endDate";
     numberOfMeetings?: number;
     endDate?: Date;
@@ -78,6 +82,7 @@ const Index = () => {
       timeSlots: data.timeSlots,
       holidays: data.holidays,
       holidayBehavior: data.holidayBehavior,
+      recurrence: data.recurrence,
       mode: data.mode,
       numberOfMeetings: data.numberOfMeetings,
       endDate: data.endDate,
@@ -103,6 +108,7 @@ const Index = () => {
       timeSlots: data.timeSlots,
       holidays: data.holidays,
       holidayBehavior: data.holidayBehavior,
+      recurrence: data.recurrence,
       location: data.location,
       notes: data.notes,
       reminderMinutes: data.reminderMinutes ?? 0,
