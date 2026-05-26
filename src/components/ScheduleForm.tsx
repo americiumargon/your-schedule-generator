@@ -222,6 +222,7 @@ export function ScheduleForm({ onGenerate }: ScheduleFormProps) {
           location: location.trim() || undefined,
           notes: notes.trim() || undefined,
           reminderMinutes,
+          timezone,
         });
         const sanitizedEventName = validated.eventName.replace(/[",\n\r]/g, ' ');
         onGenerate({
