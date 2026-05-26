@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ScheduleForm } from "@/components/ScheduleForm";
 import { ScheduleDisplay } from "@/components/ScheduleDisplay";
 import { LanguageToggle } from "@/components/LanguageToggle";
@@ -7,6 +7,12 @@ import { generateSchedule, exportToCSV, exportToICS } from "@/utils/scheduleGene
 import { Calendar, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
+import {
+  buildShareUrl,
+  decodeShareState,
+  readShareTokenFromHash,
+  type ShareFormState,
+} from "@/utils/shareLink";
 
 interface Session {
   date: Date;
@@ -25,6 +31,29 @@ const Index = () => {
   const [timezone, setTimezone] = useState<string>(() => {
     try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"; } catch { return "UTC"; }
   });
+  const [lastFormState, setLastFormState] = useState<ShareFormState | null>(null);
+  const [initialFormState, setInitialFormState] = useState<ShareFormState | undefined>(undefined);
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    const token = readShareTokenFromHash();
+    if (token) {
+      const decoded = decodeShareState(token);
+      if (decoded) {
+        setInitialFormState(decoded);
+        toast.success(t('toast.loadedFromLink'));
+      } else {
+        toast.error(t('toast.linkInvalid'));
+      }
+      try {
+        history.replaceState(null, "", window.location.pathname + window.location.search);
+      } catch {
+        // ignore
+      }
+    }
+    setHydrated(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleGenerate = (data: {
     eventName: string;
@@ -55,12 +84,28 @@ const Index = () => {
       toast.error(t('form.validation.noSessionsInRange'));
       return;
     }
+    const tz = data.timezone ?? timezone;
     setSessions(generatedSessions);
     setEventName(data.eventName);
     setLocation(data.location ?? "");
     setNotes(data.notes ?? "");
     setReminderMinutes(data.reminderMinutes ?? 0);
     if (data.timezone) setTimezone(data.timezone);
+    setLastFormState({
+      eventName: data.eventName,
+      startDate: data.startDate,
+      mode: data.mode,
+      numberOfMeetings: data.numberOfMeetings,
+      endDate: data.endDate,
+      selectedDays: data.selectedDays,
+      startTime: data.startTime,
+      endTime: data.endTime,
+      holidays: data.holidays,
+      location: data.location,
+      notes: data.notes,
+      reminderMinutes: data.reminderMinutes ?? 0,
+      timezone: tz,
+    });
     toast.success(t('toast.generated', { count: generatedSessions.length }));
   };
 
@@ -72,6 +117,17 @@ const Index = () => {
     } else {
       exportToICS(enabledSessions, eventName, language, opts);
       toast.success(t('export.successIcs'));
+    }
+  };
+
+  const handleShare = async () => {
+    if (!lastFormState) return;
+    try {
+      const url = buildShareUrl(lastFormState);
+      await navigator.clipboard.writeText(url);
+      toast.success(t('toast.linkCopied'));
+    } catch {
+      toast.error(t('toast.linkCopyFailed'));
     }
   };
 
@@ -149,7 +205,9 @@ const Index = () => {
           <div>
             <div className="bg-card rounded-xl shadow-lg p-6 sticky top-24">
               <h2 className="text-xl font-semibold mb-6">{t('form.title')}</h2>
-              <ScheduleForm onGenerate={handleGenerate} />
+              {hydrated && (
+                <ScheduleForm onGenerate={handleGenerate} initialState={initialFormState} />
+              )}
             </div>
           </div>
 
@@ -183,6 +241,7 @@ const Index = () => {
                   onExport={handleExport}
                   onClear={handleClear}
                   onUpdateSession={handleUpdateSession}
+                  onShare={lastFormState ? handleShare : undefined}
                 />
               ) : (
                 <div className="text-center py-12">
