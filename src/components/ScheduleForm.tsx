@@ -603,7 +603,33 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
             />
           </PopoverContent>
         </Popover>
+
+        {holidays.length > 0 && (
+          <div className="mt-4 space-y-2">
+            <Label className="text-sm">{t('form.holidayBehavior.label')}</Label>
+            <RadioGroup
+              value={holidayBehavior}
+              onValueChange={(v) => setHolidayBehavior(v as HolidayBehavior)}
+              className="space-y-1"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="skip" id="hb-skip" />
+                <Label htmlFor="hb-skip" className="text-sm font-normal cursor-pointer">
+                  {t('form.holidayBehavior.skip')}
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="rollForward" id="hb-roll" />
+                <Label htmlFor="hb-roll" className="text-sm font-normal cursor-pointer">
+                  {t('form.holidayBehavior.rollForward')}
+                </Label>
+              </div>
+            </RadioGroup>
+            <p className="text-xs text-muted-foreground">{t('form.holidayBehavior.description')}</p>
+          </div>
+        )}
       </div>
+
 
       <div>
         <Label htmlFor="location">{t('form.location')}</Label>
