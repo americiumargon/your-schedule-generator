@@ -37,6 +37,8 @@ const baseSchema = {
   endTime: z.string()
     .regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid end time format"),
   holidays: z.array(z.date()),
+  location: z.string().trim().max(200, "Location must be less than 200 characters").optional(),
+  notes: z.string().trim().max(2000, "Notes must be less than 2000 characters").optional(),
 };
 
 const countSchema = z.object({
