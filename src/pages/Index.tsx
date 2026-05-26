@@ -35,6 +35,7 @@ const Index = () => {
     endDate?: Date;
     location?: string;
     notes?: string;
+    reminderMinutes?: number;
   }) => {
     const generatedSessions = generateSchedule({
       startDate: data.startDate,
