@@ -21,6 +21,7 @@ const Index = () => {
   const [eventName, setEventName] = useState("");
   const [location, setLocation] = useState("");
   const [notes, setNotes] = useState("");
+  const [reminderMinutes, setReminderMinutes] = useState<number>(0);
 
   const handleGenerate = (data: {
     eventName: string;
@@ -34,6 +35,7 @@ const Index = () => {
     endDate?: Date;
     location?: string;
     notes?: string;
+    reminderMinutes?: number;
   }) => {
     const generatedSessions = generateSchedule({
       startDate: data.startDate,
@@ -53,11 +55,12 @@ const Index = () => {
     setEventName(data.eventName);
     setLocation(data.location ?? "");
     setNotes(data.notes ?? "");
+    setReminderMinutes(data.reminderMinutes ?? 0);
     toast.success(t('toast.generated', { count: generatedSessions.length }));
   };
 
   const handleExport = (format: "csv" | "ics", enabledSessions: Session[], language: string) => {
-    const opts = { location, notes };
+    const opts = { location, notes, reminderMinutes };
     if (format === "csv") {
       exportToCSV(enabledSessions, eventName, language, opts);
       toast.success(t('export.successCsv'));
@@ -73,10 +76,12 @@ const Index = () => {
     const prevName = eventName;
     const prevLocation = location;
     const prevNotes = notes;
+    const prevReminder = reminderMinutes;
     setSessions([]);
     setEventName("");
     setLocation("");
     setNotes("");
+    setReminderMinutes(0);
     toast.success(t('toast.cleared'), {
       action: {
         label: t('toast.undo'),
@@ -85,6 +90,7 @@ const Index = () => {
           setEventName(prevName);
           setLocation(prevLocation);
           setNotes(prevNotes);
+          setReminderMinutes(prevReminder);
         },
       },
       duration: 6000,

@@ -7,6 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { enUS, id as idLocale } from "date-fns/locale";
@@ -39,7 +40,16 @@ const baseSchema = {
   holidays: z.array(z.date()),
   location: z.string().trim().max(200, "Location must be less than 200 characters").optional(),
   notes: z.string().trim().max(2000, "Notes must be less than 2000 characters").optional(),
+  reminderMinutes: z.number().refine(v => [0, 5, 15, 30, 60, 1440].includes(v), "Invalid reminder"),
 };
+
+const REMINDER_OPTIONS = [0, 5, 15, 30, 60, 1440] as const;
+function reminderLabel(t: (k: string, o?: any) => string, minutes: number): string {
+  if (minutes === 0) return t('form.reminderNone');
+  if (minutes === 1440) return t('form.reminderDays', { count: 1 });
+  if (minutes >= 60) return t('form.reminderHours', { count: minutes / 60 });
+  return t('form.reminderMinutes', { count: minutes });
+}
 
 const countSchema = z.object({
   ...baseSchema,
@@ -81,6 +91,7 @@ interface ScheduleFormProps {
     endDate?: Date;
     location?: string;
     notes?: string;
+    reminderMinutes?: number;
   }) => void;
 }
 
@@ -97,6 +108,7 @@ export function ScheduleForm({ onGenerate }: ScheduleFormProps) {
   const [holidays, setHolidays] = useState<Date[]>([]);
   const [location, setLocation] = useState("");
   const [notes, setNotes] = useState("");
+  const [reminderMinutes, setReminderMinutes] = useState<number>(0);
 
   const dateLocale = i18n.language === 'id' ? idLocale : enUS;
 
@@ -135,6 +147,7 @@ export function ScheduleForm({ onGenerate }: ScheduleFormProps) {
           holidays,
           location: location.trim() || undefined,
           notes: notes.trim() || undefined,
+          reminderMinutes,
         });
         const sanitizedEventName = validated.eventName.replace(/[",\n\r]/g, ' ');
         onGenerate({
@@ -148,6 +161,7 @@ export function ScheduleForm({ onGenerate }: ScheduleFormProps) {
           numberOfMeetings: validated.numberOfMeetings,
           location: validated.location,
           notes: validated.notes,
+          reminderMinutes: validated.reminderMinutes,
         });
       } else {
         if (!endDate) {
@@ -165,6 +179,7 @@ export function ScheduleForm({ onGenerate }: ScheduleFormProps) {
           holidays,
           location: location.trim() || undefined,
           notes: notes.trim() || undefined,
+          reminderMinutes,
         });
         const sanitizedEventName = validated.eventName.replace(/[",\n\r]/g, ' ');
         onGenerate({
@@ -178,6 +193,7 @@ export function ScheduleForm({ onGenerate }: ScheduleFormProps) {
           endDate: validated.endDate,
           location: validated.location,
           notes: validated.notes,
+          reminderMinutes: validated.reminderMinutes,
         });
       }
     } catch (error) {
@@ -331,6 +347,27 @@ export function ScheduleForm({ onGenerate }: ScheduleFormProps) {
           />
         </div>
       </div>
+
+      <div>
+        <Label htmlFor="reminder">{t('form.reminder')}</Label>
+        <Select
+          value={String(reminderMinutes)}
+          onValueChange={(v) => setReminderMinutes(Number(v))}
+        >
+          <SelectTrigger id="reminder" className="mt-2">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {REMINDER_OPTIONS.map((m) => (
+              <SelectItem key={m} value={String(m)}>
+                {reminderLabel(t, m)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+
 
       <div>
         <Label className="mb-3 block">{t('form.holidays')}</Label>

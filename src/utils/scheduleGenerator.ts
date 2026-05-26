@@ -99,10 +99,17 @@ function convertTo12Hour(time24: string): string {
 export interface ExportOptions {
   location?: string;
   notes?: string;
+  reminderMinutes?: number;
 }
 
 function escapeICS(text: string): string {
   return text.replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n");
+}
+
+function buildTrigger(minutes: number): string {
+  if (minutes % 1440 === 0) return `-P${minutes / 1440}D`;
+  if (minutes % 60 === 0) return `-PT${minutes / 60}H`;
+  return `-PT${minutes}M`;
 }
 
 export function exportToCSV(sessions: Session[], eventName: string, language: string = 'en', opts: ExportOptions = {}): void {
@@ -186,10 +193,17 @@ export function exportToICS(sessions: Session[], eventName: string, language: st
       `DESCRIPTION:${escapeICS(fullDescription)}`,
     ];
     if (locationLine) lines.push(locationLine);
-    lines.push(
-      `UID:${Date.now()}-${session.sessionNumber}@schedule-generator.com`,
-      "END:VEVENT",
-    );
+    lines.push(`UID:${Date.now()}-${session.sessionNumber}@schedule-generator.com`);
+    if (opts.reminderMinutes && opts.reminderMinutes > 0) {
+      lines.push(
+        "BEGIN:VALARM",
+        "ACTION:DISPLAY",
+        `DESCRIPTION:${escapeICS(summary)}`,
+        `TRIGGER:${buildTrigger(opts.reminderMinutes)}`,
+        "END:VALARM",
+      );
+    }
+    lines.push("END:VEVENT");
     return lines.join("\r\n");
   }).join("\r\n");
 

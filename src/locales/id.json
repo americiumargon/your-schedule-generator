@@ -27,6 +27,11 @@
     "locationPlaceholder": "contoh: Tautan Zoom, Ruang Rapat B",
     "notes": "Catatan (opsional)",
     "notesPlaceholder": "Tambahkan detail, agenda, atau tautan",
+    "reminder": "Pengingat (khusus ICS)",
+    "reminderNone": "Tanpa pengingat",
+    "reminderMinutes": "{{count}} menit sebelumnya",
+    "reminderHours": "{{count}} jam sebelumnya",
+    "reminderDays": "{{count}} hari sebelumnya",
     "generateButton": "Buat Jadwal",
     "validation": {
       "eventNameRequired": "Silakan masukkan nama aktivitas",
