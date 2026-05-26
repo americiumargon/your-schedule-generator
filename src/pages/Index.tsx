@@ -22,6 +22,9 @@ const Index = () => {
   const [location, setLocation] = useState("");
   const [notes, setNotes] = useState("");
   const [reminderMinutes, setReminderMinutes] = useState<number>(0);
+  const [timezone, setTimezone] = useState<string>(() => {
+    try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"; } catch { return "UTC"; }
+  });
 
   const handleGenerate = (data: {
     eventName: string;
@@ -36,6 +39,7 @@ const Index = () => {
     location?: string;
     notes?: string;
     reminderMinutes?: number;
+    timezone?: string;
   }) => {
     const generatedSessions = generateSchedule({
       startDate: data.startDate,
@@ -56,11 +60,12 @@ const Index = () => {
     setLocation(data.location ?? "");
     setNotes(data.notes ?? "");
     setReminderMinutes(data.reminderMinutes ?? 0);
+    if (data.timezone) setTimezone(data.timezone);
     toast.success(t('toast.generated', { count: generatedSessions.length }));
   };
 
   const handleExport = (format: "csv" | "ics", enabledSessions: Session[], language: string) => {
-    const opts = { location, notes, reminderMinutes };
+    const opts = { location, notes, reminderMinutes, timezone };
     if (format === "csv") {
       exportToCSV(enabledSessions, eventName, language, opts);
       toast.success(t('export.successCsv'));

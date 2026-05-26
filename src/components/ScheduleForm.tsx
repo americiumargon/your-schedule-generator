@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,7 +8,8 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CalendarIcon } from "lucide-react";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { CalendarIcon, Check, ChevronsUpDown } from "lucide-react";
 import { format } from "date-fns";
 import { enUS, id as idLocale } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -41,6 +42,7 @@ const baseSchema = {
   location: z.string().trim().max(200, "Location must be less than 200 characters").optional(),
   notes: z.string().trim().max(2000, "Notes must be less than 2000 characters").optional(),
   reminderMinutes: z.number().refine(v => [0, 5, 15, 30, 60, 1440].includes(v), "Invalid reminder"),
+  timezone: z.string().min(1, "Timezone is required"),
 };
 
 const REMINDER_OPTIONS = [0, 5, 15, 30, 60, 1440] as const;
@@ -49,6 +51,40 @@ function reminderLabel(t: (k: string, o?: any) => string, minutes: number): stri
   if (minutes === 1440) return t('form.reminderDays', { count: 1 });
   if (minutes >= 60) return t('form.reminderHours', { count: minutes / 60 });
   return t('form.reminderMinutes', { count: minutes });
+}
+
+const FALLBACK_TIMEZONES = [
+  "UTC",
+  "Africa/Cairo", "Africa/Johannesburg", "Africa/Lagos",
+  "America/Anchorage", "America/Chicago", "America/Denver", "America/Los_Angeles",
+  "America/Mexico_City", "America/New_York", "America/Sao_Paulo", "America/Toronto",
+  "Asia/Bangkok", "Asia/Dubai", "Asia/Hong_Kong", "Asia/Jakarta", "Asia/Kolkata",
+  "Asia/Manila", "Asia/Seoul", "Asia/Shanghai", "Asia/Singapore", "Asia/Tokyo",
+  "Australia/Melbourne", "Australia/Sydney",
+  "Europe/Amsterdam", "Europe/Berlin", "Europe/Istanbul", "Europe/London",
+  "Europe/Madrid", "Europe/Moscow", "Europe/Paris", "Europe/Rome",
+  "Pacific/Auckland", "Pacific/Honolulu",
+];
+
+function getTimezoneList(): string[] {
+  try {
+    const anyIntl = Intl as any;
+    if (typeof anyIntl.supportedValuesOf === "function") {
+      const list = anyIntl.supportedValuesOf("timeZone") as string[];
+      if (Array.isArray(list) && list.length > 0) return list;
+    }
+  } catch {
+    // fall through
+  }
+  return FALLBACK_TIMEZONES;
+}
+
+function getBrowserTimezone(): string {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+  } catch {
+    return "UTC";
+  }
 }
 
 const countSchema = z.object({
@@ -92,6 +128,7 @@ interface ScheduleFormProps {
     location?: string;
     notes?: string;
     reminderMinutes?: number;
+    timezone?: string;
   }) => void;
 }
 
@@ -109,6 +146,9 @@ export function ScheduleForm({ onGenerate }: ScheduleFormProps) {
   const [location, setLocation] = useState("");
   const [notes, setNotes] = useState("");
   const [reminderMinutes, setReminderMinutes] = useState<number>(0);
+  const [timezone, setTimezone] = useState<string>(() => getBrowserTimezone());
+  const [tzOpen, setTzOpen] = useState(false);
+  const timezones = useMemo(() => getTimezoneList(), []);
 
   const dateLocale = i18n.language === 'id' ? idLocale : enUS;
 
@@ -148,6 +188,7 @@ export function ScheduleForm({ onGenerate }: ScheduleFormProps) {
           location: location.trim() || undefined,
           notes: notes.trim() || undefined,
           reminderMinutes,
+          timezone,
         });
         const sanitizedEventName = validated.eventName.replace(/[",\n\r]/g, ' ');
         onGenerate({
@@ -162,6 +203,7 @@ export function ScheduleForm({ onGenerate }: ScheduleFormProps) {
           location: validated.location,
           notes: validated.notes,
           reminderMinutes: validated.reminderMinutes,
+          timezone: validated.timezone,
         });
       } else {
         if (!endDate) {
@@ -180,6 +222,7 @@ export function ScheduleForm({ onGenerate }: ScheduleFormProps) {
           location: location.trim() || undefined,
           notes: notes.trim() || undefined,
           reminderMinutes,
+          timezone,
         });
         const sanitizedEventName = validated.eventName.replace(/[",\n\r]/g, ' ');
         onGenerate({
@@ -194,6 +237,7 @@ export function ScheduleForm({ onGenerate }: ScheduleFormProps) {
           location: validated.location,
           notes: validated.notes,
           reminderMinutes: validated.reminderMinutes,
+          timezone: validated.timezone,
         });
       }
     } catch (error) {
@@ -347,6 +391,55 @@ export function ScheduleForm({ onGenerate }: ScheduleFormProps) {
           />
         </div>
       </div>
+
+      <div>
+        <Label>{t('form.timezone')}</Label>
+        <Popover open={tzOpen} onOpenChange={setTzOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              type="button"
+              variant="outline"
+              role="combobox"
+              aria-expanded={tzOpen}
+              className="w-full justify-between mt-2 font-normal"
+            >
+              <span className="truncate">{timezone}</span>
+              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+            <Command>
+              <CommandInput placeholder={t('form.timezoneSearchPlaceholder')} />
+              <CommandList>
+                <CommandEmpty>{t('form.timezoneEmpty')}</CommandEmpty>
+                <CommandGroup>
+                  {timezones.map((tz) => (
+                    <CommandItem
+                      key={tz}
+                      value={tz}
+                      onSelect={(v) => {
+                        setTimezone(v);
+                        setTzOpen(false);
+                      }}
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          timezone === tz ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                      {tz}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
+        <p className="text-xs text-muted-foreground mt-1">{t('form.timezoneDescription')}</p>
+      </div>
+
+
 
       <div>
         <Label htmlFor="reminder">{t('form.reminder')}</Label>

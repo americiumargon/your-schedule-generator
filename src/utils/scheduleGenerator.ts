@@ -100,6 +100,7 @@ export interface ExportOptions {
   location?: string;
   notes?: string;
   reminderMinutes?: number;
+  timezone?: string;
 }
 
 function escapeICS(text: string): string {
@@ -162,18 +163,34 @@ export function exportToCSV(sessions: Session[], eventName: string, language: st
 
 export function exportToICS(sessions: Session[], eventName: string, language: string = 'en', opts: ExportOptions = {}): void {
   const t = language === 'id' ? id : en;
-  const formatICSDate = (date: Date, time: string): string => {
-    const [hours, minutes] = time.split(":");
-    const dateWithTime = new Date(date);
-    dateWithTime.setHours(parseInt(hours), parseInt(minutes), 0);
-    return dateWithTime.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+  const tz = opts.timezone && opts.timezone.trim() ? opts.timezone : "UTC";
+  const useFloatingTzid = tz !== "UTC";
+
+  // Local floating datetime: YYYYMMDDTHHMMSS, interpreted in TZID
+  const formatLocalICS = (date: Date, time: string): string => {
+    const [h, m] = time.split(":");
+    const y = date.getFullYear().toString().padStart(4, "0");
+    const mo = (date.getMonth() + 1).toString().padStart(2, "0");
+    const d = date.getDate().toString().padStart(2, "0");
+    return `${y}${mo}${d}T${h.padStart(2, "0")}${m.padStart(2, "0")}00`;
   };
+
+  const formatUtcICS = (date: Date, time: string): string => {
+    const [hours, minutes] = time.split(":");
+    const dt = new Date(date);
+    dt.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+    return dt.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+  };
+
+  const dtPrefix = useFloatingTzid ? `;TZID=${tz}` : "";
+  const formatDT = (d: Date, time: string) =>
+    useFloatingTzid ? formatLocalICS(d, time) : formatUtcICS(d, time);
 
   const locationLine = opts.location ? `LOCATION:${escapeICS(opts.location)}` : null;
 
   const events = sessions.map(session => {
-    const startDateTime = formatICSDate(session.date, session.startTime);
-    const endDateTime = formatICSDate(session.date, session.endTime);
+    const startDateTime = formatDT(session.date, session.startTime);
+    const endDateTime = formatDT(session.date, session.endTime);
 
     const summary = t.export.summary
       .replace('{{eventName}}', eventName)
@@ -187,8 +204,8 @@ export function exportToICS(sessions: Session[], eventName: string, language: st
 
     const lines = [
       "BEGIN:VEVENT",
-      `DTSTART:${startDateTime}`,
-      `DTEND:${endDateTime}`,
+      `DTSTART${dtPrefix}:${startDateTime}`,
+      `DTEND${dtPrefix}:${endDateTime}`,
       `SUMMARY:${escapeICS(summary)}`,
       `DESCRIPTION:${escapeICS(fullDescription)}`,
     ];
@@ -207,11 +224,16 @@ export function exportToICS(sessions: Session[], eventName: string, language: st
     return lines.join("\r\n");
   }).join("\r\n");
 
+  const vtimezone = useFloatingTzid
+    ? ["BEGIN:VTIMEZONE", `TZID:${tz}`, "END:VTIMEZONE"].join("\r\n")
+    : null;
+
   const icsContent = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
     "PRODID:-//Schedule Generator//EN",
     "CALSCALE:GREGORIAN",
+    ...(vtimezone ? [vtimezone] : []),
     events,
     "END:VCALENDAR",
   ].join("\r\n");
