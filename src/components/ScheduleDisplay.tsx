@@ -20,7 +20,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Download, Calendar, FileText, Copy, Pencil, CalendarIcon, ChevronDown, Printer, Link2 } from "lucide-react";
+import { Download, Calendar, FileText, Copy, Pencil, CalendarIcon, ChevronDown, Printer, Link2, CalendarPlus } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import {
@@ -30,6 +30,7 @@ import {
   writeToClipboard,
   type CopyFormat,
 } from "@/utils/copyFormats";
+import { buildGoogleCalendarUrl } from "@/utils/googleCalendar";
 
 
 interface Session {
@@ -44,6 +45,7 @@ interface ScheduleDisplayProps {
   sessions: Session[];
   location?: string;
   notes?: string;
+  timezone?: string;
   onExport: (format: "csv" | "ics", enabledSessions: Session[], language: string) => void;
   onClear: () => void;
   onUpdateSession?: (
@@ -142,7 +144,7 @@ function EditSessionPopover({
   );
 }
 
-export function ScheduleDisplay({ eventName, sessions, location, notes, onExport, onClear, onUpdateSession, onShare }: ScheduleDisplayProps) {
+export function ScheduleDisplay({ eventName, sessions, location, notes, timezone, onExport, onClear, onUpdateSession, onShare }: ScheduleDisplayProps) {
   const { t, i18n } = useTranslation();
   const [enabledSessions, setEnabledSessions] = useState<Set<number>>(
     new Set(sessions.map((_, idx) => idx))
@@ -238,6 +240,22 @@ export function ScheduleDisplay({ eventName, sessions, location, notes, onExport
     window.print();
   };
 
+  const handleAddToGoogle = () => {
+    if (enabledList.length === 0) {
+      toast.error(t('export.errorNoSessions'));
+      return;
+    }
+    const result = buildGoogleCalendarUrl(eventName, enabledList, location, notes, timezone);
+    if (!result.url) {
+      if ('reason' in result && result.reason === "too_many") toast.error(t('toast.gcalTooMany'));
+      return;
+    }
+    if ('hasTimeConflicts' in result && result.hasTimeConflicts) {
+      toast.warning(t('toast.gcalTimeConflicts'));
+    }
+    window.open(result.url, '_blank', 'noopener,noreferrer');
+  };
+
   const toggleAll = () => {
     if (allSelected) {
       setEnabledSessions(new Set());
@@ -329,6 +347,15 @@ export function ScheduleDisplay({ eventName, sessions, location, notes, onExport
           >
             <Printer className="h-4 w-4" />
             {t('schedule.printButton')}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleAddToGoogle}
+            className="gap-2"
+          >
+            <CalendarPlus className="h-4 w-4" />
+            {t('schedule.googleButton')}
           </Button>
           {onShare && (
             <Button

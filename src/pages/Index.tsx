@@ -237,6 +237,7 @@ const Index = () => {
                   eventName={eventName}
                   location={location}
                   notes={notes}
+                  timezone={timezone}
                   sessions={sessions}
                   onExport={handleExport}
                   onClear={handleClear}
