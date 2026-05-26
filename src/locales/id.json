@@ -1,22 +1,22 @@
 {
   "header": {
     "title": "Pembuat Jadwal",
-    "subtitle": "Buat jadwal sesi untuk aktivitas apa pun"
+    "subtitle": "Buat jadwal berulang untuk kelas, rapat, dan acara"
   },
   "form": {
-    "title": "Detail Jadwal",
-    "eventName": "Nama Aktivitas",
-    "eventNamePlaceholder": "contoh: Olahraga Pagi, Rapat Tim, Sesi Belajar",
-    "startDate": "Tanggal Mulai",
+    "title": "Detail jadwal",
+    "eventName": "Nama aktivitas",
+    "eventNamePlaceholder": "contoh: Olahraga pagi, Rapat tim, Sesi belajar",
+    "startDate": "Tanggal sesi pertama",
     "pickDate": "Pilih tanggal",
-    "numberOfMeetings": "Jumlah Sesi",
-    "generateBy": "Buat berdasarkan",
-    "modeByCount": "Jumlah sesi",
-    "modeByEndDate": "Tanggal selesai",
-    "endDate": "Tanggal Selesai",
+    "numberOfMeetings": "Jumlah sesi",
+    "generateBy": "Akhiri jadwal",
+    "modeByCount": "Setelah N sesi",
+    "modeByEndDate": "Pada tanggal tertentu",
+    "endDate": "Tanggal selesai",
     "pickEndDate": "Pilih tanggal selesai",
-    "meetingDays": "Hari Berulang",
-    "selectDays": "Pilih hari dalam seminggu untuk sesi Anda",
+    "meetingDays": "Hari dalam seminggu",
+    "selectDays": "Pilih satu atau beberapa hari",
     "recurrence": {
       "label": "Pengulangan",
       "weekly": "Setiap minggu",
@@ -34,51 +34,51 @@
         "last": "Terakhir"
       },
       "daysOfMonthLabel": "Tanggal dalam bulan",
-      "daysOfMonthHint": "Tanggal yang melebihi akhir bulan akan dipotong (mis. 31 → 28 Feb).",
+      "daysOfMonthHint": "Tanggal yang melebihi akhir bulan akan memakai tanggal terakhir bulan itu (mis. 31 menjadi 28 Feb).",
       "lastDay": "Hari terakhir"
     },
-    "startTime": "Waktu Mulai",
-    "endTime": "Waktu Selesai",
+    "startTime": "Waktu mulai",
+    "endTime": "Waktu selesai",
     "timeSlots": {
-      "title": "Slot Waktu",
+      "title": "Slot waktu",
       "add": "Tambah slot",
       "remove": "Hapus slot",
       "labelOptional": "Label slot (opsional)",
-      "labelForFirst": "Beri nama sesi ini (opsional)",
+      "labelForFirst": "Label slot (opsional)",
       "labelPlaceholder": "contoh: Pagi, Sore",
-      "description": "Setiap hari yang dipilih menghasilkan satu sesi per slot."
+      "description": "Setiap hari yang dipilih membuat satu sesi per slot."
     },
     "sections": {
-      "time": "Waktu Sesi",
+      "time": "Waktu sesi",
       "repeat": "Pola pengulangan",
-      "slotsHolidays": "Slot waktu & hari libur",
-      "details": "Detail acara & kalender"
+      "slotsHolidays": "Slot waktu dan hari libur",
+      "details": "Detail kalender"
     },
     "helper": {
-      "time": "Kapan setiap sesi dimulai dan berakhir?",
-      "repeat": "Ubah seberapa sering sesi berulang — tiap minggu, beberapa minggu, atau tanggal tertentu setiap bulan.",
-      "slotsHolidays": "Tambah beberapa sesi per hari dan kecualikan tanggal tertentu.",
-      "details": "Tambah lokasi, catatan, pengingat, dan pilih zona waktu untuk ekspor ICS."
+      "time": "Berlaku untuk setiap sesi kecuali Anda menambah slot lain di bawah",
+      "repeat": "Atur seberapa sering sesi berulang.",
+      "slotsHolidays": "Tambah sesi lebih dari satu per hari atau kecualikan tanggal tertentu.",
+      "details": "Lokasi, catatan, pengingat, dan zona waktu (digunakan untuk ekspor)."
     },
     "advanced": {
-      "title": "Opsi lanjutan",
-      "customizedBadge": "{{count}} disesuaikan"
+      "title": "Opsi lainnya",
+      "customizedBadge": "{{count}} diubah"
     },
-    "holidays": "Hari Libur / Hari Off",
-    "holidaysDescription": "Pilih tanggal yang akan dikecualikan dari jadwal",
-    "selectHolidays": "Pilih hari libur",
-    "holidaysSelected": "{{count}} hari libur dipilih",
+    "holidays": "Hari untuk dilewati",
+    "holidaysDescription": "Tanggal yang tidak boleh memiliki sesi",
+    "selectHolidays": "Pilih tanggal",
+    "holidaysSelected": "{{count}} hari dipilih",
     "holidayBehavior": {
-      "label": "Jika sesi jatuh di hari libur",
+      "label": "Jika sesi jatuh pada salah satu tanggal ini",
       "skip": "Lewati sesi tersebut",
       "rollForward": "Pindahkan ke hari kerja berikutnya",
-      "description": "Pemindahan mencari hingga 14 hari ke depan untuk hari yang cocok dan bukan hari libur."
+      "description": "Mencari hingga 14 hari ke depan untuk hari yang cocok dan bukan hari libur."
     },
     "location": "Lokasi (opsional)",
     "locationPlaceholder": "contoh: Tautan Zoom, Ruang Rapat B",
     "notes": "Catatan (opsional)",
     "notesPlaceholder": "Tambahkan detail, agenda, atau tautan",
-    "reminder": "Pengingat (khusus ICS)",
+    "reminder": "Pengingat (hanya ekspor ICS)",
     "timezone": "Zona waktu",
     "timezoneDescription": "Digunakan untuk ekspor ICS. CSV memakai waktu lokal kalender Anda.",
     "timezoneSearchPlaceholder": "Cari zona waktu…",
@@ -87,19 +87,19 @@
     "reminderMinutes": "{{count}} menit sebelumnya",
     "reminderHours": "{{count}} jam sebelumnya",
     "reminderDays": "{{count}} hari sebelumnya",
-    "generateButton": "Buat Jadwal",
+    "generateButton": "Buat jadwal",
     "validation": {
-      "eventNameRequired": "Silakan masukkan nama aktivitas",
-      "dateRequired": "Silakan pilih tanggal mulai",
+      "eventNameRequired": "Masukkan nama aktivitas",
+      "dateRequired": "Pilih tanggal mulai",
       "meetingsRequired": "Jumlah sesi minimal 1",
-      "daysRequired": "Silakan pilih setidaknya satu hari dalam seminggu",
-      "ordinalsRequired": "Silakan pilih setidaknya satu kemunculan (mis. ke-1, ke-2)",
-      "daysOfMonthRequired": "Silakan pilih setidaknya satu tanggal dalam bulan",
-      "timeRequired": "Silakan masukkan waktu mulai dan selesai",
-      "endDateRequired": "Silakan pilih tanggal selesai",
+      "daysRequired": "Pilih setidaknya satu hari dalam seminggu",
+      "ordinalsRequired": "Pilih setidaknya satu kemunculan (mis. ke-1, ke-2)",
+      "daysOfMonthRequired": "Pilih setidaknya satu tanggal dalam bulan",
+      "timeRequired": "Masukkan waktu mulai dan selesai untuk setiap slot",
+      "endDateRequired": "Pilih tanggal selesai",
       "endDateAfterStart": "Tanggal selesai harus sama dengan atau setelah tanggal mulai",
-      "noSessionsInRange": "Tidak ada sesi dalam rentang yang dipilih",
-      "invalid": "Silakan periksa input Anda dan coba lagi"
+      "noSessionsInRange": "Tidak ada sesi yang cocok dengan rentang tanggal ini",
+      "invalid": "Periksa formulir dan coba lagi"
     }
   },
   "weekdays": {
@@ -112,7 +112,7 @@
     "saturday": "Sabtu"
   },
   "schedule": {
-    "title": "Jadwal Anda",
+    "title": "Jadwal",
     "sessionsSelected": "{{count}} dari {{total}} sesi dipilih",
     "session": "Sesi",
     "selectAll": "Pilih Semua",
@@ -121,8 +121,8 @@
     "icsButton": "ICS",
     "copyButton": "Salin",
     "printButton": "Cetak",
-    "shareButton": "Bagikan tautan",
-    "googleButton": "Tambah ke Google",
+    "shareButton": "Salin tautan berbagi",
+    "googleButton": "Tambah ke Google Calendar",
     "copyAs": "Salin sebagai",
     "copyFormatPlain": "Teks biasa",
     "copyFormatMarkdown": "Markdown",
@@ -130,7 +130,7 @@
     "colNumber": "#",
     "colDate": "Tanggal",
     "colTime": "Waktu",
-    "clearAll": "Hapus Semua",
+    "clearAll": "Hapus",
     "editSession": "Ubah sesi",
     "editedBadge": "diubah",
     "rolledFromBadge": "Dipindah dari",
@@ -145,7 +145,7 @@
   "export": {
     "successCsv": "Jadwal diekspor sebagai CSV",
     "successIcs": "Jadwal diekspor sebagai ICS",
-    "errorNoSessions": "Silakan pilih setidaknya satu sesi untuk diekspor",
+    "errorNoSessions": "Pilih setidaknya satu sesi untuk diekspor",
     "sessionNumber": "Nomor Sesi",
     "date": "Tanggal",
     "day": "Hari",
@@ -155,27 +155,27 @@
     "description": "Sesi {{sessionNumber}} dari {{eventName}}"
   },
   "emptyState": {
-    "title": "Belum Ada Jadwal",
-    "description": "Isi formulir dan klik \"Buat Jadwal\" untuk membuat kalender acara Anda"
+    "title": "Belum ada jadwal",
+    "description": "Isi formulir dan klik Buat jadwal untuk melihat sesi Anda di sini."
   },
   "footer": {
-    "text": "Sempurna untuk rutinitas pribadi, jadwal tim, dan acara berulang"
+    "text": "Untuk rutinitas pribadi, jadwal tim, dan acara berulang"
   },
   "toast": {
-    "generated": "Berhasil membuat {{count}} sesi!",
-    "cleared": "Jadwal berhasil dihapus",
-    "copied": "Jadwal disalin ke clipboard",
+    "generated": "Berhasil membuat {{count}} sesi",
+    "cleared": "Jadwal dihapus",
+    "copied": "Disalin ke clipboard",
     "copiedPlain": "Disalin sebagai teks biasa",
     "copiedMarkdown": "Disalin sebagai Markdown",
     "copiedRich": "Disalin sebagai teks kaya",
     "copyFailed": "Gagal menyalin jadwal",
-    "linkCopied": "Tautan disalin ke clipboard",
+    "linkCopied": "Tautan berbagi disalin",
     "linkCopyFailed": "Gagal menyalin tautan",
-    "loadedFromLink": "Jadwal dimuat dari tautan",
-    "linkInvalid": "Tautan tidak valid atau kedaluwarsa",
+    "loadedFromLink": "Dimuat dari tautan berbagi",
+    "linkInvalid": "Tautan berbagi tidak valid atau kedaluwarsa",
     "undo": "Batalkan",
     "sessionUpdated": "Sesi diperbarui",
     "gcalTooMany": "Terlalu banyak sesi untuk satu tautan Google Calendar. Gunakan ICS sebagai gantinya.",
-    "gcalTimeConflicts": "Beberapa sesi memiliki waktu berbeda — akan memakai waktu sesi pertama. Pakai ICS untuk presisi penuh."
+    "gcalTimeConflicts": "Sesi memiliki waktu berbeda. Google Calendar akan memakai waktu sesi pertama. Pakai ICS untuk presisi penuh."
   }
 }
