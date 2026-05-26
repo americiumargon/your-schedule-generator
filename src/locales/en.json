@@ -44,8 +44,25 @@
       "add": "Add slot",
       "remove": "Remove slot",
       "labelOptional": "Slot label (optional)",
+      "labelForFirst": "Name this session (optional)",
       "labelPlaceholder": "e.g., Morning, Evening",
       "description": "Each selected day generates one session per slot."
+    },
+    "sections": {
+      "time": "Session Time",
+      "repeat": "Repeat pattern",
+      "slotsHolidays": "Time slots & holidays",
+      "details": "Event details & calendar"
+    },
+    "helper": {
+      "time": "When does each session start and end?",
+      "repeat": "Change how often sessions recur — every week, every few weeks, or specific dates of the month.",
+      "slotsHolidays": "Add multiple sessions per day and exclude specific dates.",
+      "details": "Add location, notes, a reminder, and pick a timezone for ICS exports."
+    },
+    "advanced": {
+      "title": "Advanced options",
+      "customizedBadge": "{{count}} customized"
     },
     "holidays": "Holidays / Days Off",
     "holidaysDescription": "Select dates to exclude from the schedule",

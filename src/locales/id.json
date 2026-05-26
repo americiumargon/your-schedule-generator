@@ -44,8 +44,25 @@
       "add": "Tambah slot",
       "remove": "Hapus slot",
       "labelOptional": "Label slot (opsional)",
+      "labelForFirst": "Beri nama sesi ini (opsional)",
       "labelPlaceholder": "contoh: Pagi, Sore",
       "description": "Setiap hari yang dipilih menghasilkan satu sesi per slot."
+    },
+    "sections": {
+      "time": "Waktu Sesi",
+      "repeat": "Pola pengulangan",
+      "slotsHolidays": "Slot waktu & hari libur",
+      "details": "Detail acara & kalender"
+    },
+    "helper": {
+      "time": "Kapan setiap sesi dimulai dan berakhir?",
+      "repeat": "Ubah seberapa sering sesi berulang — tiap minggu, beberapa minggu, atau tanggal tertentu setiap bulan.",
+      "slotsHolidays": "Tambah beberapa sesi per hari dan kecualikan tanggal tertentu.",
+      "details": "Tambah lokasi, catatan, pengingat, dan pilih zona waktu untuk ekspor ICS."
+    },
+    "advanced": {
+      "title": "Opsi lanjutan",
+      "customizedBadge": "{{count}} disesuaikan"
     },
     "holidays": "Hari Libur / Hari Off",
     "holidaysDescription": "Pilih tanggal yang akan dikecualikan dari jadwal",
