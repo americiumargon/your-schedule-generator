@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { format, differenceInCalendarDays } from "date-fns";
-import { enUS, id as idLocale, type Locale } from "date-fns/locale";
-import type { TFunction } from "i18next";
+import { enUS, id as idLocale } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -93,7 +92,7 @@ function EditSessionPopover({
         <Button
           variant="ghost"
           size="icon"
-          className="h-8 w-8"
+          className="h-8 w-8 print:hidden"
           aria-label={t('schedule.editSession')}
         >
           <Pencil className="h-4 w-4" />
@@ -248,9 +247,21 @@ export function ScheduleDisplay({ eventName, sessions, location, notes, onExport
   };
 
   return (
-    <>
-    <div className="space-y-6 print:hidden">
-      <div className="flex items-center justify-between flex-wrap gap-2">
+    <div className="space-y-6">
+      {/* Print-only header */}
+      <div className="hidden print:block space-y-1">
+        <h1 className="text-2xl font-bold">{eventName}</h1>
+        {location && <div className="text-sm">📍 {location}</div>}
+        {firstDate && lastDate && (
+          <div className="text-sm">
+            {format(firstDate, "MMM d", { locale: dateLocale })} – {format(lastDate, "MMM d, yyyy", { locale: dateLocale })}
+            {" · "}
+            {enabledList.length} {t('summary.totalSessions')}
+          </div>
+        )}
+      </div>
+
+      <div className="flex items-center justify-between flex-wrap gap-2 print:hidden">
         <p className="text-sm text-muted-foreground">
           {t('schedule.sessionsSelected', { count: enabledCount, total: sessions.length })}
         </p>
@@ -334,7 +345,7 @@ export function ScheduleDisplay({ eventName, sessions, location, notes, onExport
       </div>
 
       {enabledList.length > 0 && firstDate && lastDate && (
-        <Card className="p-4 bg-secondary/30 grid grid-cols-3 gap-3 text-center">
+        <Card className="p-4 bg-secondary/30 grid grid-cols-3 gap-3 text-center print:hidden">
           <div>
             <div className="text-2xl font-semibold">{enabledList.length}</div>
             <div className="text-xs text-muted-foreground">{t('summary.totalSessions')}</div>
@@ -352,7 +363,7 @@ export function ScheduleDisplay({ eventName, sessions, location, notes, onExport
         </Card>
       )}
 
-      <div className="flex items-center gap-2 pb-2 border-b">
+      <div className="flex items-center gap-2 pb-2 border-b print:hidden">
         <Checkbox
           checked={allSelected}
           onCheckedChange={toggleAll}
@@ -367,7 +378,7 @@ export function ScheduleDisplay({ eventName, sessions, location, notes, onExport
         </label>
       </div>
 
-      <div className="space-y-2 max-h-[600px] overflow-y-auto pr-2">
+      <div className="space-y-2 max-h-[600px] overflow-y-auto pr-2 print:max-h-none print:overflow-visible print:pr-0">
         {sessions.map((session, index) => {
           const isEnabled = enabledSessions.has(index);
           const isEdited =
@@ -377,14 +388,15 @@ export function ScheduleDisplay({ eventName, sessions, location, notes, onExport
             <Card
               key={index}
               className={cn(
-                "p-4 flex items-center justify-between transition-all hover:shadow-md gap-3",
-                !isEnabled && "opacity-50"
+                "p-4 flex items-center justify-between transition-all hover:shadow-md gap-3 print-session",
+                !isEnabled && "opacity-50 print:hidden"
               )}
             >
               <div className="flex items-center gap-4 min-w-0">
                 <Checkbox
                   checked={isEnabled}
                   onCheckedChange={() => toggleSession(index)}
+                  className="print:hidden"
                 />
                 <div className="min-w-0">
                   <div className="font-medium flex items-center gap-2 flex-wrap">
@@ -415,92 +427,12 @@ export function ScheduleDisplay({ eventName, sessions, location, notes, onExport
           );
         })}
       </div>
-    </div>
-    <PrintableSchedule
-      eventName={eventName}
-      sessions={enabledList}
-      location={location}
-      notes={notes}
-      dateLocale={dateLocale}
-      t={t}
-    />
-    </>
-  );
-}
-
-function PrintableSchedule({
-  eventName,
-  sessions,
-  location,
-  notes,
-  dateLocale,
-  t,
-}: {
-  eventName: string;
-  sessions: Session[];
-  location?: string;
-  notes?: string;
-  dateLocale: Locale;
-  t: TFunction;
-}) {
-  if (sessions.length === 0) return null;
-  const firstDate = sessions[0].date;
-  const lastDate = sessions[sessions.length - 1].date;
-  return (
-    <div className="hidden print:block print-handout text-black">
-      <header style={{ marginBottom: "16px" }}>
-        <h1 style={{ fontSize: "24pt", fontWeight: 700, margin: 0 }}>{eventName}</h1>
-        <div style={{ fontSize: "11pt", color: "#555", marginTop: 4 }}>
-          {t('schedule.printSubtitle')}
-        </div>
-        {location && (
-          <div style={{ fontSize: "12pt", marginTop: 8 }}>📍 {location}</div>
-        )}
-        <div style={{ fontSize: "11pt", marginTop: 8, color: "#333" }}>
-          {format(firstDate, "MMM d", { locale: dateLocale })} – {format(lastDate, "MMM d, yyyy", { locale: dateLocale })}
-          {" · "}
-          {sessions.length} {t('summary.totalSessions')}
-        </div>
-      </header>
-
-      <table>
-        <thead>
-          <tr>
-            <th style={{ width: "8%" }}>{t('schedule.colNumber')}</th>
-            <th>{t('schedule.colDate')}</th>
-            <th style={{ width: "25%" }}>{t('schedule.colTime')}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {sessions.map((s, i) => (
-            <tr key={i}>
-              <td>{s.sessionNumber}</td>
-              <td>{format(s.date, "EEE, MMM d, yyyy", { locale: dateLocale })}</td>
-              <td>{s.startTime} – {s.endTime}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
 
       {notes && (
-        <div
-          className="print-notes"
-          style={{
-            marginTop: 16,
-            padding: 12,
-            border: "1px solid #999",
-            fontSize: "11pt",
-            whiteSpace: "pre-wrap",
-          }}
-        >
-          <div style={{ fontWeight: 700, marginBottom: 4 }}>{t('schedule.printNotes')}</div>
+        <div className="hidden print:block border border-border p-3 text-sm whitespace-pre-wrap">
           {notes}
         </div>
       )}
-
-      <footer style={{ marginTop: 24, fontSize: "9pt", color: "#666", textAlign: "right" }}>
-        {t('schedule.printGeneratedOn', { date: format(new Date(), "PPP", { locale: dateLocale }) })}
-      </footer>
     </div>
   );
 }
