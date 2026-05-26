@@ -79,6 +79,8 @@ interface ScheduleFormProps {
     mode: Mode;
     numberOfMeetings?: number;
     endDate?: Date;
+    location?: string;
+    notes?: string;
   }) => void;
 }
 
