@@ -203,6 +203,7 @@ export function ScheduleForm({ onGenerate }: ScheduleFormProps) {
           location: validated.location,
           notes: validated.notes,
           reminderMinutes: validated.reminderMinutes,
+          timezone: validated.timezone,
         });
       } else {
         if (!endDate) {
