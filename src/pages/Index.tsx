@@ -19,6 +19,8 @@ const Index = () => {
   const { t } = useTranslation();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [eventName, setEventName] = useState("");
+  const [location, setLocation] = useState("");
+  const [notes, setNotes] = useState("");
 
   const handleGenerate = (data: {
     eventName: string;
