@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { format, differenceInCalendarDays } from "date-fns";
-import { enUS, id as idLocale } from "date-fns/locale";
+import { enUS, id as idLocale, type Locale } from "date-fns/locale";
+import type { TFunction } from "i18next";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
