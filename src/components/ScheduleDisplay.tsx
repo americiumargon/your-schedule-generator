@@ -246,11 +246,11 @@ export function ScheduleDisplay({ eventName, sessions, location, notes, timezone
       return;
     }
     const result = buildGoogleCalendarUrl(eventName, enabledList, location, notes, timezone);
-    if (result.url === null) {
-      if (result.reason === "too_many") toast.error(t('toast.gcalTooMany'));
+    if (!result.url) {
+      if ('reason' in result && result.reason === "too_many") toast.error(t('toast.gcalTooMany'));
       return;
     }
-    if (result.hasTimeConflicts) {
+    if ('hasTimeConflicts' in result && result.hasTimeConflicts) {
       toast.warning(t('toast.gcalTimeConflicts'));
     }
     window.open(result.url, '_blank', 'noopener,noreferrer');
