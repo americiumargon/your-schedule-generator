@@ -147,6 +147,7 @@ export function ScheduleForm({ onGenerate }: ScheduleFormProps) {
           holidays,
           location: location.trim() || undefined,
           notes: notes.trim() || undefined,
+          reminderMinutes,
         });
         const sanitizedEventName = validated.eventName.replace(/[",\n\r]/g, ' ');
         onGenerate({
