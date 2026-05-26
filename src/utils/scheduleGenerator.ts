@@ -96,7 +96,16 @@ function convertTo12Hour(time24: string): string {
   return `${hours12.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')} ${period}`;
 }
 
-export function exportToCSV(sessions: Session[], eventName: string, language: string = 'en'): void {
+export interface ExportOptions {
+  location?: string;
+  notes?: string;
+}
+
+function escapeICS(text: string): string {
+  return text.replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n");
+}
+
+export function exportToCSV(sessions: Session[], eventName: string, language: string = 'en', opts: ExportOptions = {}): void {
   const t = language === 'id' ? id : en;
 
   const headers = [
