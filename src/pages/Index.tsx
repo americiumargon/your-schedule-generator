@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ScheduleForm } from "@/components/ScheduleForm";
+import { ScheduleForm, type FormTimeSlot } from "@/components/ScheduleForm";
 import { ScheduleDisplay } from "@/components/ScheduleDisplay";
 import { LanguageToggle } from "@/components/LanguageToggle";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ interface Session {
   sessionNumber: number;
   startTime: string;
   endTime: string;
+  slotLabel?: string;
 }
 
 const Index = () => {
@@ -59,8 +60,7 @@ const Index = () => {
     eventName: string;
     startDate: Date;
     selectedDays: number[];
-    startTime: string;
-    endTime: string;
+    timeSlots: FormTimeSlot[];
     holidays: Date[];
     mode: "count" | "endDate";
     numberOfMeetings?: number;
@@ -73,8 +73,7 @@ const Index = () => {
     const generatedSessions = generateSchedule({
       startDate: data.startDate,
       selectedDays: data.selectedDays,
-      startTime: data.startTime,
-      endTime: data.endTime,
+      timeSlots: data.timeSlots,
       holidays: data.holidays,
       mode: data.mode,
       numberOfMeetings: data.numberOfMeetings,
@@ -98,8 +97,7 @@ const Index = () => {
       numberOfMeetings: data.numberOfMeetings,
       endDate: data.endDate,
       selectedDays: data.selectedDays,
-      startTime: data.startTime,
-      endTime: data.endTime,
+      timeSlots: data.timeSlots,
       holidays: data.holidays,
       location: data.location,
       notes: data.notes,
