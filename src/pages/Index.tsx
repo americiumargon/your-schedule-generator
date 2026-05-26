@@ -32,6 +32,8 @@ const Index = () => {
     mode: "count" | "endDate";
     numberOfMeetings?: number;
     endDate?: Date;
+    location?: string;
+    notes?: string;
   }) => {
     const generatedSessions = generateSchedule({
       startDate: data.startDate,
@@ -49,15 +51,18 @@ const Index = () => {
     }
     setSessions(generatedSessions);
     setEventName(data.eventName);
+    setLocation(data.location ?? "");
+    setNotes(data.notes ?? "");
     toast.success(t('toast.generated', { count: generatedSessions.length }));
   };
 
   const handleExport = (format: "csv" | "ics", enabledSessions: Session[], language: string) => {
+    const opts = { location, notes };
     if (format === "csv") {
-      exportToCSV(enabledSessions, eventName, language);
+      exportToCSV(enabledSessions, eventName, language, opts);
       toast.success(t('export.successCsv'));
     } else {
-      exportToICS(enabledSessions, eventName, language);
+      exportToICS(enabledSessions, eventName, language, opts);
       toast.success(t('export.successIcs'));
     }
   };
