@@ -308,6 +308,15 @@ export function ScheduleDisplay({ eventName, sessions, location, notes, onExport
             <Calendar className="h-4 w-4" />
             {t('schedule.icsButton')}
           </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handlePrint}
+            className="gap-2"
+          >
+            <Printer className="h-4 w-4" />
+            {t('schedule.printButton')}
+          </Button>
         </div>
       </div>
 
@@ -393,6 +402,92 @@ export function ScheduleDisplay({ eventName, sessions, location, notes, onExport
           );
         })}
       </div>
+    </div>
+    <PrintableSchedule
+      eventName={eventName}
+      sessions={enabledList}
+      location={location}
+      notes={notes}
+      dateLocale={dateLocale}
+      t={t}
+    />
+    </>
+  );
+}
+
+function PrintableSchedule({
+  eventName,
+  sessions,
+  location,
+  notes,
+  dateLocale,
+  t,
+}: {
+  eventName: string;
+  sessions: Session[];
+  location?: string;
+  notes?: string;
+  dateLocale: Locale;
+  t: TFunction;
+}) {
+  if (sessions.length === 0) return null;
+  const firstDate = sessions[0].date;
+  const lastDate = sessions[sessions.length - 1].date;
+  return (
+    <div className="hidden print:block print-handout text-black">
+      <header style={{ marginBottom: "16px" }}>
+        <h1 style={{ fontSize: "24pt", fontWeight: 700, margin: 0 }}>{eventName}</h1>
+        <div style={{ fontSize: "11pt", color: "#555", marginTop: 4 }}>
+          {t('schedule.printSubtitle')}
+        </div>
+        {location && (
+          <div style={{ fontSize: "12pt", marginTop: 8 }}>📍 {location}</div>
+        )}
+        <div style={{ fontSize: "11pt", marginTop: 8, color: "#333" }}>
+          {format(firstDate, "MMM d", { locale: dateLocale })} – {format(lastDate, "MMM d, yyyy", { locale: dateLocale })}
+          {" · "}
+          {sessions.length} {t('summary.totalSessions')}
+        </div>
+      </header>
+
+      <table>
+        <thead>
+          <tr>
+            <th style={{ width: "8%" }}>{t('schedule.colNumber')}</th>
+            <th>{t('schedule.colDate')}</th>
+            <th style={{ width: "25%" }}>{t('schedule.colTime')}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {sessions.map((s, i) => (
+            <tr key={i}>
+              <td>{s.sessionNumber}</td>
+              <td>{format(s.date, "EEE, MMM d, yyyy", { locale: dateLocale })}</td>
+              <td>{s.startTime} – {s.endTime}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      {notes && (
+        <div
+          className="print-notes"
+          style={{
+            marginTop: 16,
+            padding: 12,
+            border: "1px solid #999",
+            fontSize: "11pt",
+            whiteSpace: "pre-wrap",
+          }}
+        >
+          <div style={{ fontWeight: 700, marginBottom: 4 }}>{t('schedule.printNotes')}</div>
+          {notes}
+        </div>
+      )}
+
+      <footer style={{ marginTop: 24, fontSize: "9pt", color: "#666", textAlign: "right" }}>
+        {t('schedule.printGeneratedOn', { date: format(new Date(), "PPP", { locale: dateLocale }) })}
+      </footer>
     </div>
   );
 }
