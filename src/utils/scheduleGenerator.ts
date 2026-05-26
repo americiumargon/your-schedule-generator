@@ -95,6 +95,8 @@ export function generateSchedule(options: GenerateScheduleOptions): Session[] {
     const dStr = format(d, "yyyy-MM-dd");
     const dow = getDay(d);
     if (!sortedDays.includes(dow)) return false;
+    // Skip if this date was already produced (either naturally earlier, or as a rollover target)
+    if (usedRolledDates.has(dStr)) return false;
 
     if (!holidayStrings.has(dStr)) {
       usedRolledDates.add(dStr);
