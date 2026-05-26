@@ -526,7 +526,7 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
           <div>
             <Label className="mb-1 block">{t('form.meetingDays')}</Label>
             <p className="text-xs text-muted-foreground mb-3">{t('form.selectDays')}</p>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-rows-4 grid-flow-col gap-x-6 gap-y-2">
               {WEEKDAYS.map((day) => (
                 <div key={day.id} className="flex items-center space-x-2">
                   <Checkbox
