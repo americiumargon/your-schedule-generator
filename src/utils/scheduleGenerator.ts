@@ -180,7 +180,7 @@ export function exportToCSV(sessions: Session[], eventName: string, language: st
     const subject = subjectFor(eventName, session.sessionNumber, t.schedule.session, session.slotLabel);
     const baseDescription = `${t.schedule.session} ${session.sessionNumber} ${t.export.description.split(' ')[0]} ${eventName}`;
     const rolledNote = session.rolledFrom
-      ? `${t.schedule.rolledFromBadge} ${format(session.rolledFrom, "MMM d, yyyy")}`
+      ? `${(t.schedule as any).rolledFromBadge} ${format(session.rolledFrom, "MMM d, yyyy")}`
       : "";
     const descParts = [baseDescription];
     if (rolledNote) descParts.push(rolledNote);
@@ -248,7 +248,7 @@ export function exportToICS(sessions: Session[], eventName: string, language: st
       .replace('{{sessionNumber}}', session.sessionNumber.toString())
       .replace('{{eventName}}', eventName);
     const rolledNote = session.rolledFrom
-      ? `${t.schedule.rolledFromBadge} ${format(session.rolledFrom, "MMM d, yyyy")}`
+      ? `${(t.schedule as any).rolledFromBadge} ${format(session.rolledFrom, "MMM d, yyyy")}`
       : "";
     const descParts = [baseDescription];
     if (rolledNote) descParts.push(rolledNote);
