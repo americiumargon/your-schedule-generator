@@ -131,6 +131,8 @@ export interface FormTimeSlot {
   label?: string;
 }
 
+export type HolidayBehavior = "skip" | "rollForward";
+
 interface ScheduleFormProps {
   onGenerate: (data: {
     eventName: string;
@@ -138,6 +140,7 @@ interface ScheduleFormProps {
     selectedDays: number[];
     timeSlots: FormTimeSlot[];
     holidays: Date[];
+    holidayBehavior: HolidayBehavior;
     mode: Mode;
     numberOfMeetings?: number;
     endDate?: Date;
@@ -155,6 +158,7 @@ interface ScheduleFormProps {
     selectedDays: number[];
     timeSlots: FormTimeSlot[];
     holidays: Date[];
+    holidayBehavior?: HolidayBehavior;
     location?: string;
     notes?: string;
     reminderMinutes: number;
@@ -185,6 +189,7 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
   const [selectedDays, setSelectedDays] = useState<number[]>(() => initialState?.selectedDays ?? []);
   const [timeSlots, setTimeSlots] = useState<TimeSlotInput[]>(() => initialSlotsFromState(initialState));
   const [holidays, setHolidays] = useState<Date[]>(() => initialState?.holidays ?? []);
+  const [holidayBehavior, setHolidayBehavior] = useState<HolidayBehavior>(() => initialState?.holidayBehavior ?? "skip");
   const [location, setLocation] = useState(() => initialState?.location ?? "");
   const [notes, setNotes] = useState(() => initialState?.notes ?? "");
   const [reminderMinutes, setReminderMinutes] = useState<number>(() => initialState?.reminderMinutes ?? 0);
