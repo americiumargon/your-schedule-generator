@@ -60,7 +60,7 @@ const Index = () => {
   };
 
   const handleExport = (format: "csv" | "ics", enabledSessions: Session[], language: string) => {
-    const opts = { location, notes };
+    const opts = { location, notes, reminderMinutes };
     if (format === "csv") {
       exportToCSV(enabledSessions, eventName, language, opts);
       toast.success(t('export.successCsv'));
