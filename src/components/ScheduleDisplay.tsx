@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { format, differenceInCalendarDays } from "date-fns";
 import { enUS, id as idLocale } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
@@ -12,9 +12,25 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Download, Calendar, FileText, Copy, Pencil, CalendarIcon } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Download, Calendar, FileText, Copy, Pencil, CalendarIcon, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
+import {
+  formatPlain,
+  formatMarkdown,
+  formatHtml,
+  writeToClipboard,
+  type CopyFormat,
+} from "@/utils/copyFormats";
+
 
 interface Session {
   date: Date;
@@ -159,24 +175,49 @@ export function ScheduleDisplay({ eventName, sessions, location, notes, onExport
     onExport(format, enabled, i18n.language);
   };
 
-  const handleCopy = async () => {
+  const [copyFormat, setCopyFormat] = useState<CopyFormat>("markdown");
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("schedule.copyFormat");
+      if (stored === "plain" || stored === "markdown" || stored === "rich") {
+        setCopyFormat(stored);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const handleCopy = async (fmt: CopyFormat = copyFormat) => {
     const enabled = getEnabledSessions();
     if (enabled.length === 0) {
       toast.error(t('export.errorNoSessions'));
       return;
     }
-    const lines = enabled.map(s => {
-      const base = `${eventName} - ${t('schedule.session')} ${s.sessionNumber}: ${format(s.date, "EEEE, MMMM d, yyyy", { locale: dateLocale })}, ${s.startTime} - ${s.endTime}`;
-      return location ? `${base} @ ${location}` : base;
-    });
-    const text = notes ? `${lines.join("\n")}\n\n${notes}` : lines.join("\n");
+    const loc = location || undefined;
+    const nts = notes || undefined;
     try {
-      await navigator.clipboard.writeText(text);
-      toast.success(t('toast.copied'));
+      if (fmt === "plain") {
+        const text = formatPlain(eventName, enabled, loc, nts, t, i18n.language);
+        await writeToClipboard("plain", text);
+        toast.success(t('toast.copiedPlain'));
+      } else if (fmt === "markdown") {
+        const text = formatMarkdown(eventName, enabled, loc, nts, t, i18n.language);
+        await writeToClipboard("markdown", text);
+        toast.success(t('toast.copiedMarkdown'));
+      } else {
+        const html = formatHtml(eventName, enabled, loc, nts, t, i18n.language);
+        const text = formatPlain(eventName, enabled, loc, nts, t, i18n.language);
+        await writeToClipboard("rich", text, html);
+        toast.success(t('toast.copiedRich'));
+      }
+      setCopyFormat(fmt);
+      try { localStorage.setItem("schedule.copyFormat", fmt); } catch { /* ignore */ }
     } catch {
       toast.error(t('toast.copyFailed'));
     }
   };
+
 
   const enabledCount = enabledSessions.size;
   const allSelected = enabledCount === sessions.length;
@@ -203,15 +244,43 @@ export function ScheduleDisplay({ eventName, sessions, location, notes, onExport
           {t('schedule.sessionsSelected', { count: enabledCount, total: sessions.length })}
         </p>
         <div className="flex gap-2 flex-wrap">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleCopy}
-            className="gap-2"
-          >
-            <Copy className="h-4 w-4" />
-            {t('schedule.copyButton')}
-          </Button>
+          <div className="inline-flex rounded-md shadow-sm">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleCopy()}
+              className="gap-2 rounded-r-none border-r-0"
+            >
+              <Copy className="h-4 w-4" />
+              {t('schedule.copyButton')}
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="rounded-l-none px-2"
+                  aria-label={t('schedule.copyAs')}
+                >
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>{t('schedule.copyAs')}</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => handleCopy('plain')}>
+                  {t('schedule.copyFormatPlain')}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleCopy('markdown')}>
+                  {t('schedule.copyFormatMarkdown')}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleCopy('rich')}>
+                  {t('schedule.copyFormatRich')}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
           <Button
             variant="outline"
             size="sm"
