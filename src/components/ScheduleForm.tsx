@@ -716,6 +716,7 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
                       </button>
                     ))}
                   </div>
+                  {fieldError(errors.ordinals)}
                 </div>
               )}
 
