@@ -103,7 +103,7 @@ const Index = () => {
     setNotes(data.notes ?? "");
     setReminderMinutes(data.reminderMinutes ?? 0);
     if (data.timezone) setTimezone(data.timezone);
-    setLastFormState({
+    const newFormState: ShareFormState = {
       eventName: data.eventName,
       startDate: data.startDate,
       mode: data.mode,
@@ -118,8 +118,19 @@ const Index = () => {
       notes: data.notes,
       reminderMinutes: data.reminderMinutes ?? 0,
       timezone: tz,
-    });
+    };
+    setLastFormState(newFormState);
+    saveRecent(data.eventName, newFormState);
+    setRecentRefresh((n) => n + 1);
     toast.success(t('toast.generated', { count: generatedSessions.length }));
+  };
+
+  const handleLoadRecent = (state: ShareFormState) => {
+    setInitialFormState({ ...state });
+    setSessions([]);
+    requestAnimationFrame(() => {
+      formColumnRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
   };
 
   const handleExport = (format: "csv" | "ics", enabledSessions: Session[], language: string) => {
