@@ -349,6 +349,27 @@ export function ScheduleForm({ onGenerate }: ScheduleFormProps) {
       </div>
 
       <div>
+        <Label htmlFor="reminder">{t('form.reminder')}</Label>
+        <Select
+          value={String(reminderMinutes)}
+          onValueChange={(v) => setReminderMinutes(Number(v))}
+        >
+          <SelectTrigger id="reminder" className="mt-2">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {REMINDER_OPTIONS.map((m) => (
+              <SelectItem key={m} value={String(m)}>
+                {reminderLabel(t, m)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+
+
+      <div>
         <Label className="mb-3 block">{t('form.holidays')}</Label>
         <p className="text-sm text-muted-foreground mb-2">{t('form.holidaysDescription')}</p>
         <Popover>
