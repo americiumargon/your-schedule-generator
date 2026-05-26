@@ -120,10 +120,14 @@ export function exportToCSV(sessions: Session[], eventName: string, language: st
     "Private"
   ];
 
+  const baseLocation = opts.location ?? "";
+  const notes = opts.notes ?? "";
+
   const rows = sessions.map(session => {
     const dateStr = format(session.date, "MM/dd/yyyy");
     const subject = `${eventName} - ${t.schedule.session} ${session.sessionNumber}`;
-    const description = `${t.schedule.session} ${session.sessionNumber} ${t.export.description.split(' ')[0]} ${eventName}`;
+    const baseDescription = `${t.schedule.session} ${session.sessionNumber} ${t.export.description.split(' ')[0]} ${eventName}`;
+    const description = notes ? `${baseDescription}\n\n${notes}` : baseDescription;
 
     return [
       subject,
@@ -133,20 +137,23 @@ export function exportToCSV(sessions: Session[], eventName: string, language: st
       convertTo12Hour(session.endTime),
       "False",
       description,
-      "",
+      baseLocation,
       ""
     ];
   });
 
+  // Escape CSV cells: double internal quotes, wrap in quotes
+  const escapeCSV = (cell: string) => `"${String(cell).replace(/"/g, '""')}"`;
+
   const csvContent = [
     headers.join(","),
-    ...rows.map(row => row.map(cell => `"${cell}"`).join(",")),
+    ...rows.map(row => row.map(escapeCSV).join(",")),
   ].join("\n");
 
   downloadFile(csvContent, `${eventName || "schedule"}.csv`, "text/csv");
 }
 
-export function exportToICS(sessions: Session[], eventName: string, language: string = 'en'): void {
+export function exportToICS(sessions: Session[], eventName: string, language: string = 'en', opts: ExportOptions = {}): void {
   const t = language === 'id' ? id : en;
   const formatICSDate = (date: Date, time: string): string => {
     const [hours, minutes] = time.split(":");
