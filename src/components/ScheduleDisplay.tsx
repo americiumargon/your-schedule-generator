@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { format, differenceInCalendarDays } from "date-fns";
 import { enUS, id as idLocale } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
@@ -12,9 +12,25 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Download, Calendar, FileText, Copy, Pencil, CalendarIcon } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Download, Calendar, FileText, Copy, Pencil, CalendarIcon, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
+import {
+  formatPlain,
+  formatMarkdown,
+  formatHtml,
+  writeToClipboard,
+  type CopyFormat,
+} from "@/utils/copyFormats";
+
 
 interface Session {
   date: Date;
