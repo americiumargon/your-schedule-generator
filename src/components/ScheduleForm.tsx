@@ -463,11 +463,13 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
           <Input
             id="eventName"
             value={eventName}
-            onChange={(e) => setEventName(e.target.value)}
+            onChange={(e) => { setEventName(e.target.value); clearError('eventName'); }}
             placeholder={t('form.eventNamePlaceholder')}
-            required
-            className="mt-2"
+            data-invalid={!!errors.eventName}
+            aria-invalid={!!errors.eventName}
+            className={cn("mt-2", errors.eventName && "border-destructive focus-visible:ring-destructive")}
           />
+          {fieldError(errors.eventName)}
         </div>
 
         {/* Start date */}
@@ -477,9 +479,11 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
+                data-invalid={!!errors.startDate}
                 className={cn(
                   "w-full justify-start text-left font-normal mt-2",
-                  !startDate && "text-muted-foreground"
+                  !startDate && "text-muted-foreground",
+                  errors.startDate && "border-destructive"
                 )}
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
@@ -490,13 +494,14 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
               <Calendar
                 mode="single"
                 selected={startDate}
-                onSelect={setStartDate}
+                onSelect={(d) => { setStartDate(d); clearError('startDate'); }}
                 initialFocus
                 className="pointer-events-auto"
                 locale={dateLocale}
               />
             </PopoverContent>
           </Popover>
+          {fieldError(errors.startDate)}
         </div>
 
         {/* Mode tabs */}
@@ -519,10 +524,12 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
               min="1"
               max="366"
               value={numberOfMeetings}
-              onChange={(e) => setNumberOfMeetings(e.target.value)}
-              required
-              className="mt-2"
+              onChange={(e) => { setNumberOfMeetings(e.target.value); clearError('numberOfMeetings'); }}
+              data-invalid={!!errors.numberOfMeetings}
+              aria-invalid={!!errors.numberOfMeetings}
+              className={cn("mt-2", errors.numberOfMeetings && "border-destructive focus-visible:ring-destructive")}
             />
+            {fieldError(errors.numberOfMeetings)}
           </div>
         ) : (
           <div>
@@ -531,9 +538,11 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
+                  data-invalid={!!errors.endDate}
                   className={cn(
                     "w-full justify-start text-left font-normal mt-2",
-                    !endDate && "text-muted-foreground"
+                    !endDate && "text-muted-foreground",
+                    errors.endDate && "border-destructive"
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
@@ -544,7 +553,7 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
                 <Calendar
                   mode="single"
                   selected={endDate}
-                  onSelect={setEndDate}
+                  onSelect={(d) => { setEndDate(d); clearError('endDate'); }}
                   initialFocus
                   className="pointer-events-auto"
                   locale={dateLocale}
@@ -552,21 +561,22 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
                 />
               </PopoverContent>
             </Popover>
+            {fieldError(errors.endDate)}
           </div>
         )}
 
         {/* Weekdays — shown for weekly recurrence (most users) */}
         {needsWeekdays && (
-          <div>
+          <div data-invalid={!!errors.selectedDays} tabIndex={-1}>
             <Label className="mb-1 block">{t('form.meetingDays')}</Label>
             <p className="text-xs text-muted-foreground mb-3">{t('form.selectDays')}</p>
             <div className="grid grid-rows-4 grid-flow-col gap-x-6 gap-y-2">
               {WEEKDAYS.map((day) => (
-                <div key={day.id} className="flex items-center space-x-2">
+                <div key={day.id} className="flex items-center space-x-2 min-h-[36px]">
                   <Checkbox
                     id={`day-${day.id}`}
                     checked={selectedDays.includes(day.id)}
-                    onCheckedChange={() => handleDayToggle(day.id)}
+                    onCheckedChange={() => { handleDayToggle(day.id); clearError('selectedDays'); }}
                   />
                   <Label
                     htmlFor={`day-${day.id}`}
@@ -577,6 +587,7 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
                 </div>
               ))}
             </div>
+            {fieldError(errors.selectedDays)}
           </div>
         )}
 
@@ -593,9 +604,10 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
                 id="slot-start-0"
                 type="time"
                 value={firstSlot?.startTime ?? ""}
-                onChange={(e) => updateSlot(0, { startTime: e.target.value })}
-                required
-                className="mt-1"
+                onChange={(e) => { updateSlot(0, { startTime: e.target.value }); clearError('timeSlots'); }}
+                data-invalid={!!errors.timeSlots}
+                aria-invalid={!!errors.timeSlots}
+                className={cn("mt-1", errors.timeSlots && "border-destructive focus-visible:ring-destructive")}
               />
             </div>
             <div>
@@ -606,12 +618,13 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
                 id="slot-end-0"
                 type="time"
                 value={firstSlot?.endTime ?? ""}
-                onChange={(e) => updateSlot(0, { endTime: e.target.value })}
-                required
-                className="mt-1"
+                onChange={(e) => { updateSlot(0, { endTime: e.target.value }); clearError('timeSlots'); }}
+                aria-invalid={!!errors.timeSlots}
+                className={cn("mt-1", errors.timeSlots && "border-destructive focus-visible:ring-destructive")}
               />
             </div>
           </div>
+          {fieldError(errors.timeSlots)}
         </div>
       </div>
 
