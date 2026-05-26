@@ -26,6 +26,8 @@ interface Session {
 interface ScheduleDisplayProps {
   eventName: string;
   sessions: Session[];
+  location?: string;
+  notes?: string;
   onExport: (format: "csv" | "ics", enabledSessions: Session[], language: string) => void;
   onClear: () => void;
   onUpdateSession?: (
