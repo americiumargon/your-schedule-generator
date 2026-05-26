@@ -240,6 +240,22 @@ export function ScheduleDisplay({ eventName, sessions, location, notes, timezone
     window.print();
   };
 
+  const handleAddToGoogle = () => {
+    if (enabledList.length === 0) {
+      toast.error(t('export.errorNoSessions'));
+      return;
+    }
+    const result = buildGoogleCalendarUrl(eventName, enabledList, location, notes, timezone);
+    if (result.url === null) {
+      if (result.reason === "too_many") toast.error(t('toast.gcalTooMany'));
+      return;
+    }
+    if (result.hasTimeConflicts) {
+      toast.warning(t('toast.gcalTimeConflicts'));
+    }
+    window.open(result.url, '_blank', 'noopener,noreferrer');
+  };
+
   const toggleAll = () => {
     if (allSelected) {
       setEnabledSessions(new Set());
@@ -331,6 +347,15 @@ export function ScheduleDisplay({ eventName, sessions, location, notes, timezone
           >
             <Printer className="h-4 w-4" />
             {t('schedule.printButton')}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleAddToGoogle}
+            className="gap-2"
+          >
+            <CalendarPlus className="h-4 w-4" />
+            {t('schedule.googleButton')}
           </Button>
           {onShare && (
             <Button
