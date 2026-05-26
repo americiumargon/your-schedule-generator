@@ -177,5 +177,16 @@
     "sessionUpdated": "Sesi diperbarui",
     "gcalTooMany": "Terlalu banyak sesi untuk satu tautan Google Calendar. Gunakan ICS sebagai gantinya.",
     "gcalTimeConflicts": "Sesi memiliki waktu berbeda. Google Calendar akan memakai waktu sesi pertama. Pakai ICS untuk presisi penuh."
+  },
+  "recent": {
+    "title": "Jadwal terbaru",
+    "load": "Muat",
+    "remove": "Hapus",
+    "clearAll": "Hapus semua",
+    "createdAgo": "Dibuat {{ago}}"
+  },
+  "theme": {
+    "toggleLight": "Ganti ke mode terang",
+    "toggleDark": "Ganti ke mode gelap"
   }
 }
