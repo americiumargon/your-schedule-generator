@@ -39,6 +39,7 @@ const Index = () => {
     location?: string;
     notes?: string;
     reminderMinutes?: number;
+    timezone?: string;
   }) => {
     const generatedSessions = generateSchedule({
       startDate: data.startDate,
