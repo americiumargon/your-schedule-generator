@@ -8,6 +8,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { CalendarIcon, Check, ChevronsUpDown, Plus, Trash2 } from "lucide-react";
 import { format } from "date-fns";
@@ -130,6 +131,8 @@ export interface FormTimeSlot {
   label?: string;
 }
 
+export type HolidayBehavior = "skip" | "rollForward";
+
 interface ScheduleFormProps {
   onGenerate: (data: {
     eventName: string;
@@ -137,6 +140,7 @@ interface ScheduleFormProps {
     selectedDays: number[];
     timeSlots: FormTimeSlot[];
     holidays: Date[];
+    holidayBehavior: HolidayBehavior;
     mode: Mode;
     numberOfMeetings?: number;
     endDate?: Date;
@@ -154,6 +158,7 @@ interface ScheduleFormProps {
     selectedDays: number[];
     timeSlots: FormTimeSlot[];
     holidays: Date[];
+    holidayBehavior?: HolidayBehavior;
     location?: string;
     notes?: string;
     reminderMinutes: number;
@@ -184,6 +189,7 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
   const [selectedDays, setSelectedDays] = useState<number[]>(() => initialState?.selectedDays ?? []);
   const [timeSlots, setTimeSlots] = useState<TimeSlotInput[]>(() => initialSlotsFromState(initialState));
   const [holidays, setHolidays] = useState<Date[]>(() => initialState?.holidays ?? []);
+  const [holidayBehavior, setHolidayBehavior] = useState<HolidayBehavior>(() => initialState?.holidayBehavior ?? "skip");
   const [location, setLocation] = useState(() => initialState?.location ?? "");
   const [notes, setNotes] = useState(() => initialState?.notes ?? "");
   const [reminderMinutes, setReminderMinutes] = useState<number>(() => initialState?.reminderMinutes ?? 0);
@@ -254,6 +260,7 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
           selectedDays: validated.selectedDays,
           timeSlots: normalizedSlots,
           holidays: validated.holidays,
+          holidayBehavior,
           mode: "count",
           numberOfMeetings: validated.numberOfMeetings,
           location: validated.location,
@@ -286,6 +293,7 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
           selectedDays: validated.selectedDays,
           timeSlots: normalizedSlots,
           holidays: validated.holidays,
+          holidayBehavior,
           mode: "endDate",
           endDate: validated.endDate,
           location: validated.location,
@@ -595,7 +603,33 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
             />
           </PopoverContent>
         </Popover>
+
+        {holidays.length > 0 && (
+          <div className="mt-4 space-y-2">
+            <Label className="text-sm">{t('form.holidayBehavior.label')}</Label>
+            <RadioGroup
+              value={holidayBehavior}
+              onValueChange={(v) => setHolidayBehavior(v as HolidayBehavior)}
+              className="space-y-1"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="skip" id="hb-skip" />
+                <Label htmlFor="hb-skip" className="text-sm font-normal cursor-pointer">
+                  {t('form.holidayBehavior.skip')}
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="rollForward" id="hb-roll" />
+                <Label htmlFor="hb-roll" className="text-sm font-normal cursor-pointer">
+                  {t('form.holidayBehavior.rollForward')}
+                </Label>
+              </div>
+            </RadioGroup>
+            <p className="text-xs text-muted-foreground">{t('form.holidayBehavior.description')}</p>
+          </div>
+        )}
       </div>
+
 
       <div>
         <Label htmlFor="location">{t('form.location')}</Label>

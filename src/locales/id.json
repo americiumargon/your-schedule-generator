@@ -31,6 +31,12 @@
     "holidaysDescription": "Pilih tanggal yang akan dikecualikan dari jadwal",
     "selectHolidays": "Pilih hari libur",
     "holidaysSelected": "{{count}} hari libur dipilih",
+    "holidayBehavior": {
+      "label": "Jika sesi jatuh di hari libur",
+      "skip": "Lewati sesi tersebut",
+      "rollForward": "Pindahkan ke hari kerja berikutnya",
+      "description": "Pemindahan mencari hingga 14 hari ke depan untuk hari yang cocok dan bukan hari libur."
+    },
     "location": "Lokasi (opsional)",
     "locationPlaceholder": "contoh: Tautan Zoom, Ruang Rapat B",
     "notes": "Catatan (opsional)",
@@ -88,6 +94,7 @@
     "clearAll": "Hapus Semua",
     "editSession": "Ubah sesi",
     "editedBadge": "diubah",
+    "rolledFromBadge": "Dipindah dari",
     "save": "Simpan",
     "cancel": "Batal"
   },

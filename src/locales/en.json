@@ -32,6 +32,12 @@
     "selectHolidays": "Select holidays",
     "holidaysSelected": "{{count}} holiday selected",
     "holidaysSelected_other": "{{count}} holidays selected",
+    "holidayBehavior": {
+      "label": "When a session falls on a holiday",
+      "skip": "Skip the session",
+      "rollForward": "Move to the next available weekday",
+      "description": "Roll-forward looks up to 14 days ahead for a matching weekday that isn't a holiday."
+    },
     "location": "Location (optional)",
     "locationPlaceholder": "e.g., Zoom link, Conference Room B",
     "notes": "Notes (optional)",
@@ -92,6 +98,7 @@
     "clearAll": "Clear All",
     "editSession": "Edit session",
     "editedBadge": "edited",
+    "rolledFromBadge": "Moved from",
     "save": "Save",
     "cancel": "Cancel"
   },

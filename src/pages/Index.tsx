@@ -20,6 +20,7 @@ interface Session {
   startTime: string;
   endTime: string;
   slotLabel?: string;
+  rolledFrom?: Date;
 }
 
 const Index = () => {
@@ -62,6 +63,7 @@ const Index = () => {
     selectedDays: number[];
     timeSlots: FormTimeSlot[];
     holidays: Date[];
+    holidayBehavior: "skip" | "rollForward";
     mode: "count" | "endDate";
     numberOfMeetings?: number;
     endDate?: Date;
@@ -75,6 +77,7 @@ const Index = () => {
       selectedDays: data.selectedDays,
       timeSlots: data.timeSlots,
       holidays: data.holidays,
+      holidayBehavior: data.holidayBehavior,
       mode: data.mode,
       numberOfMeetings: data.numberOfMeetings,
       endDate: data.endDate,
@@ -99,6 +102,7 @@ const Index = () => {
       selectedDays: data.selectedDays,
       timeSlots: data.timeSlots,
       holidays: data.holidays,
+      holidayBehavior: data.holidayBehavior,
       location: data.location,
       notes: data.notes,
       reminderMinutes: data.reminderMinutes ?? 0,
