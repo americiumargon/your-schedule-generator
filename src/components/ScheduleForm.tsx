@@ -9,7 +9,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { CalendarIcon, Check, ChevronsUpDown } from "lucide-react";
+import { CalendarIcon, Check, ChevronsUpDown, Plus, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { enUS, id as idLocale } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -27,6 +27,25 @@ const WEEKDAYS = [
   { id: 0, key: "sunday" },
 ];
 
+const MAX_SLOTS = 6;
+
+interface TimeSlotInput {
+  startTime: string;
+  endTime: string;
+  label: string;
+}
+
+const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+
+const slotSchema = z.object({
+  startTime: z.string().regex(timeRegex, "Invalid start time format"),
+  endTime: z.string().regex(timeRegex, "Invalid end time format"),
+  label: z.string().trim().max(50, "Slot label must be less than 50 characters").optional(),
+}).refine((s) => s.startTime < s.endTime, {
+  message: "End time must be after start time",
+  path: ["endTime"],
+});
+
 const baseSchema = {
   eventName: z.string()
     .trim()
@@ -34,10 +53,7 @@ const baseSchema = {
     .max(100, "Activity name must be less than 100 characters"),
   selectedDays: z.array(z.number().min(0).max(6))
     .min(1, "At least one day must be selected"),
-  startTime: z.string()
-    .regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid start time format"),
-  endTime: z.string()
-    .regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid end time format"),
+  timeSlots: z.array(slotSchema).min(1, "At least one time slot is required").max(MAX_SLOTS),
   holidays: z.array(z.date()),
   location: z.string().trim().max(200, "Location must be less than 200 characters").optional(),
   notes: z.string().trim().max(2000, "Notes must be less than 2000 characters").optional(),
@@ -94,9 +110,6 @@ const countSchema = z.object({
     .int("Number of sessions must be a whole number")
     .min(1, "At least 1 session is required")
     .max(366, "Maximum 366 sessions allowed"),
-}).refine(data => data.startTime < data.endTime, {
-  message: "End time must be after start time",
-  path: ["endTime"],
 });
 
 const endDateSchema = z.object({
@@ -104,9 +117,6 @@ const endDateSchema = z.object({
   mode: z.literal("endDate"),
   endDate: z.date({ required_error: "Please select an end date" }),
   startDate: z.date(),
-}).refine(data => data.startTime < data.endTime, {
-  message: "End time must be after start time",
-  path: ["endTime"],
 }).refine(data => data.endDate >= data.startDate, {
   message: "End date must be on or after the start date",
   path: ["endDate"],
@@ -114,13 +124,18 @@ const endDateSchema = z.object({
 
 type Mode = "count" | "endDate";
 
+export interface FormTimeSlot {
+  startTime: string;
+  endTime: string;
+  label?: string;
+}
+
 interface ScheduleFormProps {
   onGenerate: (data: {
     eventName: string;
     startDate: Date;
     selectedDays: number[];
-    startTime: string;
-    endTime: string;
+    timeSlots: FormTimeSlot[];
     holidays: Date[];
     mode: Mode;
     numberOfMeetings?: number;
@@ -137,14 +152,24 @@ interface ScheduleFormProps {
     numberOfMeetings?: number;
     endDate?: Date;
     selectedDays: number[];
-    startTime: string;
-    endTime: string;
+    timeSlots: FormTimeSlot[];
     holidays: Date[];
     location?: string;
     notes?: string;
     reminderMinutes: number;
     timezone: string;
   };
+}
+
+function initialSlotsFromState(state?: ScheduleFormProps["initialState"]): TimeSlotInput[] {
+  if (state?.timeSlots && state.timeSlots.length > 0) {
+    return state.timeSlots.map((s) => ({
+      startTime: s.startTime,
+      endTime: s.endTime,
+      label: s.label ?? "",
+    }));
+  }
+  return [{ startTime: "", endTime: "", label: "" }];
 }
 
 export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
@@ -157,8 +182,7 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
   );
   const [endDate, setEndDate] = useState<Date | undefined>(() => initialState?.endDate);
   const [selectedDays, setSelectedDays] = useState<number[]>(() => initialState?.selectedDays ?? []);
-  const [startTime, setStartTime] = useState(() => initialState?.startTime ?? "");
-  const [endTime, setEndTime] = useState(() => initialState?.endTime ?? "");
+  const [timeSlots, setTimeSlots] = useState<TimeSlotInput[]>(() => initialSlotsFromState(initialState));
   const [holidays, setHolidays] = useState<Date[]>(() => initialState?.holidays ?? []);
   const [location, setLocation] = useState(() => initialState?.location ?? "");
   const [notes, setNotes] = useState(() => initialState?.notes ?? "");
@@ -177,6 +201,18 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
     );
   };
 
+  const updateSlot = (index: number, patch: Partial<TimeSlotInput>) => {
+    setTimeSlots((prev) => prev.map((s, i) => (i === index ? { ...s, ...patch } : s)));
+  };
+
+  const addSlot = () => {
+    setTimeSlots((prev) => (prev.length >= MAX_SLOTS ? prev : [...prev, { startTime: "", endTime: "", label: "" }]));
+  };
+
+  const removeSlot = (index: number) => {
+    setTimeSlots((prev) => (prev.length <= 1 ? prev : prev.filter((_, i) => i !== index)));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -185,13 +221,18 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
       return;
     }
 
-    if (!startTime || !endTime) {
+    if (timeSlots.some((s) => !s.startTime || !s.endTime)) {
       toast.error(t('form.validation.timeRequired'));
       return;
     }
 
     try {
       const trimmedName = eventName.trim();
+      const normalizedSlots = timeSlots.map((s) => ({
+        startTime: s.startTime,
+        endTime: s.endTime,
+        label: s.label?.trim() ? s.label.trim() : undefined,
+      }));
 
       if (mode === "count") {
         const validated = countSchema.parse({
@@ -199,8 +240,7 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
           mode: "count",
           numberOfMeetings: parseInt(numberOfMeetings),
           selectedDays,
-          startTime,
-          endTime,
+          timeSlots: normalizedSlots,
           holidays,
           location: location.trim() || undefined,
           notes: notes.trim() || undefined,
@@ -212,8 +252,7 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
           eventName: sanitizedEventName,
           startDate,
           selectedDays: validated.selectedDays,
-          startTime: validated.startTime,
-          endTime: validated.endTime,
+          timeSlots: normalizedSlots,
           holidays: validated.holidays,
           mode: "count",
           numberOfMeetings: validated.numberOfMeetings,
@@ -233,8 +272,7 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
           endDate,
           startDate,
           selectedDays,
-          startTime,
-          endTime,
+          timeSlots: normalizedSlots,
           holidays,
           location: location.trim() || undefined,
           notes: notes.trim() || undefined,
@@ -246,8 +284,7 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
           eventName: sanitizedEventName,
           startDate,
           selectedDays: validated.selectedDays,
-          startTime: validated.startTime,
-          endTime: validated.endTime,
+          timeSlots: normalizedSlots,
           holidays: validated.holidays,
           mode: "endDate",
           endDate: validated.endDate,
@@ -384,29 +421,86 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="startTime">{t('form.startTime')}</Label>
-          <Input
-            id="startTime"
-            type="time"
-            value={startTime}
-            onChange={(e) => setStartTime(e.target.value)}
-            required
-            className="mt-2"
-          />
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <Label>{t('form.timeSlots.title')}</Label>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={addSlot}
+            disabled={timeSlots.length >= MAX_SLOTS}
+            className="h-8 gap-1"
+          >
+            <Plus className="h-4 w-4" />
+            {t('form.timeSlots.add')}
+          </Button>
         </div>
-        <div>
-          <Label htmlFor="endTime">{t('form.endTime')}</Label>
-          <Input
-            id="endTime"
-            type="time"
-            value={endTime}
-            onChange={(e) => setEndTime(e.target.value)}
-            required
-            className="mt-2"
-          />
+        <div className="space-y-3">
+          {timeSlots.map((slot, index) => (
+            <div
+              key={index}
+              className="rounded-lg border border-border bg-secondary/20 p-3 space-y-2"
+            >
+              <div className="flex items-end gap-2">
+                <div className="flex-1 min-w-0">
+                  <Label htmlFor={`slot-label-${index}`} className="text-xs text-muted-foreground">
+                    {t('form.timeSlots.labelOptional')}
+                  </Label>
+                  <Input
+                    id={`slot-label-${index}`}
+                    value={slot.label}
+                    onChange={(e) => updateSlot(index, { label: e.target.value })}
+                    placeholder={t('form.timeSlots.labelPlaceholder')}
+                    maxLength={50}
+                    className="mt-1 h-9"
+                  />
+                </div>
+                {timeSlots.length > 1 && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => removeSlot(index)}
+                    aria-label={t('form.timeSlots.remove')}
+                    className="h-9 w-9 shrink-0 text-muted-foreground hover:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label htmlFor={`slot-start-${index}`} className="text-xs text-muted-foreground">
+                    {t('form.startTime')}
+                  </Label>
+                  <Input
+                    id={`slot-start-${index}`}
+                    type="time"
+                    value={slot.startTime}
+                    onChange={(e) => updateSlot(index, { startTime: e.target.value })}
+                    required
+                    className="mt-1 h-9"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor={`slot-end-${index}`} className="text-xs text-muted-foreground">
+                    {t('form.endTime')}
+                  </Label>
+                  <Input
+                    id={`slot-end-${index}`}
+                    type="time"
+                    value={slot.endTime}
+                    onChange={(e) => updateSlot(index, { endTime: e.target.value })}
+                    required
+                    className="mt-1 h-9"
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
+        <p className="text-xs text-muted-foreground mt-2">{t('form.timeSlots.description')}</p>
       </div>
 
       <div>
@@ -456,8 +550,6 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
         <p className="text-xs text-muted-foreground mt-1">{t('form.timezoneDescription')}</p>
       </div>
 
-
-
       <div>
         <Label htmlFor="reminder">{t('form.reminder')}</Label>
         <Select
@@ -476,8 +568,6 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
           </SelectContent>
         </Select>
       </div>
-
-
 
       <div>
         <Label className="mb-3 block">{t('form.holidays')}</Label>
@@ -531,8 +621,6 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
           className="mt-2"
         />
       </div>
-
-
 
       <Button
         type="submit"

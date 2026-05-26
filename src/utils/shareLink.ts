@@ -3,6 +3,12 @@ import { format, parseISO, isValid } from "date-fns";
 
 export type ShareMode = "count" | "endDate";
 
+export interface ShareTimeSlot {
+  startTime: string;
+  endTime: string;
+  label?: string;
+}
+
 export interface ShareFormState {
   eventName: string;
   startDate: Date;
@@ -10,8 +16,7 @@ export interface ShareFormState {
   numberOfMeetings?: number;
   endDate?: Date;
   selectedDays: number[];
-  startTime: string;
-  endTime: string;
+  timeSlots: ShareTimeSlot[];
   holidays: Date[];
   location?: string;
   notes?: string;
@@ -22,6 +27,12 @@ export interface ShareFormState {
 const dateStr = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const timeStr = z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/);
 
+const slotSchema = z.object({
+  s: timeStr,
+  e: timeStr,
+  l: z.string().max(50).optional(),
+});
+
 const tokenSchema = z.object({
   v: z.literal(1),
   n: z.string().min(1).max(100),
@@ -30,8 +41,11 @@ const tokenSchema = z.object({
   c: z.number().int().min(1).max(366).optional(),
   ed: dateStr.optional(),
   d: z.array(z.number().int().min(0).max(6)).min(1),
-  st: timeStr,
-  et: timeStr,
+  // New: time slots
+  ts: z.array(slotSchema).min(1).max(6).optional(),
+  // Legacy single-slot fields (still accepted for backward compatibility)
+  st: timeStr.optional(),
+  et: timeStr.optional(),
   h: z.array(dateStr).max(366),
   l: z.string().max(200).optional(),
   nt: z.string().max(2000).optional(),
@@ -74,8 +88,11 @@ export function encodeShareState(state: ShareFormState): string {
       ? { ed: fmtDate(state.endDate) }
       : {}),
     d: state.selectedDays,
-    st: state.startTime,
-    et: state.endTime,
+    ts: state.timeSlots.map((s) => ({
+      s: s.startTime,
+      e: s.endTime,
+      ...(s.label ? { l: s.label } : {}),
+    })),
     h: state.holidays.map(fmtDate),
     ...(state.location ? { l: state.location } : {}),
     ...(state.notes ? { nt: state.notes } : {}),
@@ -108,6 +125,20 @@ export function decodeShareState(token: string): ShareFormState | null {
       holidays.push(d);
     }
 
+    // Resolve slots: prefer new ts, fall back to legacy st/et
+    let timeSlots: ShareTimeSlot[];
+    if (parsed.ts && parsed.ts.length > 0) {
+      timeSlots = parsed.ts.map((s) => ({
+        startTime: s.s,
+        endTime: s.e,
+        label: s.l,
+      }));
+    } else if (parsed.st && parsed.et) {
+      timeSlots = [{ startTime: parsed.st, endTime: parsed.et }];
+    } else {
+      return null;
+    }
+
     return {
       eventName: parsed.n,
       startDate,
@@ -115,8 +146,7 @@ export function decodeShareState(token: string): ShareFormState | null {
       numberOfMeetings: parsed.c,
       endDate,
       selectedDays: parsed.d,
-      startTime: parsed.st,
-      endTime: parsed.et,
+      timeSlots,
       holidays,
       location: parsed.l,
       notes: parsed.nt,

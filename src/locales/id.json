@@ -19,6 +19,14 @@
     "selectDays": "Pilih hari dalam seminggu untuk sesi Anda",
     "startTime": "Waktu Mulai",
     "endTime": "Waktu Selesai",
+    "timeSlots": {
+      "title": "Slot Waktu",
+      "add": "Tambah slot",
+      "remove": "Hapus slot",
+      "labelOptional": "Label slot (opsional)",
+      "labelPlaceholder": "contoh: Pagi, Sore",
+      "description": "Setiap hari yang dipilih menghasilkan satu sesi per slot."
+    },
     "holidays": "Hari Libur / Hari Off",
     "holidaysDescription": "Pilih tanggal yang akan dikecualikan dari jadwal",
     "selectHolidays": "Pilih hari libur",

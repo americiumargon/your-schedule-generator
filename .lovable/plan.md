@@ -1,43 +1,93 @@
-# Google Calendar link — single event with multiple dates
+# Three upgrades, shipped one at a time
 
-## Approach
+I'll build these in priority order. After each one ships and you confirm it works, I'll start the next. This keeps each change small, reviewable, and easy to roll back.
 
-Build one Google Calendar event using Google's `render?action=TEMPLATE` URL with a `recur` parameter containing iCal `RDATE` lines — one for each selected session. The first session anchors `dates=` (start/end), and all subsequent sessions are added as RDATEs. This opens **one tab** with **one event** that Google Calendar shows on every selected date.
+## Priority order (and why)
 
-Time handling: a single event has one start/end time. If all selected sessions share the same `startTime`/`endTime`, we use RDATE. If users have edited individual sessions to different times, we fall back to opening the link anyway but show a toast warning that off-time sessions will use the anchor time, and suggest ICS for full fidelity.
+1. **Multiple time slots per day** — highest ROI. Unlocks a real-world use case (morning + evening classes) that today forces users to generate two separate schedules. Touches the most files but each touch is small.
+2. **Auto-reschedule on holiday (roll forward)** — small surface area, big UX win. Most users *want* the session moved, not deleted. Easy to add once we're already in the generator.
+3. **Recurrence patterns beyond weekly** — biggest UI surface (new selector + ordinal/day-of-month controls). Power-user feature. Worth doing last so the first two ship fast.
 
-## Changes
+Each step preserves today's defaults so existing share links and the current UX don't change unless the user opts in.
 
-**`src/utils/googleCalendar.ts`** (new)
-- `buildGoogleCalendarUrl(eventName, sessions, location?, notes?, timezone?)` returns a `https://calendar.google.com/calendar/render?action=TEMPLATE&...` URL.
-- Params:
-  - `text` = event name
-  - `dates` = `YYYYMMDDTHHmmss/YYYYMMDDTHHmmss` of the first session (floating local time, matches our ICS approach)
-  - `ctz` = timezone (if set and not UTC)
-  - `details` = notes (optional)
-  - `location` = location (optional)
-  - `recur` = `RDATE;TZID=<tz>;VALUE=DATE-TIME:<dt1>,<dt2>,...` listing every session **after the first** at the anchor time. (If tz is UTC/unset, omit `;TZID=...` and append `Z` to each datetime.)
-- Return `{ url, hasTimeConflicts: boolean }` where `hasTimeConflicts` is true if any session's start/end differs from the first.
-- Cap RDATE list at ~50 sessions to stay under URL length limits; if exceeded, return `{ url: null, reason: 'too_many' }` and caller falls back to suggesting ICS.
+---
 
-**`src/components/ScheduleDisplay.tsx`**
-- Import `CalendarPlus` icon from lucide-react.
-- Add a new "Add to Google" button in the action row (next to ICS/Print/Share, `print:hidden`).
-- Handler: builds URL from `enabledList`; if `null` (too many), `toast.error` and suggest ICS; if `hasTimeConflicts`, `toast.warning` then `window.open(url, '_blank', 'noopener')`; otherwise just open.
+## Step 1 — Multiple time slots per day
 
-**`src/locales/en.json` & `id.json`**
-- Add `schedule.googleButton` ("Add to Google" / "Tambah ke Google").
-- Add `toast.gcalTooMany` and `toast.gcalTimeConflicts` strings.
+**Form**
+- Replace the single Start/End time row with a `<TimeSlotList>`: each slot is `{ startTime, endTime, label? }`. Buttons: `+ Add time slot`, trash to remove. Min 1, max 6.
+- Validate each slot with the existing time regex; require `start < end` per slot.
 
-## Out of scope
+**Generator (`scheduleGenerator.ts`)**
+- Replace `startTime`/`endTime` in `GenerateScheduleOptions` with `timeSlots: Array<{ startTime, endTime, label? }>`.
+- For every accepted date, emit one `Session` per slot. `sessionNumber` stays globally sequential. Add `slotLabel?: string` to `Session`.
+- In `count` mode, the target counts sessions (not dates), so 10 sessions × 2 slots = 5 dates.
 
-- Per-session "Add to Google" links on each card.
-- Trying to detect a clean weekly RRULE pattern (RDATE works universally and is simpler).
-- Multi-tab bulk open for >50 sessions.
-- Editing the event time per RDATE (Google's URL API doesn't support per-instance overrides; ICS export already covers that).
+**Display + exports**
+- `ScheduleDisplay`: show the slot label as a small `<Badge>` next to the time range when present.
+- CSV/ICS/Google/Copy: append slot label to the subject/summary when present (e.g. `Yoga - Session 3 (Morning)`).
 
-## Technical notes
+**Share link**
+- Add `timeSlots` to `ShareFormState` + token (`ts: [{s,e,l?}]`). Backward compat: if a link only has `st`/`et`, synthesize a single slot.
 
-- RDATE example sent to Google: `recur=RDATE;TZID=America/New_York;VALUE=DATE-TIME:20260601T090000,20260603T090000,20260605T090000`
-- URL-encode the entire `recur` value once; newlines are not needed since it's a single property.
-- Reuse the floating-local-time formatter from `scheduleGenerator.ts` (extract or duplicate the small helper).
+**i18n** — new keys: `form.timeSlots.title/add/remove/labelPlaceholder`, `schedule.slotBadge`.
+
+---
+
+## Step 2 — Auto-reschedule on holiday
+
+**Form**
+- In the Holidays section, add a `<RadioGroup>` "When a session falls on a holiday":
+  - Skip the session (default — current behavior)
+  - Move to the next available weekday
+
+**Generator**
+- Add `holidayBehavior: "skip" | "rollForward"` to options.
+- On `rollForward`: when a candidate date is a holiday, walk forward up to 14 days, accept the first date that is in `selectedDays` and not a holiday. If none found, fall back to skip and surface a toast warning. Attach `rolledFrom: Date` to the session.
+
+**Display + exports**
+- `ScheduleDisplay`: small muted "moved from MMM d" line under the date when `rolledFrom` is set.
+- ICS/CSV `DESCRIPTION` includes "Moved from {date}" when applicable.
+
+**Share link** — add `hb: "skip" | "rollForward"`; default `skip` for legacy links.
+
+**i18n** — `form.holidayBehavior.label/skip/rollForward/description`, `schedule.rolledFromBadge`, `toast.rollForwardFailed`.
+
+---
+
+## Step 3 — Recurrence patterns beyond weekly
+
+**Form**
+- Add a Recurrence `<Select>` above the weekday list:
+  - Every week (default)
+  - Every 2 / 3 / 4 weeks
+  - Monthly by weekday (1st / 2nd / 3rd / 4th / Last + chosen weekday(s))
+  - Monthly by date (chip grid 1–31 + "Last day")
+- The weekday checkboxes stay visible for weekly + monthlyByWeekday; for monthlyByDate they're replaced by the day-of-month chip grid.
+
+**Generator**
+- Add discriminated union:
+  ```ts
+  recurrence:
+    | { type: "weekly"; interval: 1 | 2 | 3 | 4 }
+    | { type: "monthlyByWeekday"; ordinals: number[] }   // 1..4, -1 for Last
+    | { type: "monthlyByDate"; daysOfMonth: number[] }   // 1..31, -1 for Last
+  ```
+- Build a date-candidate generator per recurrence type, then run the existing holiday + slot-expansion pipeline on it.
+- `weekly` with `interval > 1`: accept date if it falls on a selected weekday AND `weekIndex % interval === 0` measured from `startDate`'s week.
+- `monthlyByWeekday`: for each month in range, compute the ordinal occurrences of each selected weekday and keep those whose ordinal is in `ordinals`.
+- `monthlyByDate`: for each month, take `daysOfMonth`; clamp values > the month's last day (so "31" becomes Feb 28/29).
+
+**Share link** — add `rec` to the token; legacy links default to `{ type: "weekly", interval: 1 }`.
+
+**i18n** — `form.recurrence.*` for all labels.
+
+---
+
+## Out of scope (across all three)
+
+- Drag-to-reschedule, per-session slot overrides (edit pencil already handles that), RRULE-style ICS output (we already expand to discrete events for max portability), backward-walking holiday rollover.
+
+---
+
+Reply "go" (or "start with step 1") and I'll implement step 1 only, verify it, and pause for your sign-off before moving on.
