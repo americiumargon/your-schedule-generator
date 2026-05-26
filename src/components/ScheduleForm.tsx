@@ -327,33 +327,54 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!startDate) {
-      toast.error(t('form.validation.dateRequired'));
-      return;
-    }
+    const next: FormErrors = {};
+    const trimmedName = eventName.trim();
+    if (!trimmedName) next.eventName = t('form.validation.eventNameRequired');
+    if (!startDate) next.startDate = t('form.validation.dateRequired');
 
-    if (timeSlots.some((s) => !s.startTime || !s.endTime)) {
-      toast.error(t('form.validation.timeRequired'));
-      return;
+    if (mode === "count") {
+      const parsed = parseInt(numberOfMeetings);
+      if (!numberOfMeetings || isNaN(parsed) || parsed < 1) {
+        next.numberOfMeetings = t('form.validation.meetingsRequired');
+      }
+    } else if (!endDate) {
+      next.endDate = t('form.validation.endDateRequired');
+    } else if (startDate && endDate < startDate) {
+      next.endDate = t('form.validation.endDateAfterStart');
     }
 
     if (needsWeekdays && selectedDays.length === 0) {
-      toast.error(t('form.validation.daysRequired'));
-      return;
+      next.selectedDays = t('form.validation.daysRequired');
     }
     if (recurrenceType === "monthlyByWeekday" && ordinals.length === 0) {
-      toast.error(t('form.validation.ordinalsRequired'));
-      return;
+      next.ordinals = t('form.validation.ordinalsRequired');
     }
     if (recurrenceType === "monthlyByDate" && daysOfMonth.length === 0) {
-      toast.error(t('form.validation.daysOfMonthRequired'));
+      next.daysOfMonth = t('form.validation.daysOfMonthRequired');
+    }
+    if (timeSlots.some((s) => !s.startTime || !s.endTime)) {
+      next.timeSlots = t('form.validation.timeRequired');
+    } else if (timeSlots.some((s) => s.startTime >= s.endTime)) {
+      next.timeSlots = t('form.validation.timeRequired');
+    }
+
+    if (Object.values(next).some(Boolean)) {
+      setErrors(next);
+      // Auto-expand advanced if errors live inside it
+      if (next.ordinals || next.daysOfMonth) setAdvancedOpen(true);
+      // Scroll first invalid field into view
+      requestAnimationFrame(() => {
+        const firstInvalid = document.querySelector<HTMLElement>('[data-invalid="true"]');
+        firstInvalid?.scrollIntoView({ behavior: "smooth", block: "center" });
+        firstInvalid?.focus?.();
+      });
       return;
     }
 
+    setErrors({});
     const recurrence = buildRecurrence();
 
     try {
-      const trimmedName = eventName.trim();
       const normalizedSlots = timeSlots.map((s) => ({
         startTime: s.startTime,
         endTime: s.endTime,
@@ -376,7 +397,7 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
         const sanitizedEventName = validated.eventName.replace(/[",\n\r]/g, ' ');
         onGenerate({
           eventName: sanitizedEventName,
-          startDate,
+          startDate: startDate!,
           selectedDays: validated.selectedDays,
           timeSlots: normalizedSlots,
           holidays: validated.holidays,
@@ -390,15 +411,11 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
           timezone: validated.timezone,
         });
       } else {
-        if (!endDate) {
-          toast.error(t('form.validation.endDateRequired'));
-          return;
-        }
         const validated = endDateSchema.parse({
           eventName: trimmedName,
           mode: "endDate",
-          endDate,
-          startDate,
+          endDate: endDate!,
+          startDate: startDate!,
           selectedDays,
           timeSlots: normalizedSlots,
           holidays,
@@ -410,7 +427,7 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
         const sanitizedEventName = validated.eventName.replace(/[",\n\r]/g, ' ');
         onGenerate({
           eventName: sanitizedEventName,
-          startDate,
+          startDate: startDate!,
           selectedDays: validated.selectedDays,
           timeSlots: normalizedSlots,
           holidays: validated.holidays,
