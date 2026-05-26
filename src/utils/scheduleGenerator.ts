@@ -162,6 +162,8 @@ export function exportToICS(sessions: Session[], eventName: string, language: st
     return dateWithTime.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
   };
 
+  const locationLine = opts.location ? `LOCATION:${escapeICS(opts.location)}` : null;
+
   const events = sessions.map(session => {
     const startDateTime = formatICSDate(session.date, session.startTime);
     const endDateTime = formatICSDate(session.date, session.endTime);
@@ -169,19 +171,26 @@ export function exportToICS(sessions: Session[], eventName: string, language: st
     const summary = t.export.summary
       .replace('{{eventName}}', eventName)
       .replace('{{sessionNumber}}', session.sessionNumber.toString());
-    const description = t.export.description
+    const baseDescription = t.export.description
       .replace('{{sessionNumber}}', session.sessionNumber.toString())
       .replace('{{eventName}}', eventName);
+    const fullDescription = opts.notes
+      ? `${baseDescription}\n\n${opts.notes}`
+      : baseDescription;
 
-    return [
+    const lines = [
       "BEGIN:VEVENT",
       `DTSTART:${startDateTime}`,
       `DTEND:${endDateTime}`,
-      `SUMMARY:${summary}`,
-      `DESCRIPTION:${description}`,
+      `SUMMARY:${escapeICS(summary)}`,
+      `DESCRIPTION:${escapeICS(fullDescription)}`,
+    ];
+    if (locationLine) lines.push(locationLine);
+    lines.push(
       `UID:${Date.now()}-${session.sessionNumber}@schedule-generator.com`,
       "END:VEVENT",
-    ].join("\r\n");
+    );
+    return lines.join("\r\n");
   }).join("\r\n");
 
   const icsContent = [
