@@ -16,6 +16,7 @@ import {
   type ShareFormState,
 } from "@/utils/shareLink";
 import { saveRecent } from "@/utils/recentSchedules";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 
 interface Session {
   date: Date;
