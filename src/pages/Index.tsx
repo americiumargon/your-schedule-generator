@@ -201,6 +201,19 @@ const Index = () => {
     });
   };
 
+  useKeyboardShortcuts([
+    {
+      key: "Escape",
+      handler: () => {
+        if (sessions.length === 0) return;
+        // Skip if a Radix popover/dialog is open
+        if (document.querySelector('[data-radix-popper-content-wrapper], [role="dialog"][data-state="open"]')) return;
+        handleClear();
+      },
+    },
+  ]);
+
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/20">
       {/* Header */}
