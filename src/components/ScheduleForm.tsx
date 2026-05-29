@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { useKeyboardShortcuts, modKeyLabel } from "@/hooks/useKeyboardShortcuts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -245,6 +246,25 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
   const [timezone, setTimezone] = useState<string>(() => initialState?.timezone ?? browserTz);
   const [tzOpen, setTzOpen] = useState(false);
   const timezones = useMemo(() => getTimezoneList(), []);
+  const eventNameRef = useRef<HTMLInputElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+  const modLabel = modKeyLabel();
+
+  useKeyboardShortcuts([
+    {
+      key: "Enter",
+      mod: true,
+      handler: () => formRef.current?.requestSubmit(),
+    },
+    {
+      key: "k",
+      mod: true,
+      handler: () => {
+        eventNameRef.current?.focus();
+        eventNameRef.current?.select();
+      },
+    },
+  ]);
 
   interface FormErrors {
     eventName?: string;
@@ -456,14 +476,20 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
   const extraSlots = timeSlots.slice(1);
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8 pb-4 lg:pb-0">
+    <form ref={formRef} onSubmit={handleSubmit} className="space-y-8 pb-4 lg:pb-0">
       {/* ===================== ESSENTIALS ===================== */}
       <div className="space-y-5">
         {/* Activity name */}
         <div>
-          <Label htmlFor="eventName">{t('form.eventName')}</Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="eventName">{t('form.eventName')}</Label>
+            <kbd className="hidden sm:inline-flex text-[10px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded border">
+              {modLabel}+K
+            </kbd>
+          </div>
           <Input
             id="eventName"
+            ref={eventNameRef}
             value={eventName}
             onChange={(e) => { setEventName(e.target.value); clearError('eventName'); }}
             placeholder={t('form.eventNamePlaceholder')}
@@ -473,6 +499,7 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
           />
           {fieldError(errors.eventName)}
         </div>
+
 
         {/* Start date */}
         <div>
@@ -1034,10 +1061,13 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
       <div className="sticky bottom-0 -mx-4 px-4 py-3 bg-card/95 backdrop-blur border-t border-border lg:static lg:bg-transparent lg:border-0 lg:p-0 lg:mx-0 lg:backdrop-blur-none z-10">
         <Button
           type="submit"
-          className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity"
+          className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity gap-2"
           size="lg"
         >
-          {t('form.generateButton')}
+          <span>{t('form.generateButton')}</span>
+          <kbd className="hidden sm:inline-flex text-[10px] font-mono bg-primary-foreground/15 px-1.5 py-0.5 rounded border border-primary-foreground/20">
+            {modLabel}+Enter
+          </kbd>
         </Button>
       </div>
     </form>

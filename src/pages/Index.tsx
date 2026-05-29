@@ -16,6 +16,7 @@ import {
   type ShareFormState,
 } from "@/utils/shareLink";
 import { saveRecent } from "@/utils/recentSchedules";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 
 interface Session {
   date: Date;
@@ -199,6 +200,19 @@ const Index = () => {
       duration: 6000,
     });
   };
+
+  useKeyboardShortcuts([
+    {
+      key: "Escape",
+      handler: () => {
+        if (sessions.length === 0) return;
+        // Skip if a Radix popover/dialog is open
+        if (document.querySelector('[data-radix-popper-content-wrapper], [role="dialog"][data-state="open"]')) return;
+        handleClear();
+      },
+    },
+  ]);
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/20">
