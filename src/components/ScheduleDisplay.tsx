@@ -333,6 +333,9 @@ export function ScheduleDisplay({ eventName, sessions, location, notes, timezone
     if ('hasTimeConflicts' in result && result.hasTimeConflicts) {
       toast.warning(t('toast.gcalTimeConflicts'));
     }
+    if ('hasOverrides' in result && result.hasOverrides) {
+      toast.warning(t('toast.gcalOverridesDropped'));
+    }
     window.open(result.url, '_blank', 'noopener,noreferrer');
   };
 
