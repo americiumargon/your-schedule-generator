@@ -187,11 +187,26 @@ const Index = () => {
 
   const handleUpdateSession = (
     index: number,
-    updated: { date: Date; startTime: string; endTime: string }
+    updated: {
+      date: Date;
+      startTime: string;
+      endTime: string;
+      location?: string;
+      notes?: string;
+    }
   ) => {
     const prev = sessions;
     const next = sessions.map((s, i) =>
-      i === index ? { ...s, ...updated } : s
+      i === index
+        ? {
+            ...s,
+            date: updated.date,
+            startTime: updated.startTime,
+            endTime: updated.endTime,
+            location: updated.location,
+            notes: updated.notes,
+          }
+        : s
     );
     setSessions(next);
     toast.success(t('toast.sessionUpdated'), {
