@@ -172,6 +172,45 @@ function EditSessionPopover({
             <Input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
           </div>
         </div>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label>{t('schedule.locationOverrideLabel')}</Label>
+            {locationOverride !== undefined && (
+              <button
+                type="button"
+                className="text-xs text-muted-foreground hover:text-foreground underline"
+                onClick={() => setLocationOverride(undefined)}
+              >
+                {t('schedule.clearOverride')}
+              </button>
+            )}
+          </div>
+          <Input
+            value={locationOverride ?? ""}
+            placeholder={locationPlaceholder}
+            onChange={(e) => setLocationOverride(e.target.value)}
+          />
+        </div>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label>{t('schedule.notesOverrideLabel')}</Label>
+            {notesOverride !== undefined && (
+              <button
+                type="button"
+                className="text-xs text-muted-foreground hover:text-foreground underline"
+                onClick={() => setNotesOverride(undefined)}
+              >
+                {t('schedule.clearOverride')}
+              </button>
+            )}
+          </div>
+          <Textarea
+            value={notesOverride ?? ""}
+            placeholder={notesPlaceholder}
+            onChange={(e) => setNotesOverride(e.target.value)}
+            rows={3}
+          />
+        </div>
         <div className="flex justify-end gap-2">
           <Button variant="ghost" size="sm" onClick={() => setOpen(false)}>
             {t('schedule.cancel')}
