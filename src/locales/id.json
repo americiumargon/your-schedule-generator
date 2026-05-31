@@ -135,7 +135,12 @@
     "editedBadge": "diubah",
     "rolledFromBadge": "Dipindah dari",
     "save": "Simpan",
-    "cancel": "Batal"
+    "cancel": "Batal",
+    "locationOverrideLabel": "Lokasi (sesi ini saja)",
+    "notesOverrideLabel": "Catatan (sesi ini saja)",
+    "useDefaultPlaceholder": "Memakai default: {{value}}",
+    "clearOverride": "Hapus penggantian",
+    "overrideBadge": "diganti"
   },
   "summary": {
     "totalSessions": "Sesi",
