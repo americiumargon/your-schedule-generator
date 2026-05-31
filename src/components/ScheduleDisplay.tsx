@@ -326,7 +326,7 @@ export function ScheduleDisplay({ eventName, sessions, location, notes, timezone
       return;
     }
     const result = buildGoogleCalendarUrl(eventName, enabledList, location, notes, timezone);
-    if (result.url === null) {
+    if ('reason' in result) {
       if (result.reason === "too_many") toast.error(t('toast.gcalTooMany'));
       else if (result.reason === "not_representable") toast.error(t('toast.gcalNotRepresentable'));
       return;
