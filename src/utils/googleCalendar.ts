@@ -3,6 +3,8 @@ interface GCalSession {
   startTime: string;
   endTime: string;
   slotLabel?: string;
+  location?: string;
+  notes?: string;
 }
 
 function pad(n: number, w = 2) {
@@ -22,7 +24,7 @@ function formatUtc(date: Date, time: string): string {
 }
 
 export type GCalResult =
-  | { url: string; hasTimeConflicts: boolean }
+  | { url: string; hasTimeConflicts: boolean; hasOverrides: boolean }
   | { url: null; reason: "too_many" | "empty" };
 
 const MAX_SESSIONS = 50;
@@ -47,6 +49,7 @@ export function buildGoogleCalendarUrl(
   const hasTimeConflicts = sessions.some(
     (s) => s.startTime !== anchor.startTime || s.endTime !== anchor.endTime
   );
+  const hasOverrides = sessions.some((s) => s.location !== undefined || s.notes !== undefined);
 
   const params = new URLSearchParams();
   params.set("action", "TEMPLATE");
@@ -71,5 +74,6 @@ export function buildGoogleCalendarUrl(
   return {
     url: `https://calendar.google.com/calendar/render?${params.toString()}`,
     hasTimeConflicts,
+    hasOverrides,
   };
 }
