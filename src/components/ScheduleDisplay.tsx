@@ -516,10 +516,25 @@ export function ScheduleDisplay({ eventName, sessions, location, notes, timezone
                         {t('schedule.editedBadge')}
                       </span>
                     )}
+                    {session.location !== undefined && (
+                      <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded bg-accent/20 text-accent-foreground border border-accent/30">
+                        📍 {t('schedule.overrideBadge')}
+                      </span>
+                    )}
+                    {session.notes !== undefined && (
+                      <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded bg-accent/20 text-accent-foreground border border-accent/30">
+                        📝 {t('schedule.overrideBadge')}
+                      </span>
+                    )}
                   </div>
                   <div className="text-sm text-muted-foreground">
                     {format(session.date, "EEEE, MMMM d, yyyy", { locale: dateLocale })}
                   </div>
+                  {(session.location ?? location) && (
+                    <div className="text-xs text-muted-foreground/80 mt-0.5 truncate max-w-[280px]">
+                      📍 {session.location ?? location}
+                    </div>
+                  )}
                   {session.rolledFrom && (
                     <div className="text-xs text-muted-foreground/80 italic mt-0.5">
                       {t('schedule.rolledFromBadge')} {format(session.rolledFrom, "MMM d", { locale: dateLocale })}
