@@ -186,7 +186,8 @@
     "undo": "Undo",
     "sessionUpdated": "Session updated",
     "gcalTooMany": "Too many sessions for one Google Calendar link. Use ICS instead.",
-    "gcalTimeConflicts": "Sessions have different times. Google Calendar will use the first session's time. Use ICS for full fidelity."
+    "gcalTimeConflicts": "Sessions have different times. Google Calendar will use the first session's time. Use ICS for full fidelity.",
+    "gcalOverridesDropped": "Per-session location/notes were dropped — Google Calendar only supports one set per event. Use ICS for full fidelity."
   },
   "recent": {
     "title": "Recent schedules",
