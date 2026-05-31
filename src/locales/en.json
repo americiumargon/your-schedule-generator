@@ -139,7 +139,12 @@
     "editedBadge": "edited",
     "rolledFromBadge": "Moved from",
     "save": "Save",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "locationOverrideLabel": "Location (this session only)",
+    "notesOverrideLabel": "Notes (this session only)",
+    "useDefaultPlaceholder": "Using default: {{value}}",
+    "clearOverride": "Clear override",
+    "overrideBadge": "override"
   },
   "summary": {
     "totalSessions": "Sessions",
