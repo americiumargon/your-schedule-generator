@@ -41,6 +41,8 @@ interface Session {
   endTime: string;
   slotLabel?: string;
   rolledFrom?: Date;
+  location?: string;
+  notes?: string;
 }
 
 interface ScheduleDisplayProps {
@@ -53,7 +55,13 @@ interface ScheduleDisplayProps {
   onClear: () => void;
   onUpdateSession?: (
     index: number,
-    updated: { date: Date; startTime: string; endTime: string }
+    updated: {
+      date: Date;
+      startTime: string;
+      endTime: string;
+      location?: string;
+      notes?: string;
+    }
   ) => void;
   onShare?: () => void;
 }
@@ -64,10 +72,20 @@ function sessionKey(s: Session) {
 
 function EditSessionPopover({
   session,
+  globalLocation,
+  globalNotes,
   onSave,
 }: {
   session: Session;
-  onSave: (u: { date: Date; startTime: string; endTime: string }) => void;
+  globalLocation?: string;
+  globalNotes?: string;
+  onSave: (u: {
+    date: Date;
+    startTime: string;
+    endTime: string;
+    location?: string;
+    notes?: string;
+  }) => void;
 }) {
   const { t, i18n } = useTranslation();
   const dateLocale = i18n.language === 'id' ? idLocale : enUS;
