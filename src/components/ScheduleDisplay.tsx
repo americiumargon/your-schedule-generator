@@ -554,6 +554,8 @@ export function ScheduleDisplay({ eventName, sessions, location, notes, timezone
                 {onUpdateSession && (
                   <EditSessionPopover
                     session={session}
+                    globalLocation={location}
+                    globalNotes={notes}
                     onSave={(u) => onUpdateSession(index, u)}
                   />
                 )}
