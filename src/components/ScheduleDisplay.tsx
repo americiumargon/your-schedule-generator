@@ -93,21 +93,41 @@ function EditSessionPopover({
   const [date, setDate] = useState<Date>(session.date);
   const [startTime, setStartTime] = useState(session.startTime);
   const [endTime, setEndTime] = useState(session.endTime);
+  // "" = explicit blank; undefined = inherit. Track inherit separately via a flag.
+  const [locationOverride, setLocationOverride] = useState<string | undefined>(session.location);
+  const [notesOverride, setNotesOverride] = useState<string | undefined>(session.notes);
 
   const handleOpenChange = (next: boolean) => {
     if (next) {
       setDate(session.date);
       setStartTime(session.startTime);
       setEndTime(session.endTime);
+      setLocationOverride(session.location);
+      setNotesOverride(session.notes);
     }
     setOpen(next);
   };
 
   const handleSave = () => {
     if (!date || !startTime || !endTime) return;
-    onSave({ date, startTime, endTime });
+    onSave({
+      date,
+      startTime,
+      endTime,
+      location: locationOverride,
+      notes: notesOverride,
+    });
     setOpen(false);
   };
+
+  const locationPlaceholder = globalLocation
+    ? t('schedule.useDefaultPlaceholder', { value: globalLocation })
+    : t('form.locationPlaceholder');
+  const notesPlaceholder = globalNotes
+    ? t('schedule.useDefaultPlaceholder', {
+        value: globalNotes.length > 40 ? `${globalNotes.slice(0, 40)}…` : globalNotes,
+      })
+    : t('form.notesPlaceholder');
 
   return (
     <Popover open={open} onOpenChange={handleOpenChange}>
