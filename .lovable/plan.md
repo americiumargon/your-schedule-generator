@@ -1,81 +1,35 @@
-## Per-session location & notes overrides
+## Problem
 
-Let users override the global location and notes on individual sessions (e.g. "Room B this week only"). Defaults stay the global values; overrides are visible, editable, and clearable, and flow through every export.
+The "Add to Google Calendar" button only ever creates a single event, even when the schedule has many sessions. Reason: `buildGoogleCalendarUrl` puts the extra dates into a `recur=RDATE;...` parameter on Google's `calendar/render?action=TEMPLATE` URL. Google Calendar's template URL does **not** support `RDATE` — the `recur` param only honors a single `RRULE`. So GCal silently drops the extras and only the anchor session is created.
 
-### Data model
+## Fix
 
-Extend `Session` (in `src/pages/Index.tsx`, `src/components/ScheduleDisplay.tsx`, and propagate to `copyFormats.ts` / `googleCalendar.ts` / `scheduleGenerator.ts`) with two optional fields:
+Rework `src/utils/googleCalendar.ts` so the URL we hand to Google actually represents every session:
 
-```ts
-location?: string;        // override; undefined = use global
-notes?: string;           // override; undefined = use global
-```
+1. **Detect a clean weekly pattern** across the enabled sessions:
+   - same `startTime` and `endTime` on every session
+   - dates are exactly every N weeks (N ≥ 1) on the same set of weekdays
+   - no per-session `location`/`notes` overrides
+   - no `rolledFrom` exceptions
+   
+   When that holds, build a real `RRULE`:
+   `RRULE:FREQ=WEEKLY;INTERVAL=N;BYDAY=MO,WE;COUNT=<sessions.length>` (or `UNTIL=<lastDate>`), keep the existing `DTSTART/DTEND/ctz` for the first session, and return that as the single URL. This is the case where one GCal link genuinely covers all sessions.
 
-`undefined` means "inherit global". Empty string `""` means "explicitly blank for this session" (so a user can suppress the global value on one session).
+2. **Otherwise (irregular dates, mixed times, overrides, rolled sessions, or > MAX_SESSIONS)** the template URL physically cannot represent the schedule. Stop pretending it can:
+   - Return a new result shape `{ url: null, reason: "not_representable" }` (keep the existing `too_many` and `empty` reasons).
+   - In `ScheduleDisplay.handleAddToGoogle`, when we get `not_representable`, show a clear toast like *"Google Calendar can't import this schedule in one link — use the ICS export instead."* and do not open a window. Add the i18n key `toast.gcalNotRepresentable` to `en.json` and `id.json`.
+   - This replaces the current misleading behavior where we open a URL that only creates session #1.
 
-A helper resolves the effective values:
-```ts
-const effLocation = session.location ?? globalLocation;
-const effNotes    = session.notes    ?? globalNotes;
-```
+3. **Tidy up the existing flags**: `hasTimeConflicts` and `hasOverrides` only made sense under the broken RDATE path. With the new logic those cases now fall into `not_representable`, so remove the two flags from the success result and delete the now-unused toasts (`gcalTimeConflicts`, `gcalOverridesDropped`) from both locale files and from `handleAddToGoogle`.
 
-### UI changes (`ScheduleDisplay.tsx` → `EditSessionPopover`)
+4. **Keep the simple cases working**: 1 session → same single-event URL as today. N regular weekly sessions → one RRULE URL that creates all of them on import.
 
-Extend the existing per-session edit popover (already opened via the pencil icon) with two new fields below date/time:
+## Files touched
 
-- **Location** input — placeholder shows the global location (e.g. `Using default: Studio A`). Empty input + Save = inherit; user can click a small "Clear override" link to reset to inherit when an override exists.
-- **Notes** textarea — same pattern, placeholder previews the global notes (truncated).
+- `src/utils/googleCalendar.ts` — pattern detection + RRULE builder + new result shape.
+- `src/components/ScheduleDisplay.tsx` — handle `not_representable`, drop the two stale warning branches.
+- `src/locales/en.json`, `src/locales/id.json` — add `gcalNotRepresentable`, remove `gcalTimeConflicts` and `gcalOverridesDropped`.
 
-Save calls `onUpdateSession(index, { date, startTime, endTime, location, notes })` where `location`/`notes` are `string | undefined` (undefined when the user left it as "inherit").
+## Out of scope
 
-On each session card, when an override is active, show a small badge next to the existing "edited" badge:
-- `📍 override` when location differs
-- `📝 override` when notes differ
-
-(Reuse existing badge styling.)
-
-### Handler change (`Index.tsx`)
-
-`handleUpdateSession` widens its `updated` param to include optional `location` and `notes`, and merges them into the session. The global `location`/`notes` state is untouched.
-
-### Exports — pick up overrides
-
-All four export paths must use the per-session effective values:
-
-1. **`scheduleGenerator.ts` → `exportToCSV`**: per-row, use `session.location ?? opts.location` for the Location column and append `session.notes ?? opts.notes` to the description.
-2. **`scheduleGenerator.ts` → `exportToICS`**: build `LOCATION` and the notes part of `DESCRIPTION` per VEVENT instead of once up front.
-3. **`copyFormats.ts`** (plain, markdown, HTML): currently take a single `location`/`notes` for the whole schedule. Change the three formatters to read from `session.location` / `session.notes` first, falling back to the passed-in globals. Markdown/HTML get an extra column or inline annotation only when at least one session has an override (to keep the common case clean):
-   - Plain: when a session has a location override, swap the `@ ${location}` suffix; append per-session notes on a new indented line under that session.
-   - Markdown table: add a `Location` column only if any session overrides it; trailing per-session notes become a `> note` quote block under the table grouped by session number when overrides exist.
-   - HTML mirrors the markdown logic.
-4. **`googleCalendar.ts` → `buildGoogleCalendarUrl`**: today it builds a single template event with `RDATE`. Per-session location/notes can't be expressed in a single Google template URL. Behavior: when any session has an override, fall back to the existing single-event template using globals **and** return a new flag `hasOverrides: true` so `ScheduleDisplay` can show a toast (`toast.warning(t('toast.gcalOverridesDropped'))`) before opening the URL. Existing `hasTimeConflicts` behavior is unchanged.
-
-### Share link / recent schedules
-
-`ShareFormState` and `recentSchedules` only persist form inputs, not generated sessions, so they don't need schema changes. Per-session overrides live only on the generated sessions in memory and are lost on regenerate (acceptable — regenerating is a destructive action already, like time edits today).
-
-### i18n keys (`src/locales/en.json` & `id.json`)
-
-Add under `schedule`:
-- `locationOverrideLabel`, `notesOverrideLabel`
-- `useDefaultPlaceholder` (e.g. `Using default: {{value}}`)
-- `clearOverride`
-- `locationOverrideBadge`, `notesOverrideBadge`
-
-Add under `toast`:
-- `gcalOverridesDropped` (e.g. `Per-session location/notes were dropped — Google Calendar only supports one set per event.`)
-
-### Files touched
-
-- `src/components/ScheduleDisplay.tsx` — extend popover, add badges, widen `Session` interface, pass overrides through `onUpdateSession`, surface gcal warning.
-- `src/pages/Index.tsx` — widen `Session` type and `handleUpdateSession` signature.
-- `src/utils/scheduleGenerator.ts` — per-row location/notes in CSV & ICS; widen `Session` type used in exports.
-- `src/utils/copyFormats.ts` — per-session overrides in plain/markdown/HTML.
-- `src/utils/googleCalendar.ts` — add `hasOverrides` flag, keep single-template behavior.
-- `src/locales/en.json`, `src/locales/id.json` — new strings.
-
-### Out of scope
-
-- No new dependencies.
-- No changes to generation logic, recurrence, share links, or theme.
-- No bulk-edit ("apply override to every Friday") — single-session only for this pass.
+No new dependencies, no changes to ICS/CSV exports, no changes to generation logic. ICS remains the recommended path for irregular schedules.
