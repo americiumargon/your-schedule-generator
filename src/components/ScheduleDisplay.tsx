@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { format, differenceInCalendarDays } from "date-fns";
+import { Textarea } from "@/components/ui/textarea";
 import { enUS, id as idLocale } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
