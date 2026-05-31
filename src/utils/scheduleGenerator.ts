@@ -15,6 +15,8 @@ interface Session {
   endTime: string;
   slotLabel?: string;
   rolledFrom?: Date;
+  location?: string;
+  notes?: string;
 }
 
 const MAX_SESSIONS = 1000;
@@ -231,7 +233,7 @@ export function exportToCSV(sessions: Session[], eventName: string, language: st
   ];
 
   const baseLocation = opts.location ?? "";
-  const notes = opts.notes ?? "";
+  const baseNotes = opts.notes ?? "";
 
   const rows = sessions.map(session => {
     const dateStr = format(session.date, "MM/dd/yyyy");
@@ -240,9 +242,11 @@ export function exportToCSV(sessions: Session[], eventName: string, language: st
     const rolledNote = session.rolledFrom
       ? `${(t.schedule as any).rolledFromBadge} ${format(session.rolledFrom, "MMM d, yyyy")}`
       : "";
+    const effLocation = session.location ?? baseLocation;
+    const effNotes = session.notes ?? baseNotes;
     const descParts = [baseDescription];
     if (rolledNote) descParts.push(rolledNote);
-    if (notes) descParts.push(notes);
+    if (effNotes) descParts.push(effNotes);
     const description = descParts.join("\n\n");
 
     return [
@@ -253,7 +257,7 @@ export function exportToCSV(sessions: Session[], eventName: string, language: st
       convertTo12Hour(session.endTime),
       "False",
       description,
-      baseLocation,
+      effLocation,
       ""
     ];
   });
@@ -292,8 +296,6 @@ export function exportToICS(sessions: Session[], eventName: string, language: st
   const formatDT = (d: Date, time: string) =>
     useFloatingTzid ? formatLocalICS(d, time) : formatUtcICS(d, time);
 
-  const locationLine = opts.location ? `LOCATION:${escapeICS(opts.location)}` : null;
-
   const events = sessions.map(session => {
     const startDateTime = formatDT(session.date, session.startTime);
     const endDateTime = formatDT(session.date, session.endTime);
@@ -308,9 +310,11 @@ export function exportToICS(sessions: Session[], eventName: string, language: st
     const rolledNote = session.rolledFrom
       ? `${(t.schedule as any).rolledFromBadge} ${format(session.rolledFrom, "MMM d, yyyy")}`
       : "";
+    const effLocation = session.location ?? opts.location;
+    const effNotes = session.notes ?? opts.notes;
     const descParts = [baseDescription];
     if (rolledNote) descParts.push(rolledNote);
-    if (opts.notes) descParts.push(opts.notes);
+    if (effNotes) descParts.push(effNotes);
     const fullDescription = descParts.join("\n\n");
 
     const lines = [
@@ -320,7 +324,7 @@ export function exportToICS(sessions: Session[], eventName: string, language: st
       `SUMMARY:${escapeICS(summary)}`,
       `DESCRIPTION:${escapeICS(fullDescription)}`,
     ];
-    if (locationLine) lines.push(locationLine);
+    if (effLocation) lines.push(`LOCATION:${escapeICS(effLocation)}`);
     lines.push(`UID:${Date.now()}-${session.sessionNumber}-${session.slotLabel ?? ''}@schedule-generator.com`);
     if (opts.reminderMinutes && opts.reminderMinutes > 0) {
       lines.push(

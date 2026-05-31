@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { format, differenceInCalendarDays } from "date-fns";
+import { Textarea } from "@/components/ui/textarea";
 import { enUS, id as idLocale } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -40,6 +41,8 @@ interface Session {
   endTime: string;
   slotLabel?: string;
   rolledFrom?: Date;
+  location?: string;
+  notes?: string;
 }
 
 interface ScheduleDisplayProps {
@@ -52,7 +55,13 @@ interface ScheduleDisplayProps {
   onClear: () => void;
   onUpdateSession?: (
     index: number,
-    updated: { date: Date; startTime: string; endTime: string }
+    updated: {
+      date: Date;
+      startTime: string;
+      endTime: string;
+      location?: string;
+      notes?: string;
+    }
   ) => void;
   onShare?: () => void;
 }
@@ -63,10 +72,20 @@ function sessionKey(s: Session) {
 
 function EditSessionPopover({
   session,
+  globalLocation,
+  globalNotes,
   onSave,
 }: {
   session: Session;
-  onSave: (u: { date: Date; startTime: string; endTime: string }) => void;
+  globalLocation?: string;
+  globalNotes?: string;
+  onSave: (u: {
+    date: Date;
+    startTime: string;
+    endTime: string;
+    location?: string;
+    notes?: string;
+  }) => void;
 }) {
   const { t, i18n } = useTranslation();
   const dateLocale = i18n.language === 'id' ? idLocale : enUS;
@@ -74,21 +93,41 @@ function EditSessionPopover({
   const [date, setDate] = useState<Date>(session.date);
   const [startTime, setStartTime] = useState(session.startTime);
   const [endTime, setEndTime] = useState(session.endTime);
+  // "" = explicit blank; undefined = inherit. Track inherit separately via a flag.
+  const [locationOverride, setLocationOverride] = useState<string | undefined>(session.location);
+  const [notesOverride, setNotesOverride] = useState<string | undefined>(session.notes);
 
   const handleOpenChange = (next: boolean) => {
     if (next) {
       setDate(session.date);
       setStartTime(session.startTime);
       setEndTime(session.endTime);
+      setLocationOverride(session.location);
+      setNotesOverride(session.notes);
     }
     setOpen(next);
   };
 
   const handleSave = () => {
     if (!date || !startTime || !endTime) return;
-    onSave({ date, startTime, endTime });
+    onSave({
+      date,
+      startTime,
+      endTime,
+      location: locationOverride,
+      notes: notesOverride,
+    });
     setOpen(false);
   };
+
+  const locationPlaceholder = globalLocation
+    ? t('schedule.useDefaultPlaceholder', { value: globalLocation })
+    : t('form.locationPlaceholder');
+  const notesPlaceholder = globalNotes
+    ? t('schedule.useDefaultPlaceholder', {
+        value: globalNotes.length > 40 ? `${globalNotes.slice(0, 40)}…` : globalNotes,
+      })
+    : t('form.notesPlaceholder');
 
   return (
     <Popover open={open} onOpenChange={handleOpenChange}>
@@ -132,6 +171,45 @@ function EditSessionPopover({
             <Label>{t('form.endTime')}</Label>
             <Input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
           </div>
+        </div>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label>{t('schedule.locationOverrideLabel')}</Label>
+            {locationOverride !== undefined && (
+              <button
+                type="button"
+                className="text-xs text-muted-foreground hover:text-foreground underline"
+                onClick={() => setLocationOverride(undefined)}
+              >
+                {t('schedule.clearOverride')}
+              </button>
+            )}
+          </div>
+          <Input
+            value={locationOverride ?? ""}
+            placeholder={locationPlaceholder}
+            onChange={(e) => setLocationOverride(e.target.value)}
+          />
+        </div>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label>{t('schedule.notesOverrideLabel')}</Label>
+            {notesOverride !== undefined && (
+              <button
+                type="button"
+                className="text-xs text-muted-foreground hover:text-foreground underline"
+                onClick={() => setNotesOverride(undefined)}
+              >
+                {t('schedule.clearOverride')}
+              </button>
+            )}
+          </div>
+          <Textarea
+            value={notesOverride ?? ""}
+            placeholder={notesPlaceholder}
+            onChange={(e) => setNotesOverride(e.target.value)}
+            rows={3}
+          />
         </div>
         <div className="flex justify-end gap-2">
           <Button variant="ghost" size="sm" onClick={() => setOpen(false)}>
@@ -254,6 +332,9 @@ export function ScheduleDisplay({ eventName, sessions, location, notes, timezone
     }
     if ('hasTimeConflicts' in result && result.hasTimeConflicts) {
       toast.warning(t('toast.gcalTimeConflicts'));
+    }
+    if ('hasOverrides' in result && result.hasOverrides) {
+      toast.warning(t('toast.gcalOverridesDropped'));
     }
     window.open(result.url, '_blank', 'noopener,noreferrer');
   };
@@ -435,10 +516,25 @@ export function ScheduleDisplay({ eventName, sessions, location, notes, timezone
                         {t('schedule.editedBadge')}
                       </span>
                     )}
+                    {session.location !== undefined && (
+                      <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded bg-accent/20 text-accent-foreground border border-accent/30">
+                        📍 {t('schedule.overrideBadge')}
+                      </span>
+                    )}
+                    {session.notes !== undefined && (
+                      <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded bg-accent/20 text-accent-foreground border border-accent/30">
+                        📝 {t('schedule.overrideBadge')}
+                      </span>
+                    )}
                   </div>
                   <div className="text-sm text-muted-foreground">
                     {format(session.date, "EEEE, MMMM d, yyyy", { locale: dateLocale })}
                   </div>
+                  {(session.location ?? location) && (
+                    <div className="text-xs text-muted-foreground/80 mt-0.5 truncate max-w-[280px]">
+                      📍 {session.location ?? location}
+                    </div>
+                  )}
                   {session.rolledFrom && (
                     <div className="text-xs text-muted-foreground/80 italic mt-0.5">
                       {t('schedule.rolledFromBadge')} {format(session.rolledFrom, "MMM d", { locale: dateLocale })}
@@ -458,6 +554,8 @@ export function ScheduleDisplay({ eventName, sessions, location, notes, timezone
                 {onUpdateSession && (
                   <EditSessionPopover
                     session={session}
+                    globalLocation={location}
+                    globalNotes={notes}
                     onSave={(u) => onUpdateSession(index, u)}
                   />
                 )}
