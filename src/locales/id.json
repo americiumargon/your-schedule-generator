@@ -181,7 +181,8 @@
     "undo": "Batalkan",
     "sessionUpdated": "Sesi diperbarui",
     "gcalTooMany": "Terlalu banyak sesi untuk satu tautan Google Calendar. Gunakan ICS sebagai gantinya.",
-    "gcalTimeConflicts": "Sesi memiliki waktu berbeda. Google Calendar akan memakai waktu sesi pertama. Pakai ICS untuk presisi penuh."
+    "gcalTimeConflicts": "Sesi memiliki waktu berbeda. Google Calendar akan memakai waktu sesi pertama. Pakai ICS untuk presisi penuh.",
+    "gcalOverridesDropped": "Penggantian lokasi/catatan per sesi diabaikan — Google Calendar hanya mendukung satu set per acara. Pakai ICS untuk presisi penuh."
   },
   "recent": {
     "title": "Jadwal terbaru",
