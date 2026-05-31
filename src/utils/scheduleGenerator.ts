@@ -15,6 +15,8 @@ interface Session {
   endTime: string;
   slotLabel?: string;
   rolledFrom?: Date;
+  location?: string;
+  notes?: string;
 }
 
 const MAX_SESSIONS = 1000;
