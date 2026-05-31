@@ -25,6 +25,8 @@ interface Session {
   endTime: string;
   slotLabel?: string;
   rolledFrom?: Date;
+  location?: string;
+  notes?: string;
 }
 
 const Index = () => {
