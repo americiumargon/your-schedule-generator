@@ -326,15 +326,10 @@ export function ScheduleDisplay({ eventName, sessions, location, notes, timezone
       return;
     }
     const result = buildGoogleCalendarUrl(eventName, enabledList, location, notes, timezone);
-    if (!result.url) {
-      if ('reason' in result && result.reason === "too_many") toast.error(t('toast.gcalTooMany'));
+    if ('reason' in result) {
+      if (result.reason === "too_many") toast.error(t('toast.gcalTooMany'));
+      else if (result.reason === "not_representable") toast.error(t('toast.gcalNotRepresentable'));
       return;
-    }
-    if ('hasTimeConflicts' in result && result.hasTimeConflicts) {
-      toast.warning(t('toast.gcalTimeConflicts'));
-    }
-    if ('hasOverrides' in result && result.hasOverrides) {
-      toast.warning(t('toast.gcalOverridesDropped'));
     }
     window.open(result.url, '_blank', 'noopener,noreferrer');
   };
