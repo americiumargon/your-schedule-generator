@@ -12,12 +12,16 @@ interface PdfSession {
   slotLabel?: string;
   location?: string;
   notes?: string;
+  trackName?: string;
+  trackColor?: string;
 }
 
 interface ExportOpts {
   location?: string;
   notes?: string;
   timezone?: string;
+  includeTrackColumn?: boolean;
+  filename?: string;
 }
 
 const DEFAULT_ACCENT = "#0ea5e9";
