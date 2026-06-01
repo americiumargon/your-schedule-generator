@@ -50,7 +50,7 @@ function buildCsv(sessions: Session[], eventName: string, language: string, opts
 
 function buildIcs(sessions: Session[], eventName: string, language: string, opts: ExportOptions): string {
   const tr = language === 'id' ? id : en;
-  const tz = opts.timezone || "UTC";
+  const tz = sanitizeTzid(opts.timezone);
   const useFloat = tz !== "UTC";
   const fmt = (d: Date, time: string) => {
     if (useFloat) {
