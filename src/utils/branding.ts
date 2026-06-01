@@ -4,6 +4,7 @@ export interface Branding {
   tagline?: string;
   accentColor?: string;
   footerText?: string;
+  coverPage?: boolean;
 }
 
 const KEY = "branding:v1";
