@@ -240,6 +240,39 @@ export function ScheduleForm({ onGenerate, initialState }: Props) {
     });
   };
 
+  // Compute & apply "Start after group X": sets active group's startDate to (last session of source group) + 1 day.
+  const applyStartAfter = (sourceTrackId: string) => {
+    const src = drafts.find((d) => d.id === sourceTrackId);
+    if (!src || !startDate) {
+      toast.error(t('tracks.sourceGroupNotReady', { name: src?.name ?? '' }));
+      return;
+    }
+    const srcTrack = draftToTrack(src);
+    const parsedCount = parseInt(numberOfMeetings);
+    try {
+      const sessions = generateSchedule({
+        startDate: srcTrack.startDate ?? startDate,
+        selectedDays: srcTrack.selectedDays,
+        timeSlots: srcTrack.timeSlots,
+        holidays,
+        holidayBehavior,
+        recurrence: srcTrack.recurrence,
+        mode,
+        numberOfMeetings: mode === 'count' && !isNaN(parsedCount) ? parsedCount : undefined,
+        endDate: mode === 'endDate' ? endDate : undefined,
+      });
+      if (!sessions.length) {
+        toast.error(t('tracks.sourceGroupNotReady', { name: src.name }));
+        return;
+      }
+      const last = sessions[sessions.length - 1].date;
+      updateActive({ startDate: addDays(last, 1) });
+    } catch {
+      toast.error(t('tracks.sourceGroupNotReady', { name: src.name }));
+    }
+  };
+
+
   // Per-track field shortcuts
   const selectedDays = active.selectedDays;
   const timeSlots = active.timeSlots;
