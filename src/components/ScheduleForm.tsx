@@ -407,6 +407,13 @@ export function ScheduleForm({ onGenerate, initialState }: Props) {
       }
     }
 
+    const cycleIds = findCycleTrackIds(drafts);
+    for (const id of cycleIds) {
+      if (!perTrack[id]) perTrack[id] = t('tracks.circularDependency');
+    }
+
+
+
     if (Object.keys(perTrack).length > 0) {
       next.perTrack = perTrack;
       // Switch to first errored track
