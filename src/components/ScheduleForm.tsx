@@ -84,6 +84,7 @@ interface TrackDraft {
   daysOfMonth: number[];
   location: string;
   notes: string;
+  startDate?: Date;
 }
 
 function trackToDraft(t: Track): TrackDraft {
@@ -101,6 +102,7 @@ function trackToDraft(t: Track): TrackDraft {
     daysOfMonth: t.recurrence.type === "monthlyByDate" ? t.recurrence.daysOfMonth : [1],
     location: t.location ?? "",
     notes: t.notes ?? "",
+    startDate: t.startDate,
   };
 }
 
@@ -125,6 +127,7 @@ function draftToTrack(d: TrackDraft): Track {
     recurrence,
     location: d.location.trim() || undefined,
     notes: d.notes.trim() || undefined,
+    startDate: d.startDate,
   };
 }
 
