@@ -53,5 +53,6 @@ export function createTrack(partial: Partial<Track> = {}, indexHint = 0): Track 
     recurrence: partial.recurrence ?? { type: "weekly", interval: 1 },
     location: partial.location,
     notes: partial.notes,
+    startDate: partial.startDate,
   };
 }
