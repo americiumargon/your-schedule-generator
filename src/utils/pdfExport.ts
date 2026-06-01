@@ -65,13 +65,109 @@ export function exportToPDF(
 
   const accent = hexToRgb(branding.accentColor || DEFAULT_ACCENT);
 
-  // Header band
-  const headerH = 80;
-  doc.setFillColor(accent[0], accent[1], accent[2]);
-  doc.rect(0, 0, pageW, headerH, "F");
+  const wantsCover =
+    branding.coverPage !== false && !!(branding.logoDataUrl || branding.orgName);
+
+  // ---------- Cover page ----------
+  if (wantsCover) {
+    // Top accent band ~ 42% of page height
+    const bandH = pageH * 0.42;
+    doc.setFillColor(accent[0], accent[1], accent[2]);
+    doc.rect(0, 0, pageW, bandH, "F");
+
+    // Centered large logo
+    let logoBottomY = 80;
+    if (branding.logoDataUrl) {
+      const props = getImageProps(doc, branding.logoDataUrl);
+      if (props) {
+        const maxH = 180;
+        const maxW = 280;
+        const ratio = props.w / props.h;
+        let h = Math.min(maxH, props.h);
+        let w = h * ratio;
+        if (w > maxW) {
+          w = maxW;
+          h = w / ratio;
+        }
+        const x = (pageW - w) / 2;
+        const y = (bandH - h) / 2;
+        try {
+          doc.addImage(branding.logoDataUrl, "PNG", x, y, w, h, undefined, "FAST");
+          logoBottomY = y + h;
+        } catch {
+          // ignore bad logo
+        }
+      }
+    }
+
+    // Below the band: text block
+    let cy = bandH + 48;
+    doc.setTextColor(20, 20, 20);
+    if (branding.orgName) {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(24);
+      doc.text(branding.orgName, pageW / 2, cy, { align: "center" });
+      cy += 30;
+    }
+    if (branding.tagline) {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(13);
+      doc.setTextColor(80, 80, 80);
+      doc.text(branding.tagline, pageW / 2, cy, { align: "center" });
+      cy += 22;
+    }
+    if (eventName) {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(16);
+      doc.setTextColor(20, 20, 20);
+      doc.text(eventName, pageW / 2, cy, { align: "center" });
+      cy += 28;
+    }
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(11);
+    doc.setTextColor(80, 80, 80);
+    if (sessions.length > 0) {
+      const first = sessions[0].date;
+      const last = sessions[sessions.length - 1].date;
+      const range = `${format(first, "MMM d, yyyy", { locale: dateLocale })} – ${format(last, "MMM d, yyyy", { locale: dateLocale })}`;
+      doc.text(range, pageW / 2, cy, { align: "center" });
+      cy += 16;
+      doc.text(`${t("pdf.sessions")}: ${sessions.length}`, pageW / 2, cy, { align: "center" });
+      cy += 16;
+    }
+    if (opts.location) {
+      doc.text(`${t("pdf.location")}: ${opts.location}`, pageW / 2, cy, { align: "center" });
+      cy += 16;
+    }
+    if (opts.timezone) {
+      doc.text(`${t("pdf.timezone")}: ${opts.timezone}`, pageW / 2, cy, { align: "center" });
+      cy += 16;
+    }
+
+    if (branding.footerText) {
+      doc.setFontSize(9);
+      doc.setTextColor(120, 120, 120);
+      doc.text(branding.footerText, pageW / 2, pageH - 30, { align: "center" });
+    }
+
+    // Suppress eslint unused-var warning on logoBottomY
+    void logoBottomY;
+
+    doc.addPage();
+  }
+
+  // ---------- Schedule first page header ----------
+  // When cover is on, use a slim accent strip (logo repeats via didDrawPage).
+  // When cover is off, render the original tall header band with logo.
+  const headerH = wantsCover ? 0 : 80;
+  if (!wantsCover) {
+    doc.setFillColor(accent[0], accent[1], accent[2]);
+    doc.rect(0, 0, pageW, headerH, "F");
+  }
 
   let textX = marginX;
-  if (branding.logoDataUrl) {
+  if (!wantsCover && branding.logoDataUrl) {
     const props = getImageProps(doc, branding.logoDataUrl);
     if (props) {
       const maxH = 48;
@@ -91,6 +187,7 @@ export function exportToPDF(
       }
     }
   }
+
 
   doc.setTextColor(255, 255, 255);
 
