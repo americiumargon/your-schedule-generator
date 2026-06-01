@@ -141,8 +141,8 @@ function encRec(rec: Recurrence) {
   if (rec.type === "monthlyByWeekday") return { t: "monthlyByWeekday" as const, o: rec.ordinals };
   return { t: "monthlyByDate" as const, dm: rec.daysOfMonth };
 }
-function decRec(r: z.infer<typeof recurrenceSchema> | undefined): Recurrence {
-  if (!r) return { type: "weekly", interval: 1 };
+function decRec(r: { t?: "weekly" | "monthlyByWeekday" | "monthlyByDate"; i?: number; o?: number[]; dm?: number[] } | undefined): Recurrence {
+  if (!r || !r.t) return { type: "weekly", interval: 1 };
   if (r.t === "weekly") return { type: "weekly", interval: r.i ?? 1 };
   if (r.t === "monthlyByWeekday") return { type: "monthlyByWeekday", ordinals: r.o ?? [1] };
   return { type: "monthlyByDate", daysOfMonth: r.dm ?? [1] };
