@@ -11,6 +11,8 @@ export interface Track {
   notes?: string;
   /** Optional per-group start date. When set, overrides ProjectState.startDate. */
   startDate?: Date;
+  /** Optional predecessor track id, set when startDate was computed via "Start after group" helper. */
+  startsAfter?: string;
 }
 
 export interface ProjectState {
