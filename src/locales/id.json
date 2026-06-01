@@ -147,10 +147,10 @@
     "useDefaultPlaceholder": "Memakai default: {{value}}",
     "clearOverride": "Hapus penggantian",
     "overrideBadge": "diganti",
-    "colTrack": "Trek",
+    "colTrack": "Grup",
     "exportScope": "Ekspor sebagai",
     "exportScopeCombined": "Satu file gabungan",
-    "exportScopePerTrack": "Satu file per trek (ZIP)"
+    "exportScopePerTrack": "Satu file per grup (ZIP)"
   },
   "summary": {
     "totalSessions": "Sesi",
