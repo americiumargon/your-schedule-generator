@@ -252,7 +252,7 @@ export function exportToCSV(sessions: Session[], eventName: string, language: st
     const effLocation = session.location ?? baseLocation;
     const effNotes = session.notes ?? baseNotes;
     const descParts = [baseDescription];
-    if (session.trackName) descParts.push(`Class: ${session.trackName}`);
+    if (session.trackName) descParts.push(`Track: ${session.trackName}`);
     if (rolledNote) descParts.push(rolledNote);
     if (effNotes) descParts.push(effNotes);
     const description = descParts.join("\n\n");
@@ -351,7 +351,7 @@ export function exportToICS(sessions: Session[], eventName: string, language: st
     const effLocation = session.location ?? opts.location;
     const effNotes = session.notes ?? opts.notes;
     const descParts = [baseDescription];
-    if (session.trackName) descParts.push(`Class: ${session.trackName}`);
+    if (session.trackName) descParts.push(`Track: ${session.trackName}`);
     if (rolledNote) descParts.push(rolledNote);
     if (effNotes) descParts.push(effNotes);
     const fullDescription = descParts.join("\n\n");

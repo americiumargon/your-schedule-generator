@@ -144,7 +144,11 @@
     "notesOverrideLabel": "Catatan (sesi ini saja)",
     "useDefaultPlaceholder": "Memakai default: {{value}}",
     "clearOverride": "Hapus penggantian",
-    "overrideBadge": "diganti"
+    "overrideBadge": "diganti",
+    "colTrack": "Trek",
+    "exportScope": "Ekspor sebagai",
+    "exportScopeCombined": "Satu file gabungan",
+    "exportScopePerTrack": "Satu file per trek (ZIP)"
   },
   "summary": {
     "totalSessions": "Sesi",
@@ -176,7 +180,8 @@
       "day": "Hari",
       "time": "Waktu",
       "location": "Lokasi",
-      "notes": "Catatan"
+      "notes": "Catatan",
+      "track": "Trek"
     }
   },
   "branding": {
