@@ -226,21 +226,23 @@
     "load": "Load",
     "remove": "Remove",
     "clearAll": "Clear all",
-    "createdAgo": "Created {{ago}}"
+    "createdAgo": "Created {{ago}}",
+    "trackCount": "{{count}} track",
+    "trackCount_other": "{{count}} tracks"
   },
   "theme": {
     "toggleLight": "Switch to light mode",
     "toggleDark": "Switch to dark mode"
   },
   "tracks": {
-    "title": "Classes",
-    "hint": "Plan multiple classes in one project",
-    "add": "Add class",
+    "title": "Tracks",
+    "hint": "Plan multiple tracks in one project",
+    "add": "Add track",
     "rename": "Rename",
     "duplicate": "Duplicate",
     "delete": "Delete",
     "color": "Color",
-    "newName": "Class",
-    "minOne": "At least one class is required"
+    "newName": "Track",
+    "minOne": "At least one track is required"
   }
 }
