@@ -5,6 +5,8 @@
   },
   "form": {
     "title": "Schedule details",
+    "projectName": "Project name",
+    "projectNamePlaceholder": "e.g. Spring semester, Summer camp",
     "eventName": "Activity name",
     "eventNamePlaceholder": "e.g. Morning workout, Team standup, Study session",
     "startDate": "First session date",
@@ -94,6 +96,7 @@
     "generateButton": "Generate schedule",
     "validation": {
       "eventNameRequired": "Enter an activity name",
+      "projectNameRequired": "Enter a project name",
       "dateRequired": "Select a start date",
       "meetingsRequired": "Number of sessions must be at least 1",
       "daysRequired": "Select at least one day of the week",
@@ -228,5 +231,16 @@
   "theme": {
     "toggleLight": "Switch to light mode",
     "toggleDark": "Switch to dark mode"
+  },
+  "tracks": {
+    "title": "Classes",
+    "hint": "Plan multiple classes in one project",
+    "add": "Add class",
+    "rename": "Rename",
+    "duplicate": "Duplicate",
+    "delete": "Delete",
+    "color": "Color",
+    "newName": "Class",
+    "minOne": "At least one class is required"
   }
 }
