@@ -107,6 +107,51 @@ describe("PDF export — Combined scope", () => {
       expect(text, `expected combined PDF to contain ${needle}`).toContain(needle);
     }
   });
+
+  it("produces a larger PDF when coverPage is enabled (extra cover page)", async () => {
+    const { sessions } = makeSessions();
+    const tinyPng =
+      "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=";
+
+    exportToPDF(
+      sessions,
+      "QA Term",
+      "en",
+      { includeTrackColumn: true, filename: "no_cover" },
+      { accentColor: "#0ea5e9", orgName: "QA Org", logoDataUrl: tinyPng, coverPage: false },
+      t,
+    );
+    const noCoverBlob = globalThis.__capturedBlobs[globalThis.__capturedBlobs.length - 1];
+    const noCoverBytes = await blobBytes(noCoverBlob);
+
+    exportToPDF(
+      sessions,
+      "QA Term",
+      "en",
+      { includeTrackColumn: true, filename: "with_cover" },
+      { accentColor: "#0ea5e9", orgName: "QA Org", logoDataUrl: tinyPng, coverPage: true },
+      t,
+    );
+    const coverBlob = globalThis.__capturedBlobs[globalThis.__capturedBlobs.length - 1];
+    const coverBytes = await blobBytes(coverBlob);
+
+    expect(coverBytes.length).toBeGreaterThan(noCoverBytes.length);
+    expect(bytesToLatin1(coverBytes)).toContain("QA Org");
+  });
+
+  it("does not throw when logo and org name are absent (cover suppressed)", () => {
+    const { sessions } = makeSessions();
+    expect(() =>
+      exportToPDF(
+        sessions,
+        "QA Term",
+        "en",
+        { includeTrackColumn: true, filename: "no_brand" },
+        { accentColor: "#0ea5e9" },
+        t,
+      ),
+    ).not.toThrow();
+  });
 });
 
 describe("PDF export — One file per track ZIP scope", () => {
