@@ -544,6 +544,19 @@ export function ScheduleDisplay({ eventName, sessions, location, notes, timezone
                 />
                 <div className="min-w-0">
                   <div className="font-medium flex items-center gap-2 flex-wrap">
+                    {isMultiTrack && session.trackName && (
+                      <span
+                        className="inline-flex items-center gap-1.5 text-[11px] px-1.5 py-0.5 rounded border"
+                        style={{ borderColor: session.trackColor, color: session.trackColor }}
+                      >
+                        <span
+                          className="h-2 w-2 rounded-full"
+                          style={{ backgroundColor: session.trackColor }}
+                          aria-hidden
+                        />
+                        {session.trackName}
+                      </span>
+                    )}
                     <span>{t('schedule.session')} {session.sessionNumber}</span>
                     {isEdited && (
                       <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded bg-accent/20 text-accent-foreground border border-accent/30">
