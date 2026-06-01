@@ -109,7 +109,14 @@
       "endDateRequired": "Select an end date",
       "endDateAfterStart": "End date must be on or after the start date",
       "noSessionsInRange": "No sessions fit in this date range",
-      "invalid": "Check the form and try again"
+      "invalid": "Check the form and try again",
+      "dateOutOfRange": "Date must be between {{min}} and {{max}}",
+      "meetingsOutOfRange": "Number of sessions must be between 1 and {{max}}",
+      "timezoneInvalid": "Select a valid timezone",
+      "intervalInvalid": "Repeat interval must be between 1 and 12",
+      "reminderInvalid": "Select a valid reminder option",
+      "timeOrder": "End time must be after start time",
+      "textTooLong": "Text is too long"
     }
   },
   "weekdays": {
@@ -228,7 +235,8 @@
     "undo": "Undo",
     "sessionUpdated": "Session updated",
     "gcalTooMany": "Too many sessions for one Google Calendar link. Use ICS instead.",
-    "gcalNotRepresentable": "Google Calendar can't import this schedule in one link — use the ICS export instead."
+    "gcalNotRepresentable": "Google Calendar can't import this schedule in one link — use the ICS export instead.",
+    "exportInvalid": "Export blocked: invalid options"
   },
   "recent": {
     "title": "Recent schedules",
