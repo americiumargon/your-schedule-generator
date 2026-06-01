@@ -81,8 +81,8 @@ describe("CSV export — Combined scope", () => {
     expect(lines[0]).toBe(
       "Subject,Start Date,Start Time,End Date,End Time,All Day Event,Description,Location,Private,Class",
     );
-    // 1 header + 8 data rows
-    expect(lines).toHaveLength(9);
+    // 8 sessions — count by row subject prefix (descriptions contain newlines).
+    expect(text.match(/"QA Term - Session \d+"/g) ?? []).toHaveLength(8);
     expect(text).toContain("09:00 AM");
     expect(text).toContain("06:00 PM");
     expect(text).toContain('"Beginner"');
