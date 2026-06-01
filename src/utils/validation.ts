@@ -56,22 +56,11 @@ export class ExportValidationError extends Error {
 }
 
 // ---------- Date ----------
-export const dateSchema = z
-  .date({ invalid_type_error: "dateInvalid" })
-  .refine((d) => d instanceof Date && !isNaN(d.getTime()), { message: "dateInvalid" })
-  .refine(
-    (d) => {
-      const y = d.getFullYear();
-      return y >= MIN_YEAR && y <= MAX_YEAR;
-    },
-    { message: "dateOutOfRange" },
-  );
-
 export function validateDate(d: unknown): ValidationCode | null {
-  const res = dateSchema.safeParse(d);
-  if (res.success) return null;
-  const msg = res.error.issues[0]?.message;
-  return (msg as ValidationCode) ?? "dateInvalid";
+  if (!(d instanceof Date) || isNaN(d.getTime())) return "dateInvalid";
+  const y = d.getFullYear();
+  if (y < MIN_YEAR || y > MAX_YEAR) return "dateOutOfRange";
+  return null;
 }
 
 // ---------- Timezone ----------
