@@ -347,18 +347,52 @@ export function exportToPDF(
       }
     },
     didDrawPage: (data) => {
-      if (data.pageNumber > 1) {
+      const drawStrip = wantsCover || data.pageNumber > 1;
+      if (drawStrip) {
+        const stripH = 20;
         doc.setFillColor(accent[0], accent[1], accent[2]);
-        doc.rect(0, 0, pageW, 18, "F");
+        doc.rect(0, 0, pageW, stripH, "F");
+
+        let stripTextX = marginX;
+        if (branding.logoDataUrl) {
+          const props = getImageProps(doc, branding.logoDataUrl);
+          if (props) {
+            const maxH = 14;
+            const maxW = 60;
+            const ratio = props.w / props.h;
+            let h = Math.min(maxH, props.h);
+            let w = h * ratio;
+            if (w > maxW) {
+              w = maxW;
+              h = w / ratio;
+            }
+            try {
+              doc.addImage(
+                branding.logoDataUrl,
+                "PNG",
+                marginX,
+                (stripH - h) / 2,
+                w,
+                h,
+                undefined,
+                "FAST",
+              );
+              stripTextX = marginX + w + 10;
+            } catch {
+              // ignore
+            }
+          }
+        }
+
         doc.setFont("helvetica", "bold");
         doc.setFontSize(9);
         doc.setTextColor(255, 255, 255);
         const brand = branding.orgName || eventName || "";
         if (brand) {
-          const stripMaxW = pageW - marginX * 2;
+          const stripMaxW = pageW - stripTextX - marginX;
           const fitted = fitText(brand, stripMaxW, 9, 7, "bold");
           doc.setFontSize(fitted.size);
-          doc.text(fitted.text, marginX, 12);
+          doc.text(fitted.text, stripTextX, 13);
         }
       }
     },
