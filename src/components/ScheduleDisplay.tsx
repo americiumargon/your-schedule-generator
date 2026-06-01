@@ -254,7 +254,8 @@ export function ScheduleDisplay({ eventName, sessions, location, notes, timezone
     return sessions.filter((_, idx) => enabledSessions.has(idx));
   };
 
-  const handleExport = (format: "csv" | "ics" | "pdf", scope: ExportScope = "combined") => {
+  const [exportScope, setExportScope] = useState<ExportScope>("combined");
+  const handleExport = (format: "csv" | "ics" | "pdf", scope: ExportScope = exportScope) => {
     const enabled = getEnabledSessions();
     if (enabled.length === 0) {
       toast.error(t('export.errorNoSessions'));
@@ -405,6 +406,28 @@ export function ScheduleDisplay({ eventName, sessions, location, notes, timezone
             </DropdownMenu>
           </div>
 
+          {isMultiTrack && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-2">
+                  {exportScope === "combined"
+                    ? t('schedule.exportScopeCombined')
+                    : t('schedule.exportScopePerTrack')}
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>{t('schedule.exportScope')}</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setExportScope("combined")}>
+                  {t('schedule.exportScopeCombined')}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setExportScope("perTrack")}>
+                  {t('schedule.exportScopePerTrack')}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
           <Button
             variant="outline"
             size="sm"
@@ -432,6 +455,7 @@ export function ScheduleDisplay({ eventName, sessions, location, notes, timezone
             <FileText className="h-4 w-4" />
             {t('schedule.pdfButton')}
           </Button>
+
           <Button
             variant="outline"
             size="sm"
