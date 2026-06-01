@@ -85,6 +85,7 @@ interface TrackDraft {
   location: string;
   notes: string;
   startDate?: Date;
+  startsAfter?: string;
 }
 
 function trackToDraft(t: Track): TrackDraft {
