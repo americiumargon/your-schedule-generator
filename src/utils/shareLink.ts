@@ -55,6 +55,7 @@ const trackSchema = z.object({
   rec: recurrenceSchema,
   l: z.string().max(200).optional(),
   nt: z.string().max(2000).optional(),
+  sd: dateStr.optional(),
 });
 
 const v2Token = z.object({
