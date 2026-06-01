@@ -73,7 +73,51 @@ const v2Token = z.object({
   tr: z.array(trackSchema).min(1).max(12),
 });
 
-const tokenSchema = z.union([v2Token, v1Token]);
+// --- v3 (loose draft, all fields optional, for "Save draft" share links) ---
+const looseTimeStr = z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).or(z.literal(""));
+const looseSlotSchema = z.object({
+  s: looseTimeStr.optional(),
+  e: looseTimeStr.optional(),
+  l: z.string().max(50).optional(),
+});
+const draftRecurrenceSchema = z.object({
+  t: z.enum(["weekly", "monthlyByWeekday", "monthlyByDate"]).optional(),
+  i: z.number().int().min(1).max(12).optional(),
+  o: z.array(z.number().int().min(-1).max(5)).optional(),
+  dm: z.array(z.number().int().min(-1).max(31)).optional(),
+});
+const draftTrackSchema = z.object({
+  id: z.string().min(1).max(64).optional(),
+  n: z.string().max(100).optional(),
+  c: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+  d: z.array(z.number().int().min(0).max(6)).optional(),
+  ts: z.array(looseSlotSchema).max(6).optional(),
+  rec: draftRecurrenceSchema.optional(),
+  l: z.string().max(200).optional(),
+  nt: z.string().max(2000).optional(),
+  sd: dateStr.optional(),
+  sa: z.string().min(1).max(64).optional(),
+});
+const v3Token = z.object({
+  v: z.literal(3),
+  pn: z.string().max(100).optional(),
+  sd: dateStr.optional(),
+  m: z.enum(["count", "endDate"]).optional(),
+  c: z.number().int().min(1).max(366).optional(),
+  ed: dateStr.optional(),
+  h: z.array(dateStr).max(366).optional(),
+  hb: z.enum(["skip", "rollForward"]).optional(),
+  r: z.number().optional(),
+  tz: z.string().max(100).optional(),
+  tr: z.array(draftTrackSchema).max(12).optional(),
+});
+
+const tokenSchema = z.union([v3Token, v2Token, v1Token]);
+
+/** A partial form state. Used by the "Save draft" flow so users can share an
+ *  in-progress form. Decoded drafts come back as ShareFormState with best-effort
+ *  defaults for missing fields (e.g. undefined startDate, empty holidays). */
+export type DraftFormState = Partial<ShareFormState>;
 
 function fmtDate(d: Date): string {
   return format(d, "yyyy-MM-dd");
@@ -97,8 +141,8 @@ function encRec(rec: Recurrence) {
   if (rec.type === "monthlyByWeekday") return { t: "monthlyByWeekday" as const, o: rec.ordinals };
   return { t: "monthlyByDate" as const, dm: rec.daysOfMonth };
 }
-function decRec(r: z.infer<typeof recurrenceSchema> | undefined): Recurrence {
-  if (!r) return { type: "weekly", interval: 1 };
+function decRec(r: { t?: "weekly" | "monthlyByWeekday" | "monthlyByDate"; i?: number; o?: number[]; dm?: number[] } | undefined): Recurrence {
+  if (!r || !r.t) return { type: "weekly", interval: 1 };
   if (r.t === "weekly") return { type: "weekly", interval: r.i ?? 1 };
   if (r.t === "monthlyByWeekday") return { type: "monthlyByWeekday", ordinals: r.o ?? [1] };
   return { type: "monthlyByDate", daysOfMonth: r.dm ?? [1] };
@@ -222,10 +266,52 @@ function decodeV2(parsed: z.infer<typeof v2Token>): ShareFormState | null {
   };
 }
 
+function decodeV3(parsed: z.infer<typeof v3Token>): ShareFormState {
+  const startDate = parsed.sd ? parseDate(parsed.sd) ?? undefined : undefined;
+  const endDate = parsed.ed ? parseDate(parsed.ed) ?? undefined : undefined;
+  const holidays: Date[] = [];
+  for (const s of parsed.h ?? []) {
+    const d = parseDate(s);
+    if (d) holidays.push(d);
+  }
+  const tracks: Track[] = (parsed.tr ?? []).map((tr, idx) => {
+    const slots = (tr.ts && tr.ts.length > 0
+      ? tr.ts.map((s) => ({ startTime: s.s ?? "", endTime: s.e ?? "", label: s.l }))
+      : [{ startTime: "", endTime: "", label: undefined as string | undefined }]);
+    return createTrack({
+      id: tr.id,
+      name: tr.n,
+      color: tr.c,
+      selectedDays: tr.d,
+      timeSlots: slots,
+      recurrence: decRec(tr.rec),
+      location: tr.l,
+      notes: tr.nt,
+      startDate: tr.sd ? parseDate(tr.sd) ?? undefined : undefined,
+      startsAfter: tr.sa,
+    }, idx);
+  });
+  // Cast: ShareFormState requires startDate, but ScheduleForm tolerates
+  // undefined via its initializer fallbacks. This is the only consumer.
+  return {
+    projectName: parsed.pn ?? "",
+    startDate: startDate as Date,
+    mode: parsed.m ?? "count",
+    numberOfMeetings: parsed.c,
+    endDate,
+    holidays,
+    holidayBehavior: (parsed.hb ?? "skip") as HolidayBehavior,
+    reminderMinutes: parsed.r ?? 0,
+    timezone: parsed.tz ?? "",
+    tracks,
+  };
+}
+
 export function decodeShareState(token: string): ShareFormState | null {
   try {
     const json = b64urlDec(token);
     const parsed = tokenSchema.parse(JSON.parse(json));
+    if (parsed.v === 3) return decodeV3(parsed);
     if (parsed.v === 2) return decodeV2(parsed);
     return decodeV1(parsed);
   } catch (e) {
@@ -234,8 +320,53 @@ export function decodeShareState(token: string): ShareFormState | null {
   }
 }
 
+export function encodeDraftState(state: DraftFormState): string {
+  const fmtIf = (d: Date | undefined) => (d ? fmtDate(d) : undefined);
+  const token: Record<string, unknown> = { v: 3 };
+  if (state.projectName) token.pn = state.projectName;
+  if (state.startDate) token.sd = fmtIf(state.startDate);
+  if (state.mode) token.m = state.mode;
+  if (state.mode === "count" && state.numberOfMeetings != null) token.c = state.numberOfMeetings;
+  if (state.mode === "endDate" && state.endDate) token.ed = fmtIf(state.endDate);
+  if (state.holidays && state.holidays.length > 0) token.h = state.holidays.map(fmtDate);
+  if (state.holidayBehavior && state.holidayBehavior !== "skip") token.hb = state.holidayBehavior;
+  if (state.reminderMinutes != null && state.reminderMinutes !== 0) token.r = state.reminderMinutes;
+  if (state.timezone) token.tz = state.timezone;
+  if (state.tracks && state.tracks.length > 0) {
+    token.tr = state.tracks.map((t) => {
+      const tr: Record<string, unknown> = {};
+      if (t.id) tr.id = t.id;
+      if (t.name) tr.n = t.name;
+      if (t.color) tr.c = t.color;
+      if (t.selectedDays && t.selectedDays.length > 0) tr.d = t.selectedDays;
+      if (t.timeSlots && t.timeSlots.length > 0) {
+        tr.ts = t.timeSlots.map((s) => {
+          const slot: Record<string, unknown> = {};
+          if (s.startTime) slot.s = s.startTime;
+          if (s.endTime) slot.e = s.endTime;
+          if (s.label) slot.l = s.label;
+          return slot;
+        });
+      }
+      if (t.recurrence) tr.rec = encRec(t.recurrence);
+      if (t.location) tr.l = t.location;
+      if (t.notes) tr.nt = t.notes;
+      if (t.startDate) tr.sd = fmtDate(t.startDate);
+      if (t.startsAfter) tr.sa = t.startsAfter;
+      return tr;
+    });
+  }
+  return b64urlEnc(JSON.stringify(token));
+}
+
 export function buildShareUrl(state: ShareFormState): string {
   const token = encodeShareState(state);
+  const { origin, pathname } = window.location;
+  return `${origin}${pathname}#s=${token}`;
+}
+
+export function buildDraftUrl(state: DraftFormState): string {
+  const token = encodeDraftState(state);
   const { origin, pathname } = window.location;
   return `${origin}${pathname}#s=${token}`;
 }
