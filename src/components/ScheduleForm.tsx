@@ -21,7 +21,7 @@ import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { TrackTabs } from "@/components/TrackTabs";
-import { createTrack, newTrackId, TRACK_COLORS, type ProjectState, type Track } from "@/utils/tracks";
+import { createTrack, newTrackId, TRACK_COLORS, wouldCreateCycle, findCycleTrackIds, type ProjectState, type Track } from "@/utils/tracks";
 import { generateSchedule } from "@/utils/scheduleGenerator";
 
 const WEEKDAYS = [
