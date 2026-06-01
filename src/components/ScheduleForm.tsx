@@ -15,13 +15,14 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import {
   CalendarIcon, Check, ChevronDown, ChevronsUpDown, Clock, MapPin, Plus, Repeat, Settings2, Trash2,
 } from "lucide-react";
-import { format } from "date-fns";
+import { format, addDays } from "date-fns";
 import { enUS, id as idLocale } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { TrackTabs } from "@/components/TrackTabs";
 import { createTrack, newTrackId, TRACK_COLORS, type ProjectState, type Track } from "@/utils/tracks";
+import { generateSchedule } from "@/utils/scheduleGenerator";
 
 const WEEKDAYS = [
   { id: 1, key: "monday" }, { id: 2, key: "tuesday" }, { id: 3, key: "wednesday" },
@@ -83,6 +84,7 @@ interface TrackDraft {
   daysOfMonth: number[];
   location: string;
   notes: string;
+  startDate?: Date;
 }
 
 function trackToDraft(t: Track): TrackDraft {
@@ -100,6 +102,7 @@ function trackToDraft(t: Track): TrackDraft {
     daysOfMonth: t.recurrence.type === "monthlyByDate" ? t.recurrence.daysOfMonth : [1],
     location: t.location ?? "",
     notes: t.notes ?? "",
+    startDate: t.startDate,
   };
 }
 
@@ -124,6 +127,7 @@ function draftToTrack(d: TrackDraft): Track {
     recurrence,
     location: d.location.trim() || undefined,
     notes: d.notes.trim() || undefined,
+    startDate: d.startDate,
   };
 }
 
@@ -235,6 +239,39 @@ export function ScheduleForm({ onGenerate, initialState }: Props) {
       return filtered;
     });
   };
+
+  // Compute & apply "Start after group X": sets active group's startDate to (last session of source group) + 1 day.
+  const applyStartAfter = (sourceTrackId: string) => {
+    const src = drafts.find((d) => d.id === sourceTrackId);
+    if (!src || !startDate) {
+      toast.error(t('tracks.sourceGroupNotReady', { name: src?.name ?? '' }));
+      return;
+    }
+    const srcTrack = draftToTrack(src);
+    const parsedCount = parseInt(numberOfMeetings);
+    try {
+      const sessions = generateSchedule({
+        startDate: srcTrack.startDate ?? startDate,
+        selectedDays: srcTrack.selectedDays,
+        timeSlots: srcTrack.timeSlots,
+        holidays,
+        holidayBehavior,
+        recurrence: srcTrack.recurrence,
+        mode,
+        numberOfMeetings: mode === 'count' && !isNaN(parsedCount) ? parsedCount : undefined,
+        endDate: mode === 'endDate' ? endDate : undefined,
+      });
+      if (!sessions.length) {
+        toast.error(t('tracks.sourceGroupNotReady', { name: src.name }));
+        return;
+      }
+      const last = sessions[sessions.length - 1].date;
+      updateActive({ startDate: addDays(last, 1) });
+    } catch {
+      toast.error(t('tracks.sourceGroupNotReady', { name: src.name }));
+    }
+  };
+
 
   // Per-track field shortcuts
   const selectedDays = active.selectedDays;
@@ -354,6 +391,10 @@ export function ScheduleForm({ onGenerate, initialState }: Props) {
       }
       if (d.timeSlots.some((s) => !s.startTime || !s.endTime || s.startTime >= s.endTime)) {
         perTrack[d.id] = t('form.validation.timeRequired');
+        continue;
+      }
+      if (d.startDate && startDate && d.startDate < startDate) {
+        perTrack[d.id] = t('tracks.startBeforeProject');
         continue;
       }
     }
@@ -498,6 +539,88 @@ export function ScheduleForm({ onGenerate, initialState }: Props) {
           </Popover>
           {fieldError(errors.startDate)}
         </div>
+
+        {/* Per-group start date override */}
+        <div className="rounded-md border border-dashed border-border/60 bg-muted/20 p-3 space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <Label className="text-sm">{t('tracks.groupStartDate')}</Label>
+            <span className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground" aria-live="polite">
+              <span className="h-2 w-2 rounded-full" style={{ backgroundColor: active.color }} aria-hidden />
+              {t('form.sessionLabelEditing', { name: active.name })}
+            </span>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className={cn(
+                    "justify-start text-left font-normal min-w-[12rem]",
+                    !active.startDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {active.startDate
+                    ? format(active.startDate, "PPP", { locale: dateLocale })
+                    : startDate
+                    ? t('tracks.usesProjectStart', { date: format(startDate, "PPP", { locale: dateLocale }) })
+                    : t('tracks.pickOverride')}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={active.startDate}
+                  onSelect={(d) => updateActive({ startDate: d ?? undefined })}
+                  initialFocus
+                  className="pointer-events-auto"
+                  locale={dateLocale}
+                  disabled={(date) => (startDate ? date < startDate : false)}
+                />
+              </PopoverContent>
+            </Popover>
+
+            {drafts.length > 1 && (
+              <Select
+                value=""
+                onValueChange={(v) => { if (v) applyStartAfter(v); }}
+              >
+                <SelectTrigger className="h-9 w-auto min-w-[10rem]">
+                  <SelectValue placeholder={t('tracks.startAfterPlaceholder')} />
+                </SelectTrigger>
+                <SelectContent>
+                  {drafts.filter((d) => d.id !== active.id).map((d) => (
+                    <SelectItem key={d.id} value={d.id}>
+                      <span className="inline-flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full" style={{ backgroundColor: d.color }} aria-hidden />
+                        {d.name}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+
+            {active.startDate && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => updateActive({ startDate: undefined })}
+              >
+                {t('tracks.resetOverride')}
+              </Button>
+            )}
+          </div>
+          {active.startDate && mode === 'endDate' && endDate && active.startDate > endDate && (
+            <p className="text-xs text-amber-600 dark:text-amber-400">
+              {t('tracks.startAfterProjectEnd')}
+            </p>
+          )}
+        </div>
+
+
 
         {/* Mode */}
         <div>

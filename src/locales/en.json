@@ -250,6 +250,14 @@
     "delete": "Delete",
     "color": "Color",
     "newName": "Group",
-    "minOne": "At least one group is required"
+    "minOne": "At least one group is required",
+    "groupStartDate": "Group start date",
+    "usesProjectStart": "Uses project start ({{date}})",
+    "pickOverride": "Pick an override date",
+    "startAfterPlaceholder": "Start after group…",
+    "resetOverride": "Reset",
+    "startBeforeProject": "Group start can't be before the project start date.",
+    "startAfterProjectEnd": "After project end date — this group won't have sessions.",
+    "sourceGroupNotReady": "Set days and times for {{name}} first."
   }
 }

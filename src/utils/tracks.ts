@@ -9,6 +9,8 @@ export interface Track {
   recurrence: Recurrence;
   location?: string;
   notes?: string;
+  /** Optional per-group start date. When set, overrides ProjectState.startDate. */
+  startDate?: Date;
 }
 
 export interface ProjectState {
@@ -51,5 +53,6 @@ export function createTrack(partial: Partial<Track> = {}, indexHint = 0): Track 
     recurrence: partial.recurrence ?? { type: "weekly", interval: 1 },
     location: partial.location,
     notes: partial.notes,
+    startDate: partial.startDate,
   };
 }
