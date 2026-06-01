@@ -226,7 +226,12 @@ export function exportToPDF(
         doc.setFontSize(9);
         doc.setTextColor(255, 255, 255);
         const brand = branding.orgName || eventName || "";
-        if (brand) doc.text(brand, marginX, 12);
+        if (brand) {
+          const stripMaxW = pageW - marginX * 2;
+          const fitted = fitText(brand, stripMaxW, 9, 7, "bold");
+          doc.setFontSize(fitted.size);
+          doc.text(fitted.text, marginX, 12);
+        }
       }
     },
   });
@@ -239,16 +244,20 @@ export function exportToPDF(
     doc.setFontSize(9);
     doc.setTextColor(120, 120, 120);
     const footerY = pageH - 20;
+    const pageLabel = t("pdf.page", { current: i, total: pageCount });
+    const pageLabelW = doc.getTextWidth(pageLabel);
     if (branding.footerText) {
-      doc.text(branding.footerText, pageW / 2, footerY, { align: "center" });
+      // Reserve space for the right-aligned page label so they never overlap.
+      const reserved = pageLabelW + 16;
+      const footerMaxW = pageW - marginX * 2 - reserved * 2;
+      const fitted = fitText(branding.footerText, footerMaxW, 9, 7, "normal");
+      doc.setFontSize(fitted.size);
+      doc.text(fitted.text, pageW / 2, footerY, { align: "center" });
+      doc.setFontSize(9);
     }
-    doc.text(
-      t("pdf.page", { current: i, total: pageCount }),
-      pageW - marginX,
-      footerY,
-      { align: "right" }
-    );
+    doc.text(pageLabel, pageW - marginX, footerY, { align: "right" });
   }
+
 
   doc.save(`${sanitizeFilename(eventName)}.pdf`);
 }
