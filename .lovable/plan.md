@@ -1,100 +1,70 @@
 ## Goal
-Let users save their in-progress form as a shareable link they can paste anywhere, then resume on another device by opening that link — even if the form was never generated.
+Add a single, strict validation layer for date, timezone, and meeting frequency inputs, applied both at form submit and at the export boundary (ICS/CSV), so bad/malicious values can never reach the generator or exported files.
 
-## What works today
-- Share links already exist (`buildShareUrl` / `decodeShareState` / `readShareTokenFromHash`).
-- `Index.tsx` already reads `#s=…` on mount and pipes it into `ScheduleForm` via `initialState`.
-- Today's flow only allows sharing **after** a successful Generate — the share button lives in `ScheduleDisplay`.
+## What gets validated
 
-## Gap
-1. No way to save/share form state *before* generation.
-2. The share-link Zod schema requires fully-valid data (`pn.min(1)`, `ts.min(1)`, time format, recurrence shape, etc.). A half-filled form can't be encoded, and a half-filled link can't be decoded.
+**Dates (start date, end date, holiday dates, per-track start date)**
+- Must be valid `Date` instances (`!isNaN(getTime())`)
+- Must be finite and within a sane window: year between 1970 and 2100
+- `endDate >= startDate` (already partial — formalize)
+- Per-track `startDate >= project startDate` (already partial)
+- Holidays: dedupe + drop anything outside [startDate, endDate or +10y]
 
-## Changes
+**Timezone**
+- Must be a non-empty string ≤ 64 chars
+- Must pass `sanitizeTzid` (already exists) — reject (not silently coerce) at the form layer with a field error; keep silent coercion to `UTC` only as a last-resort safety net inside `exportToICS`/`exportToCSV`/`perTrackExport`
+- Reject control chars and anything not in IANA list when `Intl.supportedValuesOf` is available
 
-### 1. `src/utils/shareLink.ts` — add v3 "draft" token
-A new variant where every field is optional and validators are loose:
+**Meeting frequency / counts**
+- `numberOfMeetings`: integer, 1–366 (matches current `max="366"` and `MAX_SESSIONS` intent); reject non-integer, NaN, Infinity, negative, > 366
+- `weeklyInterval`: integer 1–12
+- `ordinals` (monthlyByWeekday): subset of `{1,2,3,4,-1}`, 1–5 entries, deduped
+- `daysOfMonth` (monthlyByDate): integers in `{1..31, -1}`, 1–31 entries, deduped
+- `selectedDays`: subset of `{0..6}`, required (≥1) when recurrence needs weekdays
+- `timeSlots`: `HH:MM` 24h regex, `start < end`, 1–6 slots
+- `reminderMinutes`: must be one of `REMINDER_OPTIONS`
 
-```ts
-const v3Token = z.object({
-  v: z.literal(3),
-  pn: z.string().max(100).optional(),
-  sd: dateStr.optional(),
-  m: z.enum(["count", "endDate"]).optional(),
-  c: z.number().int().min(1).max(366).optional(),
-  ed: dateStr.optional(),
-  h: z.array(dateStr).max(366).optional(),
-  hb: z.enum(["skip", "rollForward"]).optional(),
-  r: z.number().optional(),
-  tz: z.string().max(100).optional(),
-  tr: z.array(draftTrackSchema).max(12).optional(),
-});
-```
+## Implementation
 
-Where `draftTrackSchema` mirrors `trackSchema` but with `n`, `d`, `ts`, `rec` all optional and `ts` items allowing empty `s`/`e` strings.
+1. **New module `src/utils/validation.ts`**
+   - Zod schemas: `timezoneSchema`, `dateSchema` (with min/max year), `numberOfMeetingsSchema`, `weeklyIntervalSchema`, `ordinalsSchema`, `daysOfMonthSchema`, `selectedDaysSchema`, `timeSlotSchema`, `reminderSchema`
+   - Composed `projectStateSchema` returning typed `ProjectState`
+   - Helper `validateExportOptions(opts)` for `ExportOptions` (timezone, reminderMinutes, lengths of location/notes/filename)
+   - Pure functions, no i18n inside — return error codes that the form maps to translated strings
 
-Add a new exported type:
-```ts
-export type DraftFormState = Partial<ShareFormState> & { tracks?: Partial<Track>[] };
-```
+2. **`src/components/ScheduleForm.tsx`**
+   - Replace ad-hoc checks in the submit handler with `projectStateSchema.safeParse(...)`
+   - Map Zod issues to the existing `FormErrors` shape (project-level + per-track) using a small `errorCode → t(...)` table
+   - Keep existing UX (focus first invalid, toast for track errors)
+   - Add the missing per-field guards already used in UI (interval, ordinals, daysOfMonth) so they actually block submission
 
-Export new functions:
-- `encodeDraftState(state: DraftFormState): string` — emits a v3 token, omits empty/undefined fields, b64url-encodes.
-- Extend `decodeShareState` to recognize v3 and return a `DraftFormState` (cast through to `ShareFormState` since `ScheduleForm`'s `initialState` already tolerates undefined fields in every initializer — verified line-by-line).
+3. **Export hardening (`src/utils/scheduleGenerator.ts`, `src/utils/perTrackExport.ts`)**
+   - At the top of `exportToICS`, `exportToCSV`, and `exportPerTrackZip`, run `validateExportOptions` and throw a typed `ExportValidationError` on failure
+   - Keep `sanitizeTzid` as the final safety net (defense in depth)
+   - Clamp/validate `reminderMinutes` to the allowed set before writing `TRIGGER:`
+   - Validate every `session.date` is a real Date before formatting (prevents `Invalid Date` strings in ICS/CSV)
 
-Existing v1/v2 paths stay untouched for back-compat.
+4. **Caller (`src/pages/Index.tsx`)**
+   - Wrap export calls in try/catch, surface `toast.error` with a translated "Invalid export options" message
 
-### 2. `ScheduleForm.tsx` — expose current draft + add "Save draft" button
-- Add an optional `onSaveDraft?: (draft: DraftFormState) => void` prop.
-- Add a small **"Save draft"** button next to the existing **Generate schedule** button at the bottom of the form. Button is always enabled (the whole point is partial state).
-- Builds the current draft object from local state:
-  ```ts
-  const buildDraft = (): DraftFormState => ({
-    projectName: projectName || undefined,
-    startDate, mode, numberOfMeetings: parseInt(numberOfMeetings) || undefined,
-    endDate, holidays, holidayBehavior, reminderMinutes, timezone,
-    tracks: drafts.map(draftToTrack), // drafts already mostly safe
-  });
-  ```
-  Pass to `onSaveDraft`.
+5. **i18n**
+   - Add new keys under `form.validation.*` (e.g. `dateOutOfRange`, `timezoneInvalid`, `intervalInvalid`, `ordinalsInvalid`, `daysOfMonthInvalid`, `reminderInvalid`) to `src/locales/en.json` and `src/locales/id.json`
 
-### 3. `Index.tsx` — wire it up
-- Add `handleSaveDraft`:
-  ```ts
-  const handleSaveDraft = async (draft: DraftFormState) => {
-    try {
-      const token = encodeDraftState(draft);
-      const { origin, pathname } = window.location;
-      await navigator.clipboard.writeText(`${origin}${pathname}#s=${token}`);
-      toast.success(t('toast.draftLinkCopied'));
-    } catch {
-      toast.error(t('toast.linkCopyFailed'));
-    }
-  };
-  ```
-- Pass `onSaveDraft={handleSaveDraft}` to `<ScheduleForm>`.
-- The existing `decodeShareState` call in the mount effect already returns a usable shape (v3 returns partial); the toast message stays the same (`toast.loadedFromLink`).
+6. **Tests (`src/utils/__tests__/validation.test.ts`)**
+   - Valid project passes
+   - Each invalid case (bad TZ, NaN date, year 1800, year 2200, count 0/367/1.5/"abc", interval 0/13, bad ordinals, bad daysOfMonth, bad time slot, reminder 7) produces the expected error code
+   - `validateExportOptions` rejects injected control chars in timezone and out-of-set reminder
 
-### 4. i18n
-Add to `en.json` and `id.json`:
-- `form.saveDraft` — "Save draft" / "Simpan draf"
-- `form.saveDraftHelper` — "Copy a link to continue later" / "Salin tautan untuk dilanjutkan nanti" (tooltip / sr text)
-- `toast.draftLinkCopied` — "Draft link copied" / "Tautan draf disalin"
+## Files
 
-### 5. Tests
-Extend `src/utils/__tests__/exportE2E.test.ts` or add `src/utils/__tests__/shareLink.test.ts`:
-- Encode an empty draft → decode → returns empty `DraftFormState` (no throw).
-- Encode partial draft (name only, no startDate) → decode round-trips name, leaves other fields undefined.
-- v2 fully-valid token still decodes correctly (regression).
-
-## Files touched
-- `src/utils/shareLink.ts` (add v3 schema + `encodeDraftState`, extend `decodeShareState`)
-- `src/components/ScheduleForm.tsx` (add `onSaveDraft` prop + button)
-- `src/pages/Index.tsx` (add `handleSaveDraft`, pass prop)
-- `src/locales/en.json`, `src/locales/id.json`
-- new `src/utils/__tests__/shareLinkDraft.test.ts`
+- new: `src/utils/validation.ts`
+- new: `src/utils/__tests__/validation.test.ts`
+- edit: `src/components/ScheduleForm.tsx`
+- edit: `src/utils/scheduleGenerator.ts`
+- edit: `src/utils/perTrackExport.ts`
+- edit: `src/pages/Index.tsx`
+- edit: `src/locales/en.json`, `src/locales/id.json`
 
 ## Out of scope
-- Silent auto-save to localStorage (the manual "Save draft" + share link already supports cross-device use).
-- Multiple named drafts (Recents already covers post-generation; can revisit later).
-- Sync via Lovable Cloud (still client-side per project memory).
+- No changes to the generator algorithm itself
+- No UI redesign — only error messages and blocking behavior change
