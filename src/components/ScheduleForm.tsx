@@ -104,6 +104,7 @@ function trackToDraft(t: Track): TrackDraft {
     location: t.location ?? "",
     notes: t.notes ?? "",
     startDate: t.startDate,
+    startsAfter: t.startsAfter,
   };
 }
 
