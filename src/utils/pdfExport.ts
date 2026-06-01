@@ -172,25 +172,26 @@ export function exportToPDF(
     columnStyles: {
       0: { cellWidth: 28, halign: "right" },
     },
-    didDrawPage: () => {
-      // Footer
-      const pageCount = doc.getNumberOfPages();
-      const pageNum = doc.getCurrentPageInfo().pageNumber;
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(9);
-      doc.setTextColor(120, 120, 120);
-      const footerY = pageH - 20;
-      if (branding.footerText) {
-        doc.text(branding.footerText, pageW / 2, footerY, { align: "center" });
-      }
-      doc.text(
-        t("pdf.page", { current: pageNum, total: pageCount }),
-        pageW - marginX,
-        footerY,
-        { align: "right" }
-      );
-    },
   });
+
+  // Stamp footer on every page after table is complete (so totals are correct)
+  const pageCount = doc.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(120, 120, 120);
+    const footerY = pageH - 20;
+    if (branding.footerText) {
+      doc.text(branding.footerText, pageW / 2, footerY, { align: "center" });
+    }
+    doc.text(
+      t("pdf.page", { current: i, total: pageCount }),
+      pageW - marginX,
+      footerY,
+      { align: "right" }
+    );
+  }
 
   doc.save(`${sanitizeFilename(eventName)}.pdf`);
 }
