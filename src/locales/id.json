@@ -5,8 +5,8 @@
   },
   "form": {
     "title": "Detail jadwal",
-    "projectName": "Nama program",
-    "projectNamePlaceholder": "contoh: Semester genap, Kemah musim panas",
+    "projectName": "Nama jadwal",
+    "projectNamePlaceholder": "contoh: Kelas yoga, Rapat tim, Semester genap",
     "eventName": "Label sesi",
     "eventNamePlaceholder": "contoh: Kelas yoga, Rapat tim, Pelajaran matematika",
     "sessionLabelEditing": "Mengedit grup: {{name}}",
@@ -94,7 +94,7 @@
     "generateButton": "Buat jadwal",
     "validation": {
       "eventNameRequired": "Masukkan label sesi",
-      "projectNameRequired": "Masukkan nama program",
+      "projectNameRequired": "Masukkan nama jadwal",
       "dateRequired": "Pilih tanggal mulai",
       "meetingsRequired": "Jumlah sesi minimal 1",
       "daysRequired": "Pilih setidaknya satu hari dalam seminggu",

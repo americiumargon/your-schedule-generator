@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useKeyboardShortcuts, modKeyLabel } from "@/hooks/useKeyboardShortcuts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +15,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import {
   CalendarIcon, Check, ChevronDown, ChevronsUpDown, Clock, MapPin, Plus, Repeat, Settings2, Trash2,
 } from "lucide-react";
-import { format, addDays } from "date-fns";
+import { format, addDays, nextMonday } from "date-fns";
 import { enUS, id as idLocale } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
@@ -134,8 +134,12 @@ function draftToTrack(d: TrackDraft): Track {
   };
 }
 
-function defaultDraft(idx = 0): TrackDraft {
-  return trackToDraft(createTrack({}, idx));
+function defaultDraft(idx = 0, withDefaultTime = false): TrackDraft {
+  const d = trackToDraft(createTrack({}, idx));
+  if (withDefaultTime) {
+    d.timeSlots = [{ startTime: "09:00", endTime: "10:00", label: "" }];
+  }
+  return d;
 }
 
 interface Props {
@@ -167,10 +171,12 @@ export function ScheduleForm({ onGenerate, initialState }: Props) {
 
   // Shared (project-level)
   const [projectName, setProjectName] = useState<string>(() => initialState?.projectName ?? "");
-  const [startDate, setStartDate] = useState<Date | undefined>(() => initialState?.startDate);
+  const [startDate, setStartDate] = useState<Date | undefined>(
+    () => initialState?.startDate ?? (initialState ? undefined : nextMonday(new Date()))
+  );
   const [mode, setMode] = useState<Mode>(() => initialState?.mode ?? "count");
   const [numberOfMeetings, setNumberOfMeetings] = useState<string>(() =>
-    initialState?.numberOfMeetings != null ? String(initialState.numberOfMeetings) : ""
+    initialState?.numberOfMeetings != null ? String(initialState.numberOfMeetings) : (initialState ? "" : "8")
   );
   const [endDate, setEndDate] = useState<Date | undefined>(() => initialState?.endDate);
   const [holidays, setHolidays] = useState<Date[]>(() => initialState?.holidays ?? []);
@@ -184,10 +190,19 @@ export function ScheduleForm({ onGenerate, initialState }: Props) {
   const [drafts, setDrafts] = useState<TrackDraft[]>(() => {
     const initial = initialState?.tracks;
     if (initial && initial.length > 0) return initial.map(trackToDraft);
-    return [defaultDraft(0)];
+    return [defaultDraft(0, true)];
   });
   const [activeId, setActiveId] = useState<string>(() => drafts[0].id);
   const active = drafts.find((d) => d.id === activeId) ?? drafts[0];
+  const isMulti = drafts.length > 1;
+
+  // Auto-mirror: in single-group mode, the schedule name IS the session label.
+  useEffect(() => {
+    if (drafts.length === 1 && drafts[0].name !== projectName && projectName) {
+      setDrafts((prev) => prev.map((d, i) => (i === 0 ? { ...d, name: projectName } : d)));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectName, drafts.length]);
 
   const updateActive = (patch: Partial<TrackDraft>) => {
     setDrafts((prev) => prev.map((d) => (d.id === active.id ? { ...d, ...patch } : d)));
@@ -479,55 +494,59 @@ export function ScheduleForm({ onGenerate, initialState }: Props) {
           {fieldError(errors.projectName)}
         </div>
 
-        {/* Track tabs */}
-        <div className="space-y-3">
-          <div className="flex items-baseline justify-between">
-            <Label className="text-sm">{t('tracks.title')}</Label>
-            <span className="text-xs text-muted-foreground">{t('tracks.hint')}</span>
+        {/* Track tabs — only when there are multiple groups */}
+        {isMulti && (
+          <div className="space-y-3">
+            <div className="flex items-baseline justify-between">
+              <Label className="text-sm">{t('tracks.title')}</Label>
+              <span className="text-xs text-muted-foreground">{t('tracks.hint')}</span>
+            </div>
+            <TrackTabs
+              tracks={drafts.map((d) => ({ id: d.id, name: d.name, color: d.color }))}
+              activeId={active.id}
+              onSelect={setActiveId}
+              onAdd={addTrack}
+              onRename={renameTrack}
+              onDuplicate={duplicateTrack}
+              onDelete={deleteTrack}
+              onSetColor={setTrackColor}
+            />
           </div>
-          <TrackTabs
-            tracks={drafts.map((d) => ({ id: d.id, name: d.name, color: d.color }))}
-            activeId={active.id}
-            onSelect={setActiveId}
-            onAdd={addTrack}
-            onRename={renameTrack}
-            onDuplicate={duplicateTrack}
-            onDelete={deleteTrack}
-            onSetColor={setTrackColor}
-          />
-        </div>
+        )}
 
-        {/* Session label (renames the active group's tab) */}
-        <div>
-          <div className="flex items-center justify-between gap-2">
-            <Label htmlFor={`trackName-${active.id}`}>{t('form.eventName')}</Label>
-            <span
-              className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground"
-              aria-live="polite"
-            >
+        {/* Session label — only when multi-group; otherwise mirrored from schedule name */}
+        {isMulti && (
+          <div>
+            <div className="flex items-center justify-between gap-2">
+              <Label htmlFor={`trackName-${active.id}`}>{t('form.eventName')}</Label>
               <span
-                className="h-2 w-2 rounded-full"
-                style={{ backgroundColor: active.color }}
-                aria-hidden
-              />
-              {t('form.sessionLabelEditing', { name: active.name })}
-            </span>
+                className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground"
+                aria-live="polite"
+              >
+                <span
+                  className="h-2 w-2 rounded-full"
+                  style={{ backgroundColor: active.color }}
+                  aria-hidden
+                />
+                {t('form.sessionLabelEditing', { name: active.name })}
+              </span>
+            </div>
+            <Input
+              id={`trackName-${active.id}`}
+              value={active.name}
+              onChange={(e) => updateActive({ name: e.target.value })}
+              placeholder={t('form.eventNamePlaceholder')}
+              maxLength={100}
+              style={{ borderLeftWidth: 3, borderLeftColor: active.color }}
+              className={cn("mt-2", trackErr && "border-destructive focus-visible:ring-destructive")}
+              data-invalid={!!trackErr}
+            />
+            <p className="text-xs text-muted-foreground mt-1.5">{t('form.sessionLabelHelper')}</p>
+            {trackErr && <p className="text-sm font-medium text-destructive mt-1">{trackErr}</p>}
           </div>
-          <Input
-            id={`trackName-${active.id}`}
-            value={active.name}
-            onChange={(e) => updateActive({ name: e.target.value })}
-            placeholder={t('form.eventNamePlaceholder')}
-            maxLength={100}
-            style={{ borderLeftWidth: 3, borderLeftColor: active.color }}
-            className={cn("mt-2", trackErr && "border-destructive focus-visible:ring-destructive")}
-            data-invalid={!!trackErr}
-          />
-          <p className="text-xs text-muted-foreground mt-1.5">{t('form.sessionLabelHelper')}</p>
-          {trackErr && <p className="text-sm font-medium text-destructive mt-1">{trackErr}</p>}
-        </div>
+        )}
 
-        <div className="border-t border-border/50 pt-1" />
+        {isMulti && <div className="border-t border-border/50 pt-1" />}
 
         {/* Start date */}
         <div>
@@ -555,7 +574,8 @@ export function ScheduleForm({ onGenerate, initialState }: Props) {
           {fieldError(errors.startDate)}
         </div>
 
-        {/* Per-group start date override */}
+        {/* Per-group start date override — only when multi-group */}
+        {isMulti && (
         <div className="rounded-md border border-dashed border-border/60 bg-muted/20 p-3 space-y-2">
           <div className="flex items-center justify-between gap-2">
             <Label className="text-sm">{t('tracks.groupStartDate')}</Label>
@@ -636,6 +656,7 @@ export function ScheduleForm({ onGenerate, initialState }: Props) {
             </p>
           )}
         </div>
+        )}
 
 
 
@@ -732,6 +753,22 @@ export function ScheduleForm({ onGenerate, initialState }: Props) {
             </div>
           </div>
         </div>
+
+        {/* Subtle upgrade path for casual users */}
+        {!isMulti && (
+          <div className="pt-1">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={addTrack}
+              className="text-muted-foreground hover:text-foreground gap-1.5 -ml-2"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              {t('tracks.add')}
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* ===================== ADVANCED ===================== */}

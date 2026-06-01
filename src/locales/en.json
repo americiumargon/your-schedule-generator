@@ -5,8 +5,8 @@
   },
   "form": {
     "title": "Schedule details",
-    "projectName": "Program name",
-    "projectNamePlaceholder": "e.g. Spring semester, Summer camp",
+    "projectName": "Schedule name",
+    "projectNamePlaceholder": "e.g. Yoga class, Team standup, Spring semester",
     "eventName": "Session label",
     "eventNamePlaceholder": "e.g. Yoga class, Team standup, Math lesson",
     "sessionLabelEditing": "Editing group: {{name}}",
@@ -98,7 +98,7 @@
     "generateButton": "Generate schedule",
     "validation": {
       "eventNameRequired": "Enter a session label",
-      "projectNameRequired": "Enter a program name",
+      "projectNameRequired": "Enter a schedule name",
       "dateRequired": "Select a start date",
       "meetingsRequired": "Number of sessions must be at least 1",
       "daysRequired": "Select at least one day of the week",
