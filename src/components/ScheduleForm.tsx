@@ -574,7 +574,8 @@ export function ScheduleForm({ onGenerate, initialState }: Props) {
           {fieldError(errors.startDate)}
         </div>
 
-        {/* Per-group start date override */}
+        {/* Per-group start date override — only when multi-group */}
+        {isMulti && (
         <div className="rounded-md border border-dashed border-border/60 bg-muted/20 p-3 space-y-2">
           <div className="flex items-center justify-between gap-2">
             <Label className="text-sm">{t('tracks.groupStartDate')}</Label>
