@@ -267,12 +267,13 @@ const Index = () => {
       <main className="container mx-auto px-4 py-4 lg:py-8">
         <div className="grid lg:grid-cols-2 gap-4 lg:gap-8 print:block">
           {/* Left Column - Form */}
-          <div className="print:hidden" ref={formColumnRef}>
-            <div className="bg-card rounded-xl shadow-lg p-4 lg:p-6 lg:sticky lg:top-24">
-              <h2 className="text-xl font-semibold mb-6">{t('form.title')}</h2>
+          <div className="print:hidden space-y-4" ref={formColumnRef}>
+            <div className="bg-card rounded-xl shadow-lg p-4 lg:p-6 lg:sticky lg:top-24 space-y-4">
+              <h2 className="text-xl font-semibold">{t('form.title')}</h2>
               {hydrated && (
                 <ScheduleForm onGenerate={handleGenerate} initialState={initialFormState} />
               )}
+              <BrandingSection />
             </div>
           </div>
 
