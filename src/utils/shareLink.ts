@@ -73,7 +73,51 @@ const v2Token = z.object({
   tr: z.array(trackSchema).min(1).max(12),
 });
 
-const tokenSchema = z.union([v2Token, v1Token]);
+// --- v3 (loose draft, all fields optional, for "Save draft" share links) ---
+const looseTimeStr = z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).or(z.literal(""));
+const looseSlotSchema = z.object({
+  s: looseTimeStr.optional(),
+  e: looseTimeStr.optional(),
+  l: z.string().max(50).optional(),
+});
+const draftRecurrenceSchema = z.object({
+  t: z.enum(["weekly", "monthlyByWeekday", "monthlyByDate"]).optional(),
+  i: z.number().int().min(1).max(12).optional(),
+  o: z.array(z.number().int().min(-1).max(5)).optional(),
+  dm: z.array(z.number().int().min(-1).max(31)).optional(),
+});
+const draftTrackSchema = z.object({
+  id: z.string().min(1).max(64).optional(),
+  n: z.string().max(100).optional(),
+  c: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+  d: z.array(z.number().int().min(0).max(6)).optional(),
+  ts: z.array(looseSlotSchema).max(6).optional(),
+  rec: draftRecurrenceSchema.optional(),
+  l: z.string().max(200).optional(),
+  nt: z.string().max(2000).optional(),
+  sd: dateStr.optional(),
+  sa: z.string().min(1).max(64).optional(),
+});
+const v3Token = z.object({
+  v: z.literal(3),
+  pn: z.string().max(100).optional(),
+  sd: dateStr.optional(),
+  m: z.enum(["count", "endDate"]).optional(),
+  c: z.number().int().min(1).max(366).optional(),
+  ed: dateStr.optional(),
+  h: z.array(dateStr).max(366).optional(),
+  hb: z.enum(["skip", "rollForward"]).optional(),
+  r: z.number().optional(),
+  tz: z.string().max(100).optional(),
+  tr: z.array(draftTrackSchema).max(12).optional(),
+});
+
+const tokenSchema = z.union([v3Token, v2Token, v1Token]);
+
+/** A partial form state. Used by the "Save draft" flow so users can share an
+ *  in-progress form. Decoded drafts come back as ShareFormState with best-effort
+ *  defaults for missing fields (e.g. undefined startDate, empty holidays). */
+export type DraftFormState = Partial<ShareFormState>;
 
 function fmtDate(d: Date): string {
   return format(d, "yyyy-MM-dd");
