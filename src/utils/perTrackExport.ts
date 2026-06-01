@@ -98,7 +98,7 @@ function hexToRgb(hex: string): [number, number, number] {
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 }
 
-function buildPdfBlob(sessions: Session[], eventName: string, language: string, opts: ExportOptions, branding: Branding, t: T): Blob {
+function buildPdfBlob(sessions: Session[], eventName: string, language: string, opts: ExportOptions, branding: Branding, t: T): ArrayBuffer {
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
@@ -146,7 +146,7 @@ function buildPdfBlob(sessions: Session[], eventName: string, language: string, 
     alternateRowStyles: { fillColor: [245, 247, 250] },
     columnStyles: { 0: { cellWidth: 28, halign: "right" }, 1: { cellWidth: 70 }, 2: { cellWidth: 36 } },
   });
-  return doc.output("blob");
+  return doc.output("arraybuffer") as ArrayBuffer;
 }
 
 export async function exportPerTrackZip(

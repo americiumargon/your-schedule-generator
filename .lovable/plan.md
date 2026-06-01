@@ -1,35 +1,25 @@
-## Wire tracks through Display, Recent, Export, and rename to "Tracks"
+## Verify CSV/ICS/PDF exports for Combined and Per-Track ZIP scopes
 
-### 1. Rename "Classes" → "Tracks" in i18n
-Change English `tracks.title` → "Tracks", `tracks.hint` → "Plan multiple tracks in one project", `tracks.add` → "Add track", `tracks.newName` → "Track", `tracks.minOne` → "At least one track is required". Indonesian: "Trek" (or keep "Track"). Also update CSV/ICS description label `Class: …` → `Track: …` in `scheduleGenerator.ts`, and add `schedule.colTrack` / `pdf.col.track` keys.
+Exports are browser-side (Blob + anchor.click + jsPDF). To verify without clicking through the UI, run a headless Node script that imports the export functions, stubs the DOM APIs, captures the written file payloads, and inspects them.
 
-### 2. ScheduleDisplay: render track info + scope picker
-- Widen `Session` interface to include optional `trackId`, `trackName`, `trackColor`.
-- When >1 unique `trackId` is present:
-  - Show a colored dot + track name on each session row.
-  - Show a new "Track" column header label on screen and print views.
-  - Render an export-scope dropdown (Combined / Per track ZIP) next to the CSV/ICS/PDF buttons.
-- `onExport` signature gains `scope: "combined" | "perTrack"`; passed through to `Index.handleExport`.
+### Approach
 
-### 3. Index: pass tracks + byTrack and dispatch per-track ZIP
-- Store `byTrack` and `tracks` from `generateProject` result alongside `sessions`.
-- `handleExport(format, enabled, lang, scope)`:
-  - `combined` → existing path with `includeTrackColumn` when multi-track.
-  - `perTrack` → call `exportPerTrackZip(byTrack, tracks, projectName, format, opts, branding, t, lang)` from `src/utils/perTrackExport.ts`.
-
-### 4. RecentSchedules: show track count
-Display a small `· N tracks` suffix next to the createdAt line when `formState.tracks.length > 1`. Add `recent.trackCount` i18n key with plural form.
-
-### 5. i18n additions (en + id)
-`schedule.colTrack`, `schedule.exportScope`, `schedule.exportScopeCombined`, `schedule.exportScopePerTrack`, `pdf.col.track`, `recent.trackCount` (`{{count}} track` / plural).
+1. Add a one-off script `scripts/verify-exports.mjs` (kept out of the app bundle, removed after verification) that:
+   - Boots a minimal jsdom-like shim: `globalThis.document`, `URL.createObjectURL`, `URL.revokeObjectURL`, and an `HTMLAnchorElement.click` that records `{ filename, blob }`.
+   - Imports `generateProject` from `src/utils/projectGenerator.ts`, `exportToCSV` / `exportToICS` / `exportToPDF` from the app, and `exportPerTrackZip` from `src/utils/perTrackExport.ts`.
+   - Builds a `ProjectState` with two tracks (e.g. "Beginner" Mon/Wed 09:00–10:00, "Advanced" Tue/Thu 18:00–19:30), 4-week range, no holidays.
+   - Runs all 6 cases: {csv, ics, pdf} × {combined, perTrack}.
+2. For each captured blob:
+   - **CSV / ICS combined** — assert UTF-8 text contains both `Beginner` and `Advanced`, the right number of rows/`BEGIN:VEVENT`s, and the `Track:` description line.
+   - **PDF combined** — load with `pypdf`, assert page count > 0 and extracted text mentions both track names and the new "Track" column header.
+   - **ZIP per-track** — unzip in memory (`jszip.loadAsync`), assert exactly two entries with the expected basenames, then re-run the CSV/ICS/PDF assertions on each entry (no other track's name should leak in).
+3. Use the QA loop from the PDF skill on the combined PDF and one per-track PDF:
+   - `pdftoppm -jpeg -r 150 out.pdf page` and read each image for clipping, overlap, missing column, etc.
+4. Report: a table of 6 cases with pass/fail and any captured anomalies.
 
 ### Out of scope
-- Per-tab error indicator on TrackTabs (separate polish pass).
-- Per-track timezone/holidays/reminders.
+- UI click-path verification (covered by the type-checked wiring already shipped).
+- Reminder/timezone variations beyond the defaults.
 
-### Files touched
-- `src/locales/en.json`, `src/locales/id.json`
-- `src/components/ScheduleDisplay.tsx`
-- `src/pages/Index.tsx`
-- `src/components/RecentSchedules.tsx`
-- `src/utils/scheduleGenerator.ts` (rename `Class:` → `Track:` label)
+### Deliverable
+A short verification report listing each scope/format combination, what was checked, and any defects found (with fixes if any). The temporary script is deleted afterwards.
