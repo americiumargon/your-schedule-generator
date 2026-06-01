@@ -258,6 +258,7 @@
     "resetOverride": "Reset",
     "startBeforeProject": "Group start can't be before the project start date.",
     "startAfterProjectEnd": "After project end date — this group won't have sessions.",
-    "sourceGroupNotReady": "Set days and times for {{name}} first."
+    "sourceGroupNotReady": "Set days and times for {{name}} first.",
+    "circularDependency": "That would create a circular dependency between groups."
   }
 }

@@ -21,7 +21,7 @@ import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { TrackTabs } from "@/components/TrackTabs";
-import { createTrack, newTrackId, TRACK_COLORS, type ProjectState, type Track } from "@/utils/tracks";
+import { createTrack, newTrackId, TRACK_COLORS, wouldCreateCycle, findCycleTrackIds, type ProjectState, type Track } from "@/utils/tracks";
 import { generateSchedule } from "@/utils/scheduleGenerator";
 
 const WEEKDAYS = [
@@ -85,6 +85,7 @@ interface TrackDraft {
   location: string;
   notes: string;
   startDate?: Date;
+  startsAfter?: string;
 }
 
 function trackToDraft(t: Track): TrackDraft {
@@ -103,6 +104,7 @@ function trackToDraft(t: Track): TrackDraft {
     location: t.location ?? "",
     notes: t.notes ?? "",
     startDate: t.startDate,
+    startsAfter: t.startsAfter,
   };
 }
 
@@ -128,6 +130,7 @@ function draftToTrack(d: TrackDraft): Track {
     location: d.location.trim() || undefined,
     notes: d.notes.trim() || undefined,
     startDate: d.startDate,
+    startsAfter: d.startsAfter,
   };
 }
 
@@ -242,6 +245,10 @@ export function ScheduleForm({ onGenerate, initialState }: Props) {
 
   // Compute & apply "Start after group X": sets active group's startDate to (last session of source group) + 1 day.
   const applyStartAfter = (sourceTrackId: string) => {
+    if (sourceTrackId === active.id || wouldCreateCycle(active.id, sourceTrackId, drafts)) {
+      toast.error(t('tracks.circularDependency'));
+      return;
+    }
     const src = drafts.find((d) => d.id === sourceTrackId);
     if (!src || !startDate) {
       toast.error(t('tracks.sourceGroupNotReady', { name: src?.name ?? '' }));
@@ -266,11 +273,12 @@ export function ScheduleForm({ onGenerate, initialState }: Props) {
         return;
       }
       const last = sessions[sessions.length - 1].date;
-      updateActive({ startDate: addDays(last, 1) });
+      updateActive({ startDate: addDays(last, 1), startsAfter: sourceTrackId });
     } catch {
       toast.error(t('tracks.sourceGroupNotReady', { name: src.name }));
     }
   };
+
 
 
   // Per-track field shortcuts
@@ -398,6 +406,13 @@ export function ScheduleForm({ onGenerate, initialState }: Props) {
         continue;
       }
     }
+
+    const cycleIds = findCycleTrackIds(drafts);
+    for (const id of cycleIds) {
+      if (!perTrack[id]) perTrack[id] = t('tracks.circularDependency');
+    }
+
+
 
     if (Object.keys(perTrack).length > 0) {
       next.perTrack = perTrack;
@@ -572,7 +587,7 @@ export function ScheduleForm({ onGenerate, initialState }: Props) {
                 <Calendar
                   mode="single"
                   selected={active.startDate}
-                  onSelect={(d) => updateActive({ startDate: d ?? undefined })}
+                  onSelect={(d) => updateActive({ startDate: d ?? undefined, startsAfter: undefined })}
                   initialFocus
                   className="pointer-events-auto"
                   locale={dateLocale}
@@ -590,14 +605,16 @@ export function ScheduleForm({ onGenerate, initialState }: Props) {
                   <SelectValue placeholder={t('tracks.startAfterPlaceholder')} />
                 </SelectTrigger>
                 <SelectContent>
-                  {drafts.filter((d) => d.id !== active.id).map((d) => (
-                    <SelectItem key={d.id} value={d.id}>
-                      <span className="inline-flex items-center gap-2">
-                        <span className="h-2 w-2 rounded-full" style={{ backgroundColor: d.color }} aria-hidden />
-                        {d.name}
-                      </span>
-                    </SelectItem>
-                  ))}
+                  {drafts
+                    .filter((d) => d.id !== active.id && !wouldCreateCycle(active.id, d.id, drafts))
+                    .map((d) => (
+                      <SelectItem key={d.id} value={d.id}>
+                        <span className="inline-flex items-center gap-2">
+                          <span className="h-2 w-2 rounded-full" style={{ backgroundColor: d.color }} aria-hidden />
+                          {d.name}
+                        </span>
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             )}
@@ -607,7 +624,7 @@ export function ScheduleForm({ onGenerate, initialState }: Props) {
                 type="button"
                 variant="ghost"
                 size="sm"
-                onClick={() => updateActive({ startDate: undefined })}
+                onClick={() => updateActive({ startDate: undefined, startsAfter: undefined })}
               >
                 {t('tracks.resetOverride')}
               </Button>

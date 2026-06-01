@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { generateProject } from "@/utils/projectGenerator";
-import { createTrack } from "@/utils/tracks";
+import { createTrack, wouldCreateCycle, findCycleTrackIds } from "@/utils/tracks";
 import type { ProjectState } from "@/utils/tracks";
 
 function baseProject(overrides: Partial<ProjectState> = {}): ProjectState {
@@ -89,5 +89,45 @@ describe("generateProject — per-group startDate override", () => {
     );
     const firstB = byTrack[groupB.id][0].date;
     expect(firstB.getTime()).toBeGreaterThan(lastA.getTime());
+  });
+});
+
+describe("wouldCreateCycle / findCycleTrackIds", () => {
+  it("rejects self-reference", () => {
+    const tracks = [{ id: "a" }, { id: "b" }];
+    expect(wouldCreateCycle("a", "a", tracks)).toBe(true);
+  });
+
+  it("detects direct A -> B -> A cycle", () => {
+    const tracks = [{ id: "a", startsAfter: "b" }, { id: "b" }];
+    // setting b.startsAfter = a would close the cycle
+    expect(wouldCreateCycle("b", "a", tracks)).toBe(true);
+  });
+
+  it("detects indirect A -> B -> C -> A cycle", () => {
+    const tracks = [
+      { id: "a", startsAfter: "b" },
+      { id: "b", startsAfter: "c" },
+      { id: "c" },
+    ];
+    expect(wouldCreateCycle("c", "a", tracks)).toBe(true);
+  });
+
+  it("allows safe chains", () => {
+    const tracks = [{ id: "a" }, { id: "b" }, { id: "c" }];
+    expect(wouldCreateCycle("b", "a", tracks)).toBe(false);
+    expect(wouldCreateCycle("c", "b", tracks)).toBe(false);
+  });
+
+  it("findCycleTrackIds flags all members of a cycle", () => {
+    const tracks = [
+      { id: "a", startsAfter: "b" },
+      { id: "b", startsAfter: "a" },
+      { id: "c" },
+    ];
+    const bad = findCycleTrackIds(tracks);
+    expect(bad.has("a")).toBe(true);
+    expect(bad.has("b")).toBe(true);
+    expect(bad.has("c")).toBe(false);
   });
 });

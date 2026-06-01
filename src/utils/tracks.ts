@@ -11,6 +11,8 @@ export interface Track {
   notes?: string;
   /** Optional per-group start date. When set, overrides ProjectState.startDate. */
   startDate?: Date;
+  /** Optional predecessor track id, set when startDate was computed via "Start after group" helper. */
+  startsAfter?: string;
 }
 
 export interface ProjectState {
@@ -54,5 +56,58 @@ export function createTrack(partial: Partial<Track> = {}, indexHint = 0): Track 
     location: partial.location,
     notes: partial.notes,
     startDate: partial.startDate,
+    startsAfter: partial.startsAfter,
   };
+}
+
+/**
+ * Returns true if setting `activeId.startsAfter = sourceId` would create
+ * a cycle in the dependency chain (including the self-reference case).
+ */
+export function wouldCreateCycle(
+  activeId: string,
+  sourceId: string,
+  tracks: Array<{ id: string; startsAfter?: string }>
+): boolean {
+  if (activeId === sourceId) return true;
+  const byId = new Map(tracks.map((t) => [t.id, t]));
+  let cursor: string | undefined = sourceId;
+  const seen = new Set<string>();
+  while (cursor) {
+    if (cursor === activeId) return true;
+    if (seen.has(cursor)) return true; // pre-existing cycle, treat as unsafe
+    seen.add(cursor);
+    cursor = byId.get(cursor)?.startsAfter;
+  }
+  return false;
+}
+
+/**
+ * Detects any track that participates in a startsAfter cycle.
+ * Returns the set of track ids involved in any cycle.
+ */
+export function findCycleTrackIds(
+  tracks: Array<{ id: string; startsAfter?: string }>
+): Set<string> {
+  const byId = new Map(tracks.map((t) => [t.id, t]));
+  const bad = new Set<string>();
+  for (const t of tracks) {
+    const seen = new Set<string>();
+    let cursor: string | undefined = t.id;
+    while (cursor) {
+      if (seen.has(cursor)) {
+        // cursor onward is the cycle
+        let c: string | undefined = cursor;
+        const start = c;
+        do {
+          bad.add(c!);
+          c = byId.get(c!)?.startsAfter;
+        } while (c && c !== start);
+        break;
+      }
+      seen.add(cursor);
+      cursor = byId.get(cursor)?.startsAfter;
+    }
+  }
+  return bad;
 }

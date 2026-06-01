@@ -56,6 +56,7 @@ const trackSchema = z.object({
   l: z.string().max(200).optional(),
   nt: z.string().max(2000).optional(),
   sd: dateStr.optional(),
+  sa: z.string().min(1).max(64).optional(),
 });
 
 const v2Token = z.object({
@@ -125,6 +126,7 @@ export function encodeShareState(state: ShareFormState): string {
       ...(t.location ? { l: t.location } : {}),
       ...(t.notes ? { nt: t.notes } : {}),
       ...(t.startDate ? { sd: fmtDate(t.startDate) } : {}),
+      ...(t.startsAfter ? { sa: t.startsAfter } : {}),
     })),
   };
   return b64urlEnc(JSON.stringify(token));
@@ -204,6 +206,7 @@ function decodeV2(parsed: z.infer<typeof v2Token>): ShareFormState | null {
     location: tr.l,
     notes: tr.nt,
     startDate: tr.sd ? parseDate(tr.sd) ?? undefined : undefined,
+    startsAfter: tr.sa,
   }));
   return {
     projectName: parsed.pn,
