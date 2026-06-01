@@ -1,41 +1,86 @@
-# Clarify the naming hierarchy
+## Goal
 
-## Why
+Let each group (track) optionally override the project start date, with a one-click helper that sets it to the day after another group's last session. Sequential and parallel scheduling both fall out of this.
 
-Right now the form shows three name-like surfaces stacked together — **Project name**, the **track tab label**, and an **"Activity name"** input — which reads as three competing identifiers. Under the hood there are only two stored values (`projectName` + per-track `name`); the tab label and the "Activity name" input edit the same field, which is the main source of confusion.
+## Model change
 
-We'll keep the two-field model but rename everything to a clearer hierarchy and visually tie the name input to the active tab so the duplication stops feeling redundant.
+`src/utils/tracks.ts` — add an optional field:
 
-## New vocabulary
+```ts
+export interface Track {
+  // ...existing fields
+  startDate?: Date; // overrides ProjectState.startDate when set
+}
+```
 
-| Old label | New label | What it means |
-|---|---|---|
-| Project name | **Program name** | Top-level container (used for filenames, PDF title, CSV "Class" column header) |
-| Tracks / Track | **Groups / Group** | Parallel sub-schedules (e.g. Beginner, Advanced) |
-| Activity name (per track) | **Session label** | What each generated session is called (used in CSV summary, ICS SUMMARY, PDF rows) |
+`src/utils/projectGenerator.ts` — use the override:
 
-Indonesian equivalents: Program / Grup / Sesi.
+```ts
+startDate: track.startDate ?? project.startDate,
+```
 
-## UI changes
+End-of-schedule semantics stay shared (project-level `mode`, `numberOfMeetings`, `endDate`, `holidays`). When `endDate` mode is active and a group's start is later than the project end, that group produces zero sessions — surface a non-blocking warning toast.
 
-1. **Reorder + relabel the Essentials block** so the hierarchy reads top-down:
-   - `Program name` (was Project name)
-   - Mode picker (unchanged)
-   - `Groups` tab bar (was Tracks) — tab still shows the group's name
-   - Active group panel, headed by `Session label for "<group name>"` — the input that was "Activity name". Helper text: "Used as the title for each generated session. Renames the active tab."
-2. **Visually couple the name input to the tab**: add a thin colored left border on the input matching the active group's color, and a small caption above it like `Editing: <Group A>` so the user immediately sees the input belongs to the tab above.
-3. **Add-group button copy**: "Add another group" instead of "Add track".
-4. **Empty/single-group state**: when only one group exists, the tab bar still shows but with a softer style (already in place); no further change here.
+## UI changes (`src/components/ScheduleForm.tsx`)
 
-## Files to touch
+In the Essentials block, below the existing project-level **Start date** field, add a small per-group **"Group start date"** subsection. It belongs to the currently active tab and is purely additive — the project-level Start date stays as the default.
 
-- `src/locales/en.json`, `src/locales/id.json` — rename keys' user-facing strings only (keep JSON keys like `projectName`, `eventName`, `tracks.*` to avoid a code-wide rename). Update: `form.projectName`, `form.projectNamePlaceholder`, `form.eventName`, `form.eventNamePlaceholder`, `form.validation.projectNameRequired`, `form.validation.eventNameRequired`, `tracks.title`, `tracks.hint`, `tracks.add`, plus any "track"/"activity"/"project" copy in `ScheduleDisplay.tsx`, share/export confirmations, and PDF/CSV column headers that the user sees.
-- `src/components/ScheduleForm.tsx` — relabel the two fields, add the "Editing: <group>" caption + colored accent on the Session label input, reorder so the tab bar sits directly above the active group panel (already close — minor spacing tweak).
-- `src/components/TrackTabs.tsx` — update visible "Add" button copy via i18n key; no structural change.
-- No changes to data shape, validation logic, exports, generator, tests, or storage keys. Internal variable names (`projectName`, `trackName`, `activityName`) stay as-is to keep the diff focused on UX.
+Layout (compact, single row on desktop):
+
+```
+Group start date:  [ uses project start ▾ ]  [ 📅 Jan 8, 2026 ]  [ Reset ]
+                   "Start after: ( Group… ▾ )"
+```
+
+Behavior:
+- Default state: no override → label reads "Uses project start (Jan 5, 2026)", date picker shows the project date but is grayed.
+- Picking a date in the calendar sets `draft.startDate`.
+- **"Start after group …" dropdown** lists every other group. Selecting one runs `generateSchedule` for that group with current draft values, takes the last session's date, and sets the active group's `startDate = lastSession.date + 1 day`. If the source group can't be generated (incomplete fields, empty result), show a toast: "Pick days/times for {Group} first."
+- **Reset** button clears the override (`startDate = undefined`).
+- Display the resolved effective start as caption text when overridden: "Starts {date} — {N} days after project start" or "Starts after {Group X}".
+
+Validation:
+- If override start < project start, show inline error: "Group start can't be before project start."
+- If `mode === "endDate"` and override start > project end, allow but show warning caption: "After project end date — this group won't have sessions."
+
+## Generation & exports
+
+No changes needed beyond `projectGenerator.ts`. Combined-view sorting (`a.date - b.date`) already places sequential groups in the right order. CSV/ICS/Google Calendar all read from each session's `date` — no format changes.
+
+Google Calendar URL builder already requires a single representable weekly pattern *per call*; per-group URLs are unaffected. The combined "all groups" Google Calendar link (if present) will keep returning `not_representable` when groups start at different dates, which is correct.
+
+## Persistence
+
+- `src/utils/shareLink.ts` — `Track.startDate` rides along through `ProjectState` serialization; verify the existing date (de)serializer handles the optional field. If serialization is JSON-stringified, ensure dates are revived to `Date` objects on load (mirror how `project.startDate` is handled).
+- `src/utils/recentSchedules.ts` — same check; reuse existing date revival.
+
+## i18n
+
+Add new keys in `src/locales/en.json` and `src/locales/id.json`:
+
+```
+tracks.groupStartDate
+tracks.usesProjectStart
+tracks.startAfter
+tracks.startAfterPlaceholder
+tracks.resetOverride
+tracks.effectiveStartCaption
+tracks.startBeforeProject       // validation
+tracks.startAfterProjectEnd     // warning
+tracks.sourceGroupNotReady      // toast for "Start after" helper
+```
+
+## Tests
+
+Extend `src/utils/__tests__/exportE2E.test.ts` (or new `projectGenerator.test.ts`):
+
+1. Per-group override: two groups, group B has `startDate = projectStart + 14 days`; assert byTrack[A] starts at projectStart, byTrack[B] starts at the override.
+2. "Start after" simulation: generate group A (5 sessions, Mon/Wed), then set group B's start to A.last + 1 day, regenerate; assert no date overlap and B's first date > A's last date.
+3. Combined ordering: assert `combined` is sorted by date across groups.
 
 ## Out of scope
 
-- Inline-editing the tab title (deferred — chosen option keeps the separate input).
-- Renaming TypeScript identifiers, file names, or storage keys.
-- Changing export file naming logic.
+- Per-group end date / count overrides.
+- A project-level "Sequential | Parallel" toggle (option 3 from earlier).
+- Dependency chains beyond a single hop (e.g., "start after A and B both finish").
+- Auto-recompute when a referenced group changes — the helper writes a fixed date, not a live link. (Re-click to refresh.)
