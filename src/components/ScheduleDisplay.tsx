@@ -32,6 +32,7 @@ import {
   type CopyFormat,
 } from "@/utils/copyFormats";
 import { buildGoogleCalendarUrl } from "@/utils/googleCalendar";
+import { LogoQuickUpload } from "@/components/LogoQuickUpload";
 
 
 interface Session {
