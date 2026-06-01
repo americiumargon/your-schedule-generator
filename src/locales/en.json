@@ -123,6 +123,7 @@
     "deselectAll": "Deselect All",
     "csvButton": "CSV",
     "icsButton": "ICS",
+    "pdfButton": "PDF",
     "copyButton": "Copy",
     "printButton": "Print",
     "shareButton": "Copy share link",
