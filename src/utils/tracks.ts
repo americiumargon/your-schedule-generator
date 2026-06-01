@@ -9,6 +9,8 @@ export interface Track {
   recurrence: Recurrence;
   location?: string;
   notes?: string;
+  /** Optional per-group start date. When set, overrides ProjectState.startDate. */
+  startDate?: Date;
 }
 
 export interface ProjectState {
