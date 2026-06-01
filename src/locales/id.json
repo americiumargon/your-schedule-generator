@@ -151,6 +151,7 @@
   "export": {
     "successCsv": "Jadwal diekspor sebagai CSV",
     "successIcs": "Jadwal diekspor sebagai ICS",
+    "successPdf": "Jadwal diekspor sebagai PDF",
     "errorNoSessions": "Pilih setidaknya satu sesi untuk diekspor",
     "sessionNumber": "Nomor Sesi",
     "date": "Tanggal",
@@ -159,6 +160,34 @@
     "endTime": "Waktu Selesai",
     "summary": "{{eventName}} - Sesi {{sessionNumber}}",
     "description": "Sesi {{sessionNumber}} dari {{eventName}}"
+  },
+  "pdf": {
+    "sessions": "Sesi",
+    "dateRange": "Rentang tanggal",
+    "location": "Lokasi",
+    "timezone": "Zona waktu",
+    "page": "Halaman {{current}} / {{total}}",
+    "col": {
+      "num": "#",
+      "date": "Tanggal",
+      "day": "Hari",
+      "time": "Waktu",
+      "location": "Lokasi",
+      "notes": "Catatan"
+    }
+  },
+  "branding": {
+    "title": "Branding (untuk ekspor PDF)",
+    "logo": "Logo",
+    "removeLogo": "Hapus logo",
+    "orgName": "Nama organisasi",
+    "tagline": "Tagline",
+    "accentColor": "Warna aksen",
+    "footer": "Teks footer",
+    "reset": "Atur ulang branding",
+    "logoTooLarge": "Logo harus kurang dari 500 KB",
+    "logoInvalid": "Logo harus berformat PNG, JPG, atau SVG",
+    "preview": "Organisasi Anda"
   },
   "emptyState": {
     "title": "Belum ada jadwal",
