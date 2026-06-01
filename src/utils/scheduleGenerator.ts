@@ -262,7 +262,11 @@ export function exportToCSV(sessions: Session[], eventName: string, language: st
     ];
   });
 
-  const escapeCSV = (cell: string) => `"${String(cell).replace(/"/g, '""')}"`;
+  const neutralizeFormula = (cell: string) => {
+    const s = String(cell);
+    return /^[=+\-@\t\r]/.test(s) ? `'${s}` : s;
+  };
+  const escapeCSV = (cell: string) => `"${neutralizeFormula(cell).replace(/"/g, '""')}"`;
 
   const csvContent = [
     headers.join(","),
