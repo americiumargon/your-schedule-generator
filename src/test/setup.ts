@@ -21,14 +21,42 @@ URL.createObjectURL = ((blob: Blob) => {
 
 URL.revokeObjectURL = (() => {}) as typeof URL.revokeObjectURL;
 
-// Patch jsPDF save() to capture the produced PDF as a Blob, since jsdom's
-// download path may not reliably invoke URL.createObjectURL.
+// Wrap jsPDF so every instance has its `save` method replaced with a capture
+// that pushes the PDF bytes as a Blob into globalThis.__capturedBlobs.
+// jsPDF copies API methods onto each instance at construction time, so we
+// patch instances rather than the prototype.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-(jsPDF as any).API.save = function (this: jsPDF) {
-  const ab = this.output("arraybuffer") as ArrayBuffer;
-  globalThis.__capturedBlobs.push(new Blob([ab], { type: "application/pdf" }));
-  return this;
-};
+const jsPDFMod = jsPDF as any;
+const OriginalJsPDF = jsPDFMod;
+function PatchedJsPDF(this: unknown, ...args: unknown[]) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const inst: any = new (OriginalJsPDF as any)(...args);
+  inst.save = function () {
+    const ab = inst.output("arraybuffer") as ArrayBuffer;
+    globalThis.__capturedBlobs.push(new Blob([ab], { type: "application/pdf" }));
+    return inst;
+  };
+  return inst;
+}
+PatchedJsPDF.prototype = OriginalJsPDF.prototype;
+// Copy static members (API, version, etc.) so consumers keep working.
+Object.setPrototypeOf(PatchedJsPDF, OriginalJsPDF);
+for (const k of Object.getOwnPropertyNames(OriginalJsPDF)) {
+  if (!(k in PatchedJsPDF)) {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (PatchedJsPDF as any)[k] = (OriginalJsPDF as any)[k];
+    } catch {
+      // ignore non-writable
+    }
+  }
+}
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(jsPDFMod as any).default = PatchedJsPDF;
+// Replace the named export reference used by ESM consumers.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const modAny = jsPDFMod as any;
+if (modAny.jsPDF) modAny.jsPDF = PatchedJsPDF;
 
 Object.defineProperty(window, "matchMedia", {
   writable: true,
