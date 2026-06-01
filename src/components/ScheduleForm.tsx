@@ -580,7 +580,7 @@ export function ScheduleForm({ onGenerate, initialState }: Props) {
                 <Calendar
                   mode="single"
                   selected={active.startDate}
-                  onSelect={(d) => updateActive({ startDate: d ?? undefined })}
+                  onSelect={(d) => updateActive({ startDate: d ?? undefined, startsAfter: undefined })}
                   initialFocus
                   className="pointer-events-auto"
                   locale={dateLocale}
@@ -598,14 +598,16 @@ export function ScheduleForm({ onGenerate, initialState }: Props) {
                   <SelectValue placeholder={t('tracks.startAfterPlaceholder')} />
                 </SelectTrigger>
                 <SelectContent>
-                  {drafts.filter((d) => d.id !== active.id).map((d) => (
-                    <SelectItem key={d.id} value={d.id}>
-                      <span className="inline-flex items-center gap-2">
-                        <span className="h-2 w-2 rounded-full" style={{ backgroundColor: d.color }} aria-hidden />
-                        {d.name}
-                      </span>
-                    </SelectItem>
-                  ))}
+                  {drafts
+                    .filter((d) => d.id !== active.id && !wouldCreateCycle(active.id, d.id, drafts))
+                    .map((d) => (
+                      <SelectItem key={d.id} value={d.id}>
+                        <span className="inline-flex items-center gap-2">
+                          <span className="h-2 w-2 rounded-full" style={{ backgroundColor: d.color }} aria-hidden />
+                          {d.name}
+                        </span>
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             )}
@@ -615,7 +617,7 @@ export function ScheduleForm({ onGenerate, initialState }: Props) {
                 type="button"
                 variant="ghost"
                 size="sm"
-                onClick={() => updateActive({ startDate: undefined })}
+                onClick={() => updateActive({ startDate: undefined, startsAfter: undefined })}
               >
                 {t('tracks.resetOverride')}
               </Button>
