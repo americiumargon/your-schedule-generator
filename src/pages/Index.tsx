@@ -4,8 +4,11 @@ import { ScheduleDisplay } from "@/components/ScheduleDisplay";
 import { LanguageToggle } from "@/components/LanguageToggle";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { RecentSchedules } from "@/components/RecentSchedules";
+import { BrandingSection } from "@/components/BrandingSection";
 import { Button } from "@/components/ui/button";
 import { generateSchedule, exportToCSV, exportToICS } from "@/utils/scheduleGenerator";
+import { exportToPDF } from "@/utils/pdfExport";
+import { loadBranding } from "@/utils/branding";
 import { Calendar, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
@@ -136,14 +139,18 @@ const Index = () => {
     });
   };
 
-  const handleExport = (format: "csv" | "ics", enabledSessions: Session[], language: string) => {
+  const handleExport = (format: "csv" | "ics" | "pdf", enabledSessions: Session[], language: string) => {
     const opts = { location, notes, reminderMinutes, timezone };
     if (format === "csv") {
       exportToCSV(enabledSessions, eventName, language, opts);
       toast.success(t('export.successCsv'));
-    } else {
+    } else if (format === "ics") {
       exportToICS(enabledSessions, eventName, language, opts);
       toast.success(t('export.successIcs'));
+    } else {
+      const branding = loadBranding();
+      exportToPDF(enabledSessions, eventName, language, opts, branding, t);
+      toast.success(t('export.successPdf'));
     }
   };
 
@@ -260,12 +267,13 @@ const Index = () => {
       <main className="container mx-auto px-4 py-4 lg:py-8">
         <div className="grid lg:grid-cols-2 gap-4 lg:gap-8 print:block">
           {/* Left Column - Form */}
-          <div className="print:hidden" ref={formColumnRef}>
-            <div className="bg-card rounded-xl shadow-lg p-4 lg:p-6 lg:sticky lg:top-24">
-              <h2 className="text-xl font-semibold mb-6">{t('form.title')}</h2>
+          <div className="print:hidden space-y-4" ref={formColumnRef}>
+            <div className="bg-card rounded-xl shadow-lg p-4 lg:p-6 lg:sticky lg:top-24 space-y-4">
+              <h2 className="text-xl font-semibold">{t('form.title')}</h2>
               {hydrated && (
                 <ScheduleForm onGenerate={handleGenerate} initialState={initialFormState} />
               )}
+              <BrandingSection />
             </div>
           </div>
 

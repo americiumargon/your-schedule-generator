@@ -51,7 +51,7 @@ interface ScheduleDisplayProps {
   location?: string;
   notes?: string;
   timezone?: string;
-  onExport: (format: "csv" | "ics", enabledSessions: Session[], language: string) => void;
+  onExport: (format: "csv" | "ics" | "pdf", enabledSessions: Session[], language: string) => void;
   onClear: () => void;
   onUpdateSession?: (
     index: number,
@@ -249,7 +249,7 @@ export function ScheduleDisplay({ eventName, sessions, location, notes, timezone
     return sessions.filter((_, idx) => enabledSessions.has(idx));
   };
 
-  const handleExport = (format: "csv" | "ics") => {
+  const handleExport = (format: "csv" | "ics" | "pdf") => {
     const enabled = getEnabledSessions();
     if (enabled.length === 0) {
       toast.error(t('export.errorNoSessions'));
@@ -416,6 +416,15 @@ export function ScheduleDisplay({ eventName, sessions, location, notes, timezone
           >
             <Calendar className="h-4 w-4" />
             {t('schedule.icsButton')}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleExport("pdf")}
+            className="gap-2"
+          >
+            <FileText className="h-4 w-4" />
+            {t('schedule.pdfButton')}
           </Button>
           <Button
             variant="outline"
