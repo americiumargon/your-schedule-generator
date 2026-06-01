@@ -234,8 +234,8 @@
     "remove": "Remove",
     "clearAll": "Clear all",
     "createdAgo": "Created {{ago}}",
-    "trackCount": "{{count}} track",
-    "trackCount_other": "{{count}} tracks"
+    "trackCount": "{{count}} group",
+    "trackCount_other": "{{count}} groups"
   },
   "theme": {
     "toggleLight": "Switch to light mode",
