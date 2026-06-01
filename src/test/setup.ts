@@ -1,4 +1,4 @@
-import "@testing-library/jest-dom";
+// Test environment setup for Vitest (jsdom)
 
 declare global {
   // eslint-disable-next-line no-var
