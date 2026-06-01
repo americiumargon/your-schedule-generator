@@ -329,6 +329,7 @@ export function exportToPDF(
     head: [head],
     body,
     margin: { left: marginX, right: marginX, top: 32, bottom: 40 },
+    tableWidth: "wrap",
     styles: { fontSize: 9, cellPadding: 6, overflow: "linebreak", valign: "middle" },
     headStyles: {
       fillColor: [accent[0], accent[1], accent[2]],
