@@ -195,6 +195,27 @@ export function BrandingSection() {
           </div>
         </div>
 
+
+        <div className="flex items-start gap-2 rounded-md border p-3">
+          <input
+            id="branding-cover"
+            type="checkbox"
+            className="mt-1"
+            checked={branding.coverPage !== false}
+            onChange={(e) => update({ coverPage: e.target.checked })}
+          />
+          <div className="space-y-1">
+            <Label htmlFor="branding-cover" className="cursor-pointer">
+              {t("branding.coverPage")}
+            </Label>
+            <p className="text-xs text-muted-foreground">
+              {t("branding.coverPageHint")}
+            </p>
+          </div>
+        </div>
+
+        <p className="text-xs text-muted-foreground">{t("branding.quickHint")}</p>
+
         <div className="flex justify-end">
           <Button type="button" variant="ghost" size="sm" onClick={handleReset}>
             {t("branding.reset")}

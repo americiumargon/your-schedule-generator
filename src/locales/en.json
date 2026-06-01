@@ -210,7 +210,14 @@
     "reset": "Reset branding",
     "logoTooLarge": "Logo must be under 500 KB",
     "logoInvalid": "Logo must be PNG, JPG, or SVG",
-    "preview": "Your organization"
+    "preview": "Your organization",
+    "coverPage": "Include cover page in PDF",
+    "coverPageHint": "Adds a title page with your logo before the schedule.",
+    "quickAdd": "Add logo",
+    "quickChange": "Change logo",
+    "quickRemove": "Remove logo",
+    "quickTooltip": "Used on PDF cover and header. Manage full branding below the form.",
+    "quickHint": "Tip: use the logo button next to the PDF export for quick uploads."
   },
   "emptyState": {
     "title": "No schedule yet",

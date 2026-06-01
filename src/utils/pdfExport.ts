@@ -65,13 +65,109 @@ export function exportToPDF(
 
   const accent = hexToRgb(branding.accentColor || DEFAULT_ACCENT);
 
-  // Header band
-  const headerH = 80;
-  doc.setFillColor(accent[0], accent[1], accent[2]);
-  doc.rect(0, 0, pageW, headerH, "F");
+  const wantsCover =
+    branding.coverPage !== false && !!(branding.logoDataUrl || branding.orgName);
+
+  // ---------- Cover page ----------
+  if (wantsCover) {
+    // Top accent band ~ 42% of page height
+    const bandH = pageH * 0.42;
+    doc.setFillColor(accent[0], accent[1], accent[2]);
+    doc.rect(0, 0, pageW, bandH, "F");
+
+    // Centered large logo
+    let logoBottomY = 80;
+    if (branding.logoDataUrl) {
+      const props = getImageProps(doc, branding.logoDataUrl);
+      if (props) {
+        const maxH = 180;
+        const maxW = 280;
+        const ratio = props.w / props.h;
+        let h = Math.min(maxH, props.h);
+        let w = h * ratio;
+        if (w > maxW) {
+          w = maxW;
+          h = w / ratio;
+        }
+        const x = (pageW - w) / 2;
+        const y = (bandH - h) / 2;
+        try {
+          doc.addImage(branding.logoDataUrl, "PNG", x, y, w, h, undefined, "FAST");
+          logoBottomY = y + h;
+        } catch {
+          // ignore bad logo
+        }
+      }
+    }
+
+    // Below the band: text block
+    let cy = bandH + 48;
+    doc.setTextColor(20, 20, 20);
+    if (branding.orgName) {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(24);
+      doc.text(branding.orgName, pageW / 2, cy, { align: "center" });
+      cy += 30;
+    }
+    if (branding.tagline) {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(13);
+      doc.setTextColor(80, 80, 80);
+      doc.text(branding.tagline, pageW / 2, cy, { align: "center" });
+      cy += 22;
+    }
+    if (eventName) {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(16);
+      doc.setTextColor(20, 20, 20);
+      doc.text(eventName, pageW / 2, cy, { align: "center" });
+      cy += 28;
+    }
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(11);
+    doc.setTextColor(80, 80, 80);
+    if (sessions.length > 0) {
+      const first = sessions[0].date;
+      const last = sessions[sessions.length - 1].date;
+      const range = `${format(first, "MMM d, yyyy", { locale: dateLocale })} – ${format(last, "MMM d, yyyy", { locale: dateLocale })}`;
+      doc.text(range, pageW / 2, cy, { align: "center" });
+      cy += 16;
+      doc.text(`${t("pdf.sessions")}: ${sessions.length}`, pageW / 2, cy, { align: "center" });
+      cy += 16;
+    }
+    if (opts.location) {
+      doc.text(`${t("pdf.location")}: ${opts.location}`, pageW / 2, cy, { align: "center" });
+      cy += 16;
+    }
+    if (opts.timezone) {
+      doc.text(`${t("pdf.timezone")}: ${opts.timezone}`, pageW / 2, cy, { align: "center" });
+      cy += 16;
+    }
+
+    if (branding.footerText) {
+      doc.setFontSize(9);
+      doc.setTextColor(120, 120, 120);
+      doc.text(branding.footerText, pageW / 2, pageH - 30, { align: "center" });
+    }
+
+    // Suppress eslint unused-var warning on logoBottomY
+    void logoBottomY;
+
+    doc.addPage();
+  }
+
+  // ---------- Schedule first page header ----------
+  // When cover is on, use a slim accent strip (logo repeats via didDrawPage).
+  // When cover is off, render the original tall header band with logo.
+  const headerH = wantsCover ? 0 : 80;
+  if (!wantsCover) {
+    doc.setFillColor(accent[0], accent[1], accent[2]);
+    doc.rect(0, 0, pageW, headerH, "F");
+  }
 
   let textX = marginX;
-  if (branding.logoDataUrl) {
+  if (!wantsCover && branding.logoDataUrl) {
     const props = getImageProps(doc, branding.logoDataUrl);
     if (props) {
       const maxH = 48;
@@ -91,6 +187,7 @@ export function exportToPDF(
       }
     }
   }
+
 
   doc.setTextColor(255, 255, 255);
 
@@ -123,22 +220,24 @@ export function exportToPDF(
   };
 
 
-  const titleSrc = branding.orgName || eventName || "Schedule";
-  const title = fitText(titleSrc, headerTextMaxW, 18, 12, "bold");
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(title.size);
-  doc.text(title.text, textX, 36);
-  if (branding.tagline) {
-    const tag = fitText(branding.tagline, headerTextMaxW, 11, 8, "normal");
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(tag.size);
-    doc.text(tag.text, textX, 56);
+  if (!wantsCover) {
+    const titleSrc = branding.orgName || eventName || "Schedule";
+    const title = fitText(titleSrc, headerTextMaxW, 18, 12, "bold");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(title.size);
+    doc.text(title.text, textX, 36);
+    if (branding.tagline) {
+      const tag = fitText(branding.tagline, headerTextMaxW, 11, 8, "normal");
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(tag.size);
+      doc.text(tag.text, textX, 56);
+    }
   }
 
 
   // Info block
   doc.setTextColor(20, 20, 20);
-  let y = headerH + 28;
+  let y = (wantsCover ? 40 : headerH + 28);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(14);
   doc.text(eventName || t("schedule.title"), marginX, y);
@@ -248,41 +347,83 @@ export function exportToPDF(
       }
     },
     didDrawPage: (data) => {
-      if (data.pageNumber > 1) {
+      const drawStrip = wantsCover || data.pageNumber > 1;
+      if (drawStrip) {
+        const stripH = 20;
         doc.setFillColor(accent[0], accent[1], accent[2]);
-        doc.rect(0, 0, pageW, 18, "F");
+        doc.rect(0, 0, pageW, stripH, "F");
+
+        let stripTextX = marginX;
+        if (branding.logoDataUrl) {
+          const props = getImageProps(doc, branding.logoDataUrl);
+          if (props) {
+            const maxH = 14;
+            const maxW = 60;
+            const ratio = props.w / props.h;
+            let h = Math.min(maxH, props.h);
+            let w = h * ratio;
+            if (w > maxW) {
+              w = maxW;
+              h = w / ratio;
+            }
+            try {
+              doc.addImage(
+                branding.logoDataUrl,
+                "PNG",
+                marginX,
+                (stripH - h) / 2,
+                w,
+                h,
+                undefined,
+                "FAST",
+              );
+              stripTextX = marginX + w + 10;
+            } catch {
+              // ignore
+            }
+          }
+        }
+
         doc.setFont("helvetica", "bold");
         doc.setFontSize(9);
         doc.setTextColor(255, 255, 255);
         const brand = branding.orgName || eventName || "";
         if (brand) {
-          const stripMaxW = pageW - marginX * 2;
+          const stripMaxW = pageW - stripTextX - marginX;
           const fitted = fitText(brand, stripMaxW, 9, 7, "bold");
           doc.setFontSize(fitted.size);
-          doc.text(fitted.text, marginX, 12);
+          doc.text(fitted.text, stripTextX, 13);
         }
       }
     },
   });
 
   const pageCount = doc.getNumberOfPages();
+  const firstSchedulePage = wantsCover ? 2 : 1;
+  const scheduleTotal = pageCount - firstSchedulePage + 1;
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
     doc.setTextColor(120, 120, 120);
     const footerY = pageH - 20;
-    const pageLabel = t("pdf.page", { current: i, total: pageCount });
-    const pageLabelW = doc.getTextWidth(pageLabel);
-    if (branding.footerText) {
-      const reserved = pageLabelW + 16;
-      const footerMaxW = pageW - marginX * 2 - reserved * 2;
-      const fitted = fitText(branding.footerText, footerMaxW, 9, 7, "normal");
-      doc.setFontSize(fitted.size);
-      doc.text(fitted.text, pageW / 2, footerY, { align: "center" });
-      doc.setFontSize(9);
+    const isCover = wantsCover && i === 1;
+    if (!isCover) {
+      const pageLabel = t("pdf.page", {
+        current: i - firstSchedulePage + 1,
+        total: scheduleTotal,
+      });
+      const pageLabelW = doc.getTextWidth(pageLabel);
+      if (branding.footerText) {
+        const reserved = pageLabelW + 16;
+        const footerMaxW = pageW - marginX * 2 - reserved * 2;
+        const fitted = fitText(branding.footerText, footerMaxW, 9, 7, "normal");
+        doc.setFontSize(fitted.size);
+        doc.text(fitted.text, pageW / 2, footerY, { align: "center" });
+        doc.setFontSize(9);
+      }
+      doc.text(pageLabel, pageW - marginX, footerY, { align: "right" });
     }
-    doc.text(pageLabel, pageW - marginX, footerY, { align: "right" });
   }
 
   doc.save(`${sanitizeFilename(opts.filename || eventName)}.pdf`);

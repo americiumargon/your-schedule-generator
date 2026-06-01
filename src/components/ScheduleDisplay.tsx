@@ -32,6 +32,7 @@ import {
   type CopyFormat,
 } from "@/utils/copyFormats";
 import { buildGoogleCalendarUrl } from "@/utils/googleCalendar";
+import { LogoQuickUpload } from "@/components/LogoQuickUpload";
 
 
 interface Session {
@@ -455,6 +456,9 @@ export function ScheduleDisplay({ eventName, sessions, location, notes, timezone
             <FileText className="h-4 w-4" />
             {t('schedule.pdfButton')}
           </Button>
+          <LogoQuickUpload />
+
+
 
           <Button
             variant="outline"

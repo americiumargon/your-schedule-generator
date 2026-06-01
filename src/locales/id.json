@@ -205,7 +205,14 @@
     "reset": "Atur ulang branding",
     "logoTooLarge": "Logo harus kurang dari 500 KB",
     "logoInvalid": "Logo harus berformat PNG, JPG, atau SVG",
-    "preview": "Organisasi Anda"
+    "preview": "Organisasi Anda",
+    "coverPage": "Sertakan halaman sampul di PDF",
+    "coverPageHint": "Menambahkan halaman judul dengan logo Anda sebelum jadwal.",
+    "quickAdd": "Tambah logo",
+    "quickChange": "Ganti logo",
+    "quickRemove": "Hapus logo",
+    "quickTooltip": "Digunakan di sampul dan header PDF. Atur branding lengkap di bawah formulir.",
+    "quickHint": "Tip: gunakan tombol logo di samping ekspor PDF untuk unggahan cepat."
   },
   "emptyState": {
     "title": "Belum ada jadwal",
