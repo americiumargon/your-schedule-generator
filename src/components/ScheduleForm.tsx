@@ -419,17 +419,39 @@ export function ScheduleForm({ onGenerate, onSaveDraft, initialState }: Props) {
     const next: FormErrors = {};
     const trimmedProject = projectName.trim();
     if (!trimmedProject) next.projectName = t("form.validation.projectNameRequired");
-    if (!startDate) next.startDate = t('form.validation.dateRequired');
 
+    // Start date
+    if (!startDate) {
+      next.startDate = t('form.validation.dateRequired');
+    } else {
+      const c = validateDate(startDate);
+      if (c) next.startDate = tCode(c);
+    }
+
+    // Count / end date
     if (mode === "count") {
-      const parsed = parseInt(numberOfMeetings);
-      if (!numberOfMeetings || isNaN(parsed) || parsed < 1) {
-        next.numberOfMeetings = t('form.validation.meetingsRequired');
-      }
+      const c = validateMeetings(numberOfMeetings);
+      if (c) next.numberOfMeetings = tCode(c);
     } else if (!endDate) {
       next.endDate = t('form.validation.endDateRequired');
-    } else if (startDate && endDate < startDate) {
-      next.endDate = t('form.validation.endDateAfterStart');
+    } else {
+      const c = validateDate(endDate);
+      if (c) next.endDate = tCode(c);
+      else if (startDate && endDate < startDate) next.endDate = t('form.validation.endDateAfterStart');
+    }
+
+    // Timezone & reminder (project-level export inputs)
+    const tzCode = validateTimezone(timezone);
+    if (tzCode) next.timezone = tCode(tzCode);
+    const remCode = validateReminder(reminderMinutes);
+    if (remCode) next.reminderMinutes = tCode(remCode);
+
+    // Holidays
+    for (const h of holidays) {
+      if (validateDate(h)) {
+        next.startDate = next.startDate ?? tCode("dateInvalid");
+        break;
+      }
     }
 
     const perTrack: Record<string, string> = {};
@@ -439,25 +461,31 @@ export function ScheduleForm({ onGenerate, onSaveDraft, initialState }: Props) {
         continue;
       }
       const tNeedsWeekdays = d.recurrenceType !== "monthlyByDate";
-      if (tNeedsWeekdays && d.selectedDays.length === 0) {
-        perTrack[d.id] = t('form.validation.daysRequired');
-        continue;
+      if (tNeedsWeekdays) {
+        const c = validateDaysOfWeek(d.selectedDays);
+        if (c) { perTrack[d.id] = tCode(c); continue; }
       }
-      if (d.recurrenceType === "monthlyByWeekday" && d.ordinals.length === 0) {
-        perTrack[d.id] = t('form.validation.ordinalsRequired');
-        continue;
+      if (d.recurrenceType === "weekly") {
+        const c = validateInterval(d.weeklyInterval);
+        if (c) { perTrack[d.id] = tCode(c); continue; }
       }
-      if (d.recurrenceType === "monthlyByDate" && d.daysOfMonth.length === 0) {
-        perTrack[d.id] = t('form.validation.daysOfMonthRequired');
-        continue;
+      if (d.recurrenceType === "monthlyByWeekday") {
+        const c = validateOrdinals(d.ordinals);
+        if (c) { perTrack[d.id] = tCode(c); continue; }
       }
-      if (d.timeSlots.some((s) => !s.startTime || !s.endTime || s.startTime >= s.endTime)) {
-        perTrack[d.id] = t('form.validation.timeRequired');
-        continue;
+      if (d.recurrenceType === "monthlyByDate") {
+        const c = validateDaysOfMonth(d.daysOfMonth);
+        if (c) { perTrack[d.id] = tCode(c); continue; }
       }
-      if (d.startDate && startDate && d.startDate < startDate) {
-        perTrack[d.id] = t('tracks.startBeforeProject');
-        continue;
+      const slotCode = validateTimeSlots(d.timeSlots);
+      if (slotCode) { perTrack[d.id] = tCode(slotCode); continue; }
+      if (d.startDate) {
+        const c = validateDate(d.startDate);
+        if (c) { perTrack[d.id] = tCode(c); continue; }
+        if (startDate && d.startDate < startDate) {
+          perTrack[d.id] = t('tracks.startBeforeProject');
+          continue;
+        }
       }
     }
 
@@ -466,16 +494,13 @@ export function ScheduleForm({ onGenerate, onSaveDraft, initialState }: Props) {
       if (!perTrack[id]) perTrack[id] = t('tracks.circularDependency');
     }
 
-
-
     if (Object.keys(perTrack).length > 0) {
       next.perTrack = perTrack;
-      // Switch to first errored track
       const firstErrId = Object.keys(perTrack)[0];
       setActiveId(firstErrId);
     }
 
-    if (next.projectName || next.startDate || next.numberOfMeetings || next.endDate || next.perTrack) {
+    if (next.projectName || next.startDate || next.numberOfMeetings || next.endDate || next.timezone || next.reminderMinutes || next.perTrack) {
       setErrors(next);
       requestAnimationFrame(() => {
         const firstInvalid = document.querySelector<HTMLElement>('[data-invalid="true"]');
