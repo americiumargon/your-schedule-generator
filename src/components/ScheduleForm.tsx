@@ -423,6 +423,56 @@ export function ScheduleForm({ onGenerate, initialState }: Props) {
           {fieldError(errors.projectName)}
         </div>
 
+        {/* Track tabs */}
+        <div className="space-y-3">
+          <div className="flex items-baseline justify-between">
+            <Label className="text-sm">{t('tracks.title')}</Label>
+            <span className="text-xs text-muted-foreground">{t('tracks.hint')}</span>
+          </div>
+          <TrackTabs
+            tracks={drafts.map((d) => ({ id: d.id, name: d.name, color: d.color }))}
+            activeId={active.id}
+            onSelect={setActiveId}
+            onAdd={addTrack}
+            onRename={renameTrack}
+            onDuplicate={duplicateTrack}
+            onDelete={deleteTrack}
+            onSetColor={setTrackColor}
+          />
+        </div>
+
+        {/* Session label (renames the active group's tab) */}
+        <div>
+          <div className="flex items-center justify-between gap-2">
+            <Label htmlFor={`trackName-${active.id}`}>{t('form.eventName')}</Label>
+            <span
+              className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground"
+              aria-live="polite"
+            >
+              <span
+                className="h-2 w-2 rounded-full"
+                style={{ backgroundColor: active.color }}
+                aria-hidden
+              />
+              {t('form.sessionLabelEditing', { name: active.name })}
+            </span>
+          </div>
+          <Input
+            id={`trackName-${active.id}`}
+            value={active.name}
+            onChange={(e) => updateActive({ name: e.target.value })}
+            placeholder={t('form.eventNamePlaceholder')}
+            maxLength={100}
+            style={{ borderLeftWidth: 3, borderLeftColor: active.color }}
+            className={cn("mt-2", trackErr && "border-destructive focus-visible:ring-destructive")}
+            data-invalid={!!trackErr}
+          />
+          <p className="text-xs text-muted-foreground mt-1.5">{t('form.sessionLabelHelper')}</p>
+          {trackErr && <p className="text-sm font-medium text-destructive mt-1">{trackErr}</p>}
+        </div>
+
+        <div className="border-t border-border/50 pt-1" />
+
         {/* Start date */}
         <div>
           <Label>{t('form.startDate')}</Label>
@@ -497,53 +547,6 @@ export function ScheduleForm({ onGenerate, initialState }: Props) {
           </div>
         )}
 
-        {/* Track tabs */}
-        <div className="space-y-3">
-          <div className="flex items-baseline justify-between">
-            <Label className="text-sm">{t('tracks.title')}</Label>
-            <span className="text-xs text-muted-foreground">{t('tracks.hint')}</span>
-          </div>
-          <TrackTabs
-            tracks={drafts.map((d) => ({ id: d.id, name: d.name, color: d.color }))}
-            activeId={active.id}
-            onSelect={setActiveId}
-            onAdd={addTrack}
-            onRename={renameTrack}
-            onDuplicate={duplicateTrack}
-            onDelete={deleteTrack}
-            onSetColor={setTrackColor}
-          />
-        </div>
-
-        {/* Session label (renames the active group's tab) */}
-        <div>
-          <div className="flex items-center justify-between gap-2">
-            <Label htmlFor={`trackName-${active.id}`}>{t('form.eventName')}</Label>
-            <span
-              className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground"
-              aria-live="polite"
-            >
-              <span
-                className="h-2 w-2 rounded-full"
-                style={{ backgroundColor: active.color }}
-                aria-hidden
-              />
-              {t('form.sessionLabelEditing', { name: active.name })}
-            </span>
-          </div>
-          <Input
-            id={`trackName-${active.id}`}
-            value={active.name}
-            onChange={(e) => updateActive({ name: e.target.value })}
-            placeholder={t('form.eventNamePlaceholder')}
-            maxLength={100}
-            style={{ borderLeftWidth: 3, borderLeftColor: active.color }}
-            className={cn("mt-2", trackErr && "border-destructive focus-visible:ring-destructive")}
-            data-invalid={!!trackErr}
-          />
-          <p className="text-xs text-muted-foreground mt-1.5">{t('form.sessionLabelHelper')}</p>
-          {trackErr && <p className="text-sm font-medium text-destructive mt-1">{trackErr}</p>}
-        </div>
 
 
         {/* Weekdays */}
