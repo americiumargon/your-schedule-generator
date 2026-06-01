@@ -1,58 +1,113 @@
-# Branded PDF Export
 
-Add a new export format: a branded PDF of the generated schedule with a customizable logo, organization name, tagline, accent color, and footer. Branding settings persist in localStorage so users set them once and reuse them.
+# Multi-track scheduling
 
-## Scope
+Let users plan multiple classes (e.g. "Beginner Mon/Wed", "Advanced Tue/Thu") inside one project and export them combined or per track.
 
-In v1:
-- Single set of branding (one profile), stored in localStorage.
-- One clean PDF layout, header + info block + sessions table + footer.
-- EN/ID localized strings via existing i18n.
+## Concept
 
-Out of scope (later):
-- Multiple brand profiles, custom fonts, watermarks, layout variants.
+A **Project** has:
+- Shared: project name, start date, end mode (count or end date), timezone, holidays, holiday behavior, reminder, branding.
+- **Tracks[]**: each with its own name, color, weekdays, time slots, recurrence, location, notes.
+
+A single track behaves exactly like today (backward compatible).
+
+## UX
+
+In `ScheduleForm`:
+- Above the per-track fields, add a **Tracks** tab strip: `[Beginner] [Advanced] [+ Add track]`. Right-click / "..." menu on a tab: rename, duplicate, set color, delete (min 1 track).
+- Fields that move **into the track tab**: activity name → track name, weekdays, time slots, recurrence, location, notes.
+- Fields that stay **shared** above the tabs: start date, end mode/count/end date, holidays + behavior, reminder, timezone, branding.
+- New top field: **Project name** (used as filename and combined header).
+- Each track gets a color swatch (picked from a small preset palette). Color is shown in the tab, results list, and exports.
+
+In `ScheduleDisplay`:
+- View toggle: **Combined** (all tracks merged, sorted by date+time, with a colored "Track" pill) vs **By track** (collapsible group per track).
+- Session count chip per track; existing edit/select/clear behavior preserved per session.
+- Export bar gains a small **Scope** dropdown: `Combined` | `Per track (zip)` | individual track names.
+
+## Data model
+
+```ts
+interface Track {
+  id: string;           // uuid
+  name: string;
+  color: string;        // hex from preset palette
+  selectedDays: number[];
+  timeSlots: TimeSlot[];
+  recurrence: Recurrence;
+  location?: string;
+  notes?: string;
+}
+
+interface ProjectState {
+  projectName: string;
+  startDate: Date;
+  mode: "count" | "endDate";
+  numberOfMeetings?: number;
+  endDate?: Date;
+  holidays: Date[];
+  holidayBehavior: "skip" | "rollForward";
+  reminderMinutes: number;
+  timezone: string;
+  tracks: Track[];
+}
+
+// Session gains:
+interface Session {
+  // ...existing
+  trackId: string;
+  trackName: string;
+  trackColor: string;
+}
+```
+
+Cap: total generated sessions across all tracks stays ≤ 366 (existing limit).
+
+## Generation
+
+`generateSchedule` already takes one track's worth of inputs. New wrapper `generateProject(project)`:
+1. For each track, call `generateSchedule` with shared start/end/holidays + track-specific days/slots/recurrence/location/notes.
+2. Tag each resulting session with `trackId`, `trackName`, `trackColor`.
+3. Return `Record<trackId, Session[]>` plus a flat sorted `combined: Session[]`.
+4. Renumber: combined uses a global `#`; per-track keeps the track-local `#`.
+
+## Exports
+
+- `exportToCSV/ICS/PDF` get an optional `scope: { mode: "combined" | "track"; trackId?: string }` and a `tracks` lookup.
+- **Combined CSV/PDF**: new "Class" column with track name. PDF gets a small colored dot before the name.
+- **Per-track**: today's behavior, filename `{project}-{track}.csv|ics|pdf`.
+- **Per-track zip**: use `jszip` (new dep) to bundle all tracks for the selected format. Filename `{project}-{format}.zip`.
+
+## Share & recent
+
+Bump share token to `v: 2` with a `tracks` array; **decoder accepts both v1 and v2** (v1 → single-track project, track inherits today's shared fields). Recent schedules store the full `ProjectState`; old entries upgrade on load the same way.
 
 ## Files
 
 ### New
-- `src/utils/branding.ts` — types + `loadBranding()` / `saveBranding()` / `clearBranding()` against `localStorage` key `branding:v1`. Shape:
-  ```ts
-  { logoDataUrl?: string; orgName?: string; tagline?: string; accentColor?: string; footerText?: string; }
-  ```
-- `src/utils/pdfExport.ts` — `exportToPDF(sessions, eventName, language, opts, branding)` using `jspdf` + `jspdf-autotable`.
-  - Header band tinted with `accentColor` (fallback to current theme primary, e.g. `#0ea5e9`).
-  - Logo: base64 data URL, fit into max 40pt tall × 160pt wide, preserve aspect.
-  - Info block: event name, location, timezone, session count, date range.
-  - Table: `#`, Date, Day, Time, Location (if any), Notes (if any). Repeating header row, page numbers in footer, footer text centered.
-  - Localized column headers and labels via i18n keys.
-- `src/components/BrandingSection.tsx` — collapsible section rendered inside `ScheduleForm` (or `Index` near form). Fields:
-  - Logo file input (accept `image/png,image/jpeg,image/svg+xml`, max ~500KB; read as data URL).
-  - Live mini-preview of the header bar (logo + org name + tagline tinted with accent color).
-  - Org name, tagline, footer text inputs.
-  - Accent color picker (`<input type="color">`).
-  - "Reset branding" button.
-  - On any change, persist via `saveBranding()`.
+- `src/utils/tracks.ts` — `Track`, `ProjectState` types, `createTrack(defaults)`, `TRACK_COLORS` preset palette, id helper.
+- `src/utils/projectGenerator.ts` — `generateProject(project) → { byTrack, combined }`.
+- `src/components/TrackTabs.tsx` — tab strip with add/rename/duplicate/color/delete.
+- `src/components/TrackEditor.tsx` — per-track fields extracted from `ScheduleForm` (name, days, slots, recurrence, location, notes).
 
 ### Edited
-- `src/components/ScheduleDisplay.tsx` — add "Export PDF" button next to existing CSV/ICS buttons. Wire to a new `onExport("pdf", ...)` case.
-- `src/pages/Index.tsx` — extend `handleExport` to handle `"pdf"`: load branding from localStorage, call `exportToPDF(...)`, toast `t('export.successPdf')`.
-- `src/components/ScheduleForm.tsx` (or `Index.tsx`) — mount `<BrandingSection />` as a collapsed-by-default block above the Generate button.
-- `src/locales/en.json` and `src/locales/id.json` — add keys:
-  - `branding.title`, `branding.logo`, `branding.orgName`, `branding.tagline`, `branding.accentColor`, `branding.footer`, `branding.reset`, `branding.logoTooLarge`, `branding.logoInvalid`, `branding.preview`
-  - `export.pdf`, `export.successPdf`
-  - `pdf.sessions`, `pdf.dateRange`, `pdf.location`, `pdf.timezone`, `pdf.page`, `pdf.col.num`, `pdf.col.date`, `pdf.col.day`, `pdf.col.time`, `pdf.col.location`, `pdf.col.notes`
+- `src/components/ScheduleForm.tsx` — split into shared section + `<TrackTabs/>` + `<TrackEditor track={active}/>`; emit `ProjectState` to `onGenerate`.
+- `src/components/ScheduleDisplay.tsx` — view toggle (Combined/By track), track pill, export scope dropdown.
+- `src/pages/Index.tsx` — hold `ProjectState` + generated `byTrack`/`combined`; route export calls with scope; pass `projectName` to PDF branding header.
+- `src/utils/scheduleGenerator.ts` (`exportToCSV/ICS`) — accept optional track scope + add "Class" column for combined.
+- `src/utils/pdfExport.ts` — Class column + colored dot when combined; per-track filename pattern.
+- `src/utils/shareLink.ts` — v2 schema with `tracks`, decoder fallback for v1.
+- `src/utils/recentSchedules.ts` — store/load `ProjectState`, upgrade v1 entries.
+- `src/locales/en.json` + `id.json` — keys: `tracks.title`, `tracks.add`, `tracks.rename`, `tracks.duplicate`, `tracks.delete`, `tracks.color`, `tracks.minOne`, `tracks.untitled`, `schedule.viewCombined`, `schedule.viewByTrack`, `schedule.classColumn`, `export.scopeCombined`, `export.scopePerTrack`, `export.scopeTrack`, `form.projectName`.
+- `package.json` — `bun add jszip`.
 
-### Dependencies
-- `bun add jspdf jspdf-autotable`
+## Backward compatibility
 
-## Behavior details
+- Existing v1 share links and recent entries load as a single-track project named after the old `eventName`.
+- A fresh project starts with one track ("Class 1") so the form looks identical to today for single-class users.
 
-- **No branding set** → PDF still works: text-only header with event name, neutral accent (theme primary).
-- **Logo handling** → validate MIME and size before saving; reject >500KB with a toast. Auto-fit dimensions; never stretch.
-- **Long content** → autoTable handles wrapping and pagination; repeat header row per page; footer shows `Page X / Y` and footer text.
-- **Filename** → `{eventName || 'schedule'}.pdf`, sanitized.
-- **Persistence** → branding survives reload, independent of any specific schedule, shared across all exports.
+## Out of scope
 
-## Out of scope confirmation
-
-Country holiday presets are explicitly deferred to a follow-up task.
+- Per-track timezone, per-track holidays, per-track reminders.
+- Conflict detection (same room, overlapping times) — possible follow-up.
+- Country holiday presets (still deferred).

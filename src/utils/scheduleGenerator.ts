@@ -8,7 +8,7 @@ export interface TimeSlot {
   label?: string;
 }
 
-interface Session {
+export interface Session {
   date: Date;
   sessionNumber: number;
   startTime: string;
@@ -17,6 +17,9 @@ interface Session {
   rolledFrom?: Date;
   location?: string;
   notes?: string;
+  trackId?: string;
+  trackName?: string;
+  trackColor?: string;
 }
 
 const MAX_SESSIONS = 1000;
@@ -200,6 +203,8 @@ export interface ExportOptions {
   notes?: string;
   reminderMinutes?: number;
   timezone?: string;
+  includeTrackColumn?: boolean;
+  filename?: string;
 }
 
 function escapeICS(text: string): string {
@@ -219,6 +224,7 @@ function subjectFor(eventName: string, sessionNumber: number, sessionWord: strin
 
 export function exportToCSV(sessions: Session[], eventName: string, language: string = 'en', opts: ExportOptions = {}): void {
   const t = language === 'id' ? id : en;
+  const includeTrack = !!opts.includeTrackColumn;
 
   const headers = [
     "Subject",
@@ -229,7 +235,8 @@ export function exportToCSV(sessions: Session[], eventName: string, language: st
     "All Day Event",
     "Description",
     "Location",
-    "Private"
+    "Private",
+    ...(includeTrack ? ["Class"] : []),
   ];
 
   const baseLocation = opts.location ?? "";
@@ -245,6 +252,7 @@ export function exportToCSV(sessions: Session[], eventName: string, language: st
     const effLocation = session.location ?? baseLocation;
     const effNotes = session.notes ?? baseNotes;
     const descParts = [baseDescription];
+    if (session.trackName) descParts.push(`Class: ${session.trackName}`);
     if (rolledNote) descParts.push(rolledNote);
     if (effNotes) descParts.push(effNotes);
     const description = descParts.join("\n\n");
@@ -258,7 +266,8 @@ export function exportToCSV(sessions: Session[], eventName: string, language: st
       "False",
       description,
       effLocation,
-      ""
+      "",
+      ...(includeTrack ? [session.trackName ?? ""] : []),
     ];
   });
 
@@ -273,7 +282,7 @@ export function exportToCSV(sessions: Session[], eventName: string, language: st
     ...rows.map(row => row.map(escapeCSV).join(",")),
   ].join("\n");
 
-  downloadFile(csvContent, `${eventName || "schedule"}.csv`, "text/csv");
+  downloadFile(csvContent, `${opts.filename || eventName || "schedule"}.csv`, "text/csv");
 }
 
 function sanitizeTzid(tz: string | undefined): string {
@@ -329,7 +338,10 @@ export function exportToICS(sessions: Session[], eventName: string, language: st
     const baseSummary = t.export.summary
       .replace('{{eventName}}', eventName)
       .replace('{{sessionNumber}}', session.sessionNumber.toString());
-    const summary = session.slotLabel ? `${baseSummary} (${session.slotLabel})` : baseSummary;
+    const summaryParts = [baseSummary];
+    if (session.trackName) summaryParts.push(`[${session.trackName}]`);
+    if (session.slotLabel) summaryParts.push(`(${session.slotLabel})`);
+    const summary = summaryParts.join(" ");
     const baseDescription = t.export.description
       .replace('{{sessionNumber}}', session.sessionNumber.toString())
       .replace('{{eventName}}', eventName);
@@ -339,6 +351,7 @@ export function exportToICS(sessions: Session[], eventName: string, language: st
     const effLocation = session.location ?? opts.location;
     const effNotes = session.notes ?? opts.notes;
     const descParts = [baseDescription];
+    if (session.trackName) descParts.push(`Class: ${session.trackName}`);
     if (rolledNote) descParts.push(rolledNote);
     if (effNotes) descParts.push(effNotes);
     const fullDescription = descParts.join("\n\n");
@@ -351,7 +364,7 @@ export function exportToICS(sessions: Session[], eventName: string, language: st
       `DESCRIPTION:${escapeICS(fullDescription)}`,
     ];
     if (effLocation) lines.push(`LOCATION:${escapeICS(effLocation)}`);
-    lines.push(`UID:${Date.now()}-${session.sessionNumber}-${sanitizeUidPart(session.slotLabel)}@schedule-generator.com`);
+    lines.push(`UID:${Date.now()}-${session.sessionNumber}-${sanitizeUidPart(session.trackId)}-${sanitizeUidPart(session.slotLabel)}@schedule-generator.com`);
     if (opts.reminderMinutes && opts.reminderMinutes > 0) {
       lines.push(
         "BEGIN:VALARM",
@@ -379,7 +392,7 @@ export function exportToICS(sessions: Session[], eventName: string, language: st
     "END:VCALENDAR",
   ].join("\r\n");
 
-  downloadFile(icsContent, `${eventName || "schedule"}.ics`, "text/calendar");
+  downloadFile(icsContent, `${opts.filename || eventName || "schedule"}.ics`, "text/calendar");
 }
 
 function downloadFile(content: string, filename: string, mimeType: string): void {

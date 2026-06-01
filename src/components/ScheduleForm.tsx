@@ -13,78 +13,27 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import {
-  CalendarIcon,
-  Check,
-  ChevronDown,
-  ChevronsUpDown,
-  Clock,
-  MapPin,
-  Plus,
-  Repeat,
-  Settings2,
-  Trash2,
+  CalendarIcon, Check, ChevronDown, ChevronsUpDown, Clock, MapPin, Plus, Repeat, Settings2, Trash2,
 } from "lucide-react";
 import { format } from "date-fns";
 import { enUS, id as idLocale } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { z } from "zod";
+import { TrackTabs } from "@/components/TrackTabs";
+import { createTrack, newTrackId, TRACK_COLORS, type ProjectState, type Track } from "@/utils/tracks";
 
 const WEEKDAYS = [
-  { id: 1, key: "monday" },
-  { id: 2, key: "tuesday" },
-  { id: 3, key: "wednesday" },
-  { id: 4, key: "thursday" },
-  { id: 5, key: "friday" },
-  { id: 6, key: "saturday" },
-  { id: 0, key: "sunday" },
+  { id: 1, key: "monday" }, { id: 2, key: "tuesday" }, { id: 3, key: "wednesday" },
+  { id: 4, key: "thursday" }, { id: 5, key: "friday" }, { id: 6, key: "saturday" }, { id: 0, key: "sunday" },
 ];
 
 const MAX_SLOTS = 6;
-
-interface TimeSlotInput {
-  startTime: string;
-  endTime: string;
-  label: string;
-}
-
-const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
-
-const slotSchema = z.object({
-  startTime: z.string().regex(timeRegex, "Invalid start time format"),
-  endTime: z.string().regex(timeRegex, "Invalid end time format"),
-  label: z.string().trim().max(50, "Slot label must be less than 50 characters").optional(),
-}).refine((s) => s.startTime < s.endTime, {
-  message: "End time must be after start time",
-  path: ["endTime"],
-});
-
-const baseSchema = {
-  eventName: z.string()
-    .trim()
-    .min(1, "Activity name is required")
-    .max(100, "Activity name must be less than 100 characters"),
-  selectedDays: z.array(z.number().min(0).max(6)),
-  timeSlots: z.array(slotSchema).min(1, "At least one time slot is required").max(MAX_SLOTS),
-  holidays: z.array(z.date()),
-  location: z.string().trim().max(200, "Location must be less than 200 characters").optional(),
-  notes: z.string().trim().max(2000, "Notes must be less than 2000 characters").optional(),
-  reminderMinutes: z.number().refine(v => [0, 5, 15, 30, 60, 1440].includes(v), "Invalid reminder"),
-  timezone: z.string().min(1, "Timezone is required"),
-};
-
+const MAX_TRACKS = 12;
 const REMINDER_OPTIONS = [0, 5, 15, 30, 60, 1440] as const;
-function reminderLabel(t: (k: string, o?: any) => string, minutes: number): string {
-  if (minutes === 0) return t('form.reminderNone');
-  if (minutes === 1440) return t('form.reminderDays', { count: 1 });
-  if (minutes >= 60) return t('form.reminderHours', { count: minutes / 60 });
-  return t('form.reminderMinutes', { count: minutes });
-}
 
 const FALLBACK_TIMEZONES = [
-  "UTC",
-  "Africa/Cairo", "Africa/Johannesburg", "Africa/Lagos",
+  "UTC", "Africa/Cairo", "Africa/Johannesburg", "Africa/Lagos",
   "America/Anchorage", "America/Chicago", "America/Denver", "America/Los_Angeles",
   "America/Mexico_City", "America/New_York", "America/Sao_Paulo", "America/Toronto",
   "Asia/Bangkok", "Asia/Dubai", "Asia/Hong_Kong", "Asia/Jakarta", "Asia/Kolkata",
@@ -97,103 +46,94 @@ const FALLBACK_TIMEZONES = [
 
 function getTimezoneList(): string[] {
   try {
-    const anyIntl = Intl as any;
-    if (typeof anyIntl.supportedValuesOf === "function") {
-      const list = anyIntl.supportedValuesOf("timeZone") as string[];
-      if (Array.isArray(list) && list.length > 0) return list;
+    const a = Intl as any;
+    if (typeof a.supportedValuesOf === "function") {
+      const list = a.supportedValuesOf("timeZone") as string[];
+      if (Array.isArray(list) && list.length) return list;
     }
-  } catch {
-    // fall through
-  }
+  } catch { /* ignore */ }
   return FALLBACK_TIMEZONES;
 }
-
 function getBrowserTimezone(): string {
-  try {
-    return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
-  } catch {
-    return "UTC";
-  }
+  try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"; } catch { return "UTC"; }
 }
 
-const countSchema = z.object({
-  ...baseSchema,
-  mode: z.literal("count"),
-  numberOfMeetings: z.number()
-    .int("Number of sessions must be a whole number")
-    .min(1, "At least 1 session is required")
-    .max(366, "Maximum 366 sessions allowed"),
-});
-
-const endDateSchema = z.object({
-  ...baseSchema,
-  mode: z.literal("endDate"),
-  endDate: z.date({ required_error: "Please select an end date" }),
-  startDate: z.date(),
-}).refine(data => data.endDate >= data.startDate, {
-  message: "End date must be on or after the start date",
-  path: ["endDate"],
-});
+function reminderLabel(t: (k: string, o?: any) => string, minutes: number): string {
+  if (minutes === 0) return t('form.reminderNone');
+  if (minutes === 1440) return t('form.reminderDays', { count: 1 });
+  if (minutes >= 60) return t('form.reminderHours', { count: minutes / 60 });
+  return t('form.reminderMinutes', { count: minutes });
+}
 
 type Mode = "count" | "endDate";
+type HolidayBehavior = "skip" | "rollForward";
+type RecType = "weekly" | "monthlyByWeekday" | "monthlyByDate";
 
-export interface FormTimeSlot {
-  startTime: string;
-  endTime: string;
-  label?: string;
+interface TimeSlotInput { startTime: string; endTime: string; label: string }
+
+interface TrackDraft {
+  id: string;
+  name: string;
+  color: string;
+  selectedDays: number[];
+  timeSlots: TimeSlotInput[];
+  recurrenceType: RecType;
+  weeklyInterval: number;
+  ordinals: number[];
+  daysOfMonth: number[];
+  location: string;
+  notes: string;
 }
 
-export type HolidayBehavior = "skip" | "rollForward";
-
-export type FormRecurrence =
-  | { type: "weekly"; interval: number }
-  | { type: "monthlyByWeekday"; ordinals: number[] }
-  | { type: "monthlyByDate"; daysOfMonth: number[] };
-
-interface ScheduleFormProps {
-  onGenerate: (data: {
-    eventName: string;
-    startDate: Date;
-    selectedDays: number[];
-    timeSlots: FormTimeSlot[];
-    holidays: Date[];
-    holidayBehavior: HolidayBehavior;
-    recurrence: FormRecurrence;
-    mode: Mode;
-    numberOfMeetings?: number;
-    endDate?: Date;
-    location?: string;
-    notes?: string;
-    reminderMinutes?: number;
-    timezone?: string;
-  }) => void;
-  initialState?: {
-    eventName: string;
-    startDate: Date;
-    mode: Mode;
-    numberOfMeetings?: number;
-    endDate?: Date;
-    selectedDays: number[];
-    timeSlots: FormTimeSlot[];
-    holidays: Date[];
-    holidayBehavior?: HolidayBehavior;
-    recurrence?: FormRecurrence;
-    location?: string;
-    notes?: string;
-    reminderMinutes: number;
-    timezone: string;
+function trackToDraft(t: Track): TrackDraft {
+  return {
+    id: t.id,
+    name: t.name,
+    color: t.color,
+    selectedDays: t.selectedDays,
+    timeSlots: t.timeSlots.length
+      ? t.timeSlots.map((s) => ({ startTime: s.startTime, endTime: s.endTime, label: s.label ?? "" }))
+      : [{ startTime: "", endTime: "", label: "" }],
+    recurrenceType: t.recurrence.type,
+    weeklyInterval: t.recurrence.type === "weekly" ? t.recurrence.interval : 1,
+    ordinals: t.recurrence.type === "monthlyByWeekday" ? t.recurrence.ordinals : [1],
+    daysOfMonth: t.recurrence.type === "monthlyByDate" ? t.recurrence.daysOfMonth : [1],
+    location: t.location ?? "",
+    notes: t.notes ?? "",
   };
 }
 
-function initialSlotsFromState(state?: ScheduleFormProps["initialState"]): TimeSlotInput[] {
-  if (state?.timeSlots && state.timeSlots.length > 0) {
-    return state.timeSlots.map((s) => ({
-      startTime: s.startTime,
-      endTime: s.endTime,
-      label: s.label ?? "",
-    }));
-  }
-  return [{ startTime: "", endTime: "", label: "" }];
+function draftToTrack(d: TrackDraft): Track {
+  const slots = d.timeSlots.map((s) => ({
+    startTime: s.startTime,
+    endTime: s.endTime,
+    label: s.label.trim() || undefined,
+  }));
+  const recurrence =
+    d.recurrenceType === "weekly"
+      ? { type: "weekly" as const, interval: d.weeklyInterval }
+      : d.recurrenceType === "monthlyByWeekday"
+      ? { type: "monthlyByWeekday" as const, ordinals: [...d.ordinals].sort((a, b) => a - b) }
+      : { type: "monthlyByDate" as const, daysOfMonth: [...d.daysOfMonth].sort((a, b) => a - b) };
+  return {
+    id: d.id,
+    name: d.name.trim() || "Track",
+    color: d.color,
+    selectedDays: d.selectedDays,
+    timeSlots: slots,
+    recurrence,
+    location: d.location.trim() || undefined,
+    notes: d.notes.trim() || undefined,
+  };
+}
+
+function defaultDraft(idx = 0): TrackDraft {
+  return trackToDraft(createTrack({}, idx));
+}
+
+interface Props {
+  onGenerate: (project: ProjectState) => void;
+  initialState?: ProjectState;
 }
 
 interface SectionHeaderProps {
@@ -201,7 +141,6 @@ interface SectionHeaderProps {
   title: string;
   hint?: string;
 }
-
 function SectionHeader({ icon: Icon, title, hint }: SectionHeaderProps) {
   return (
     <div className="mb-3">
@@ -214,78 +153,147 @@ function SectionHeader({ icon: Icon, title, hint }: SectionHeaderProps) {
   );
 }
 
-export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
+export function ScheduleForm({ onGenerate, initialState }: Props) {
   const { t, i18n } = useTranslation();
   const browserTz = useMemo(() => getBrowserTimezone(), []);
-  const [eventName, setEventName] = useState(() => initialState?.eventName ?? "");
+  const dateLocale = i18n.language === 'id' ? idLocale : enUS;
+
+  // Shared (project-level)
+  const [projectName, setProjectName] = useState<string>(() => initialState?.projectName ?? "");
   const [startDate, setStartDate] = useState<Date | undefined>(() => initialState?.startDate);
   const [mode, setMode] = useState<Mode>(() => initialState?.mode ?? "count");
-  const [numberOfMeetings, setNumberOfMeetings] = useState(() =>
+  const [numberOfMeetings, setNumberOfMeetings] = useState<string>(() =>
     initialState?.numberOfMeetings != null ? String(initialState.numberOfMeetings) : ""
   );
   const [endDate, setEndDate] = useState<Date | undefined>(() => initialState?.endDate);
-  const [selectedDays, setSelectedDays] = useState<number[]>(() => initialState?.selectedDays ?? []);
-  const [timeSlots, setTimeSlots] = useState<TimeSlotInput[]>(() => initialSlotsFromState(initialState));
   const [holidays, setHolidays] = useState<Date[]>(() => initialState?.holidays ?? []);
   const [holidayBehavior, setHolidayBehavior] = useState<HolidayBehavior>(() => initialState?.holidayBehavior ?? "skip");
-  const [recurrenceType, setRecurrenceType] = useState<FormRecurrence["type"]>(
-    () => initialState?.recurrence?.type ?? "weekly"
-  );
-  const [weeklyInterval, setWeeklyInterval] = useState<number>(() =>
-    initialState?.recurrence?.type === "weekly" ? initialState.recurrence.interval : 1
-  );
-  const [ordinals, setOrdinals] = useState<number[]>(() =>
-    initialState?.recurrence?.type === "monthlyByWeekday" ? initialState.recurrence.ordinals : [1]
-  );
-  const [daysOfMonth, setDaysOfMonth] = useState<number[]>(() =>
-    initialState?.recurrence?.type === "monthlyByDate" ? initialState.recurrence.daysOfMonth : [1]
-  );
-  const [location, setLocation] = useState(() => initialState?.location ?? "");
-  const [notes, setNotes] = useState(() => initialState?.notes ?? "");
   const [reminderMinutes, setReminderMinutes] = useState<number>(() => initialState?.reminderMinutes ?? 0);
   const [timezone, setTimezone] = useState<string>(() => initialState?.timezone ?? browserTz);
   const [tzOpen, setTzOpen] = useState(false);
   const timezones = useMemo(() => getTimezoneList(), []);
-  const eventNameRef = useRef<HTMLInputElement>(null);
-  const formRef = useRef<HTMLFormElement>(null);
-  const modLabel = modKeyLabel();
 
-  useKeyboardShortcuts([
-    {
-      key: "Enter",
-      mod: true,
-      handler: () => formRef.current?.requestSubmit(),
-    },
-    {
-      key: "k",
-      mod: true,
-      handler: () => {
-        eventNameRef.current?.focus();
-        eventNameRef.current?.select();
-      },
-    },
-  ]);
+  // Tracks
+  const [drafts, setDrafts] = useState<TrackDraft[]>(() => {
+    const initial = initialState?.tracks;
+    if (initial && initial.length > 0) return initial.map(trackToDraft);
+    return [defaultDraft(0)];
+  });
+  const [activeId, setActiveId] = useState<string>(() => drafts[0].id);
+  const active = drafts.find((d) => d.id === activeId) ?? drafts[0];
+
+  const updateActive = (patch: Partial<TrackDraft>) => {
+    setDrafts((prev) => prev.map((d) => (d.id === active.id ? { ...d, ...patch } : d)));
+  };
+
+  const addTrack = () => {
+    if (drafts.length >= MAX_TRACKS) return;
+    const idx = drafts.length;
+    const fresh: TrackDraft = {
+      ...defaultDraft(idx),
+      // Inherit the project-wide template (active track's pattern minus its specifics)
+      name: `${t("tracks.newName", { defaultValue: "Class" })} ${idx + 1}`,
+      color: TRACK_COLORS[idx % TRACK_COLORS.length],
+    };
+    setDrafts((prev) => [...prev, fresh]);
+    setActiveId(fresh.id);
+  };
+
+  const renameTrack = (id: string, name: string) => {
+    setDrafts((prev) => prev.map((d) => (d.id === id ? { ...d, name } : d)));
+  };
+  const setTrackColor = (id: string, color: string) => {
+    setDrafts((prev) => prev.map((d) => (d.id === id ? { ...d, color } : d)));
+  };
+  const duplicateTrack = (id: string) => {
+    if (drafts.length >= MAX_TRACKS) return;
+    const src = drafts.find((d) => d.id === id);
+    if (!src) return;
+    const copy: TrackDraft = {
+      ...src,
+      id: newTrackId(),
+      name: `${src.name} (copy)`,
+    };
+    setDrafts((prev) => {
+      const idx = prev.findIndex((d) => d.id === id);
+      const next = [...prev];
+      next.splice(idx + 1, 0, copy);
+      return next;
+    });
+    setActiveId(copy.id);
+  };
+  const deleteTrack = (id: string) => {
+    if (drafts.length <= 1) {
+      toast.error(t("tracks.minOne"));
+      return;
+    }
+    setDrafts((prev) => {
+      const filtered = prev.filter((d) => d.id !== id);
+      if (id === activeId) {
+        setActiveId(filtered[0].id);
+      }
+      return filtered;
+    });
+  };
+
+  // Per-track field shortcuts
+  const selectedDays = active.selectedDays;
+  const timeSlots = active.timeSlots;
+  const recurrenceType = active.recurrenceType;
+  const weeklyInterval = active.weeklyInterval;
+  const ordinals = active.ordinals;
+  const daysOfMonth = active.daysOfMonth;
+  const location = active.location;
+  const notes = active.notes;
+
+  const handleDayToggle = (dayId: number) => {
+    const next = selectedDays.includes(dayId)
+      ? selectedDays.filter((d) => d !== dayId)
+      : [...selectedDays, dayId].sort();
+    updateActive({ selectedDays: next });
+  };
+  const updateSlot = (index: number, patch: Partial<TimeSlotInput>) => {
+    updateActive({ timeSlots: timeSlots.map((s, i) => (i === index ? { ...s, ...patch } : s)) });
+  };
+  const addSlot = () => {
+    if (timeSlots.length >= MAX_SLOTS) return;
+    updateActive({ timeSlots: [...timeSlots, { startTime: "", endTime: "", label: "" }] });
+  };
+  const removeSlot = (index: number) => {
+    if (timeSlots.length <= 1) return;
+    updateActive({ timeSlots: timeSlots.filter((_, i) => i !== index) });
+  };
+  const toggleOrdinal = (o: number) => {
+    updateActive({ ordinals: ordinals.includes(o) ? ordinals.filter((x) => x !== o) : [...ordinals, o] });
+  };
+  const toggleDayOfMonth = (d: number) => {
+    updateActive({ daysOfMonth: daysOfMonth.includes(d) ? daysOfMonth.filter((x) => x !== d) : [...daysOfMonth, d] });
+  };
+
+  const needsWeekdays = recurrenceType === "weekly" || recurrenceType === "monthlyByWeekday";
 
   interface FormErrors {
-    eventName?: string;
+    projectName?: string;
     startDate?: string;
     numberOfMeetings?: string;
     endDate?: string;
-    selectedDays?: string;
-    ordinals?: string;
-    daysOfMonth?: string;
-    timeSlots?: string;
+    perTrack?: Record<string, string>;
   }
   const [errors, setErrors] = useState<FormErrors>({});
-  const clearError = (key: keyof FormErrors) => {
-    setErrors((prev) => (prev[key] ? { ...prev, [key]: undefined } : prev));
-  };
   const fieldError = (msg?: string) =>
     msg ? <p className="text-sm font-medium text-destructive mt-1">{msg}</p> : null;
 
-  // Customization count for the advanced badge + auto-expand
+  const eventNameRef = useRef<HTMLInputElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+  const modLabel = modKeyLabel();
+  useKeyboardShortcuts([
+    { key: "Enter", mod: true, handler: () => formRef.current?.requestSubmit() },
+    { key: "k", mod: true, handler: () => { eventNameRef.current?.focus(); eventNameRef.current?.select(); } },
+  ]);
+
   const customizedCount = useMemo(() => {
     let n = 0;
+    if (drafts.length > 1) n++;
     if (recurrenceType !== "weekly" || weeklyInterval !== 1) n++;
     if (timeSlots.length > 1 || (timeSlots[0]?.label?.trim() ?? "")) n++;
     if (holidays.length > 0) n++;
@@ -293,65 +301,25 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
     if (reminderMinutes !== 0) n++;
     if (timezone !== browserTz) n++;
     return n;
-  }, [recurrenceType, weeklyInterval, timeSlots, holidays, location, notes, reminderMinutes, timezone, browserTz]);
-
+  }, [drafts.length, recurrenceType, weeklyInterval, timeSlots, holidays, location, notes, reminderMinutes, timezone, browserTz]);
   const [advancedOpen, setAdvancedOpen] = useState<boolean>(() => {
-    // Auto-expand if loaded from a share link with customizations
     if (!initialState) return false;
-    if (initialState.recurrence && initialState.recurrence.type !== "weekly") return true;
-    if (initialState.recurrence?.type === "weekly" && initialState.recurrence.interval !== 1) return true;
-    if ((initialState.timeSlots?.length ?? 0) > 1) return true;
-    if ((initialState.holidays?.length ?? 0) > 0) return true;
-    if (initialState.location || initialState.notes) return true;
-    if ((initialState.reminderMinutes ?? 0) !== 0) return true;
+    if (initialState.tracks.length > 1) return true;
+    const tr = initialState.tracks[0];
+    if (tr?.recurrence && tr.recurrence.type !== "weekly") return true;
+    if (tr?.recurrence?.type === "weekly" && tr.recurrence.interval !== 1) return true;
+    if ((tr?.timeSlots?.length ?? 0) > 1) return true;
+    if (initialState.holidays.length > 0) return true;
+    if (tr?.location || tr?.notes) return true;
+    if (initialState.reminderMinutes !== 0) return true;
     return false;
   });
 
-  const buildRecurrence = (): FormRecurrence => {
-    if (recurrenceType === "weekly") return { type: "weekly", interval: weeklyInterval };
-    if (recurrenceType === "monthlyByWeekday") return { type: "monthlyByWeekday", ordinals: [...ordinals].sort((a, b) => a - b) };
-    return { type: "monthlyByDate", daysOfMonth: [...daysOfMonth].sort((a, b) => a - b) };
-  };
-
-  const toggleOrdinal = (o: number) => {
-    setOrdinals((prev) => (prev.includes(o) ? prev.filter((x) => x !== o) : [...prev, o]));
-    setErrors((prev) => (prev.ordinals ? { ...prev, ordinals: undefined } : prev));
-  };
-  const toggleDayOfMonth = (d: number) => {
-    setDaysOfMonth((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]));
-    setErrors((prev) => (prev.daysOfMonth ? { ...prev, daysOfMonth: undefined } : prev));
-  };
-
-  const needsWeekdays = recurrenceType === "weekly" || recurrenceType === "monthlyByWeekday";
-
-  const dateLocale = i18n.language === 'id' ? idLocale : enUS;
-
-  const handleDayToggle = (dayId: number) => {
-    setSelectedDays(prev =>
-      prev.includes(dayId)
-        ? prev.filter(d => d !== dayId)
-        : [...prev, dayId].sort()
-    );
-  };
-
-  const updateSlot = (index: number, patch: Partial<TimeSlotInput>) => {
-    setTimeSlots((prev) => prev.map((s, i) => (i === index ? { ...s, ...patch } : s)));
-  };
-
-  const addSlot = () => {
-    setTimeSlots((prev) => (prev.length >= MAX_SLOTS ? prev : [...prev, { startTime: "", endTime: "", label: "" }]));
-  };
-
-  const removeSlot = (index: number) => {
-    setTimeSlots((prev) => (prev.length <= 1 ? prev : prev.filter((_, i) => i !== index)));
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
     const next: FormErrors = {};
-    const trimmedName = eventName.trim();
-    if (!trimmedName) next.eventName = t('form.validation.eventNameRequired');
+    const trimmedProject = projectName.trim();
+    if (!trimmedProject) next.projectName = t("form.validation.projectNameRequired");
     if (!startDate) next.startDate = t('form.validation.dateRequired');
 
     if (mode === "count") {
@@ -365,141 +333,95 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
       next.endDate = t('form.validation.endDateAfterStart');
     }
 
-    if (needsWeekdays && selectedDays.length === 0) {
-      next.selectedDays = t('form.validation.daysRequired');
-    }
-    if (recurrenceType === "monthlyByWeekday" && ordinals.length === 0) {
-      next.ordinals = t('form.validation.ordinalsRequired');
-    }
-    if (recurrenceType === "monthlyByDate" && daysOfMonth.length === 0) {
-      next.daysOfMonth = t('form.validation.daysOfMonthRequired');
-    }
-    if (timeSlots.some((s) => !s.startTime || !s.endTime)) {
-      next.timeSlots = t('form.validation.timeRequired');
-    } else if (timeSlots.some((s) => s.startTime >= s.endTime)) {
-      next.timeSlots = t('form.validation.timeRequired');
+    const perTrack: Record<string, string> = {};
+    for (const d of drafts) {
+      if (!d.name.trim()) {
+        perTrack[d.id] = t("form.validation.eventNameRequired");
+        continue;
+      }
+      const tNeedsWeekdays = d.recurrenceType !== "monthlyByDate";
+      if (tNeedsWeekdays && d.selectedDays.length === 0) {
+        perTrack[d.id] = t('form.validation.daysRequired');
+        continue;
+      }
+      if (d.recurrenceType === "monthlyByWeekday" && d.ordinals.length === 0) {
+        perTrack[d.id] = t('form.validation.ordinalsRequired');
+        continue;
+      }
+      if (d.recurrenceType === "monthlyByDate" && d.daysOfMonth.length === 0) {
+        perTrack[d.id] = t('form.validation.daysOfMonthRequired');
+        continue;
+      }
+      if (d.timeSlots.some((s) => !s.startTime || !s.endTime || s.startTime >= s.endTime)) {
+        perTrack[d.id] = t('form.validation.timeRequired');
+        continue;
+      }
     }
 
-    if (Object.values(next).some(Boolean)) {
+    if (Object.keys(perTrack).length > 0) {
+      next.perTrack = perTrack;
+      // Switch to first errored track
+      const firstErrId = Object.keys(perTrack)[0];
+      setActiveId(firstErrId);
+    }
+
+    if (next.projectName || next.startDate || next.numberOfMeetings || next.endDate || next.perTrack) {
       setErrors(next);
-      // Auto-expand advanced if errors live inside it
-      if (next.ordinals || next.daysOfMonth) setAdvancedOpen(true);
-      // Scroll first invalid field into view
       requestAnimationFrame(() => {
         const firstInvalid = document.querySelector<HTMLElement>('[data-invalid="true"]');
         firstInvalid?.scrollIntoView({ behavior: "smooth", block: "center" });
         firstInvalid?.focus?.();
       });
+      // surface track-level error
+      const firstTrackErr = perTrack[Object.keys(perTrack)[0] ?? ""];
+      if (firstTrackErr) toast.error(firstTrackErr);
       return;
     }
 
     setErrors({});
-    const recurrence = buildRecurrence();
-
-    try {
-      const normalizedSlots = timeSlots.map((s) => ({
-        startTime: s.startTime,
-        endTime: s.endTime,
-        label: s.label?.trim() ? s.label.trim() : undefined,
-      }));
-
-      if (mode === "count") {
-        const validated = countSchema.parse({
-          eventName: trimmedName,
-          mode: "count",
-          numberOfMeetings: parseInt(numberOfMeetings),
-          selectedDays,
-          timeSlots: normalizedSlots,
-          holidays,
-          location: location.trim() || undefined,
-          notes: notes.trim() || undefined,
-          reminderMinutes,
-          timezone,
-        });
-        const sanitizedEventName = validated.eventName.replace(/[",\n\r]/g, ' ');
-        onGenerate({
-          eventName: sanitizedEventName,
-          startDate: startDate!,
-          selectedDays: validated.selectedDays,
-          timeSlots: normalizedSlots,
-          holidays: validated.holidays,
-          holidayBehavior,
-          recurrence,
-          mode: "count",
-          numberOfMeetings: validated.numberOfMeetings,
-          location: validated.location,
-          notes: validated.notes,
-          reminderMinutes: validated.reminderMinutes,
-          timezone: validated.timezone,
-        });
-      } else {
-        const validated = endDateSchema.parse({
-          eventName: trimmedName,
-          mode: "endDate",
-          endDate: endDate!,
-          startDate: startDate!,
-          selectedDays,
-          timeSlots: normalizedSlots,
-          holidays,
-          location: location.trim() || undefined,
-          notes: notes.trim() || undefined,
-          reminderMinutes,
-          timezone,
-        });
-        const sanitizedEventName = validated.eventName.replace(/[",\n\r]/g, ' ');
-        onGenerate({
-          eventName: sanitizedEventName,
-          startDate: startDate!,
-          selectedDays: validated.selectedDays,
-          timeSlots: normalizedSlots,
-          holidays: validated.holidays,
-          holidayBehavior,
-          recurrence,
-          mode: "endDate",
-          endDate: validated.endDate,
-          location: validated.location,
-          notes: validated.notes,
-          reminderMinutes: validated.reminderMinutes,
-          timezone: validated.timezone,
-        });
-      }
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        toast.error(error.errors[0].message);
-      } else {
-        toast.error(t('form.validation.invalid'));
-      }
-    }
+    const project: ProjectState = {
+      projectName: trimmedProject,
+      startDate: startDate!,
+      mode,
+      numberOfMeetings: mode === "count" ? parseInt(numberOfMeetings) : undefined,
+      endDate: mode === "endDate" ? endDate : undefined,
+      holidays,
+      holidayBehavior,
+      reminderMinutes,
+      timezone,
+      tracks: drafts.map(draftToTrack),
+    };
+    onGenerate(project);
   };
 
   const firstSlot = timeSlots[0];
   const extraSlots = timeSlots.slice(1);
+  const trackErr = errors.perTrack?.[active.id];
 
   return (
     <form ref={formRef} onSubmit={handleSubmit} className="space-y-8 pb-4 lg:pb-0">
       {/* ===================== ESSENTIALS ===================== */}
       <div className="space-y-5">
-        {/* Activity name */}
+        {/* Project name */}
         <div>
           <div className="flex items-center justify-between">
-            <Label htmlFor="eventName">{t('form.eventName')}</Label>
+            <Label htmlFor="projectName">{t('form.projectName')}</Label>
             <kbd className="hidden sm:inline-flex text-[10px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded border">
               {modLabel}+K
             </kbd>
           </div>
           <Input
-            id="eventName"
+            id="projectName"
             ref={eventNameRef}
-            value={eventName}
-            onChange={(e) => { setEventName(e.target.value); clearError('eventName'); }}
-            placeholder={t('form.eventNamePlaceholder')}
-            data-invalid={!!errors.eventName}
-            aria-invalid={!!errors.eventName}
-            className={cn("mt-2", errors.eventName && "border-destructive focus-visible:ring-destructive")}
+            value={projectName}
+            onChange={(e) => { setProjectName(e.target.value); setErrors((p) => ({ ...p, projectName: undefined })); }}
+            placeholder={t('form.projectNamePlaceholder')}
+            data-invalid={!!errors.projectName}
+            aria-invalid={!!errors.projectName}
+            className={cn("mt-2", errors.projectName && "border-destructive focus-visible:ring-destructive")}
           />
-          {fieldError(errors.eventName)}
+          {fieldError(errors.projectName)}
         </div>
-
 
         {/* Start date */}
         <div>
@@ -509,8 +431,7 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
               <Button
                 variant="outline"
                 data-invalid={!!errors.startDate}
-                className={cn(
-                  "w-full justify-start text-left font-normal mt-2",
+                className={cn("w-full justify-start text-left font-normal mt-2",
                   !startDate && "text-muted-foreground",
                   errors.startDate && "border-destructive"
                 )}
@@ -520,20 +441,15 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={startDate}
-                onSelect={(d) => { setStartDate(d); clearError('startDate'); }}
-                initialFocus
-                className="pointer-events-auto"
-                locale={dateLocale}
-              />
+              <Calendar mode="single" selected={startDate}
+                onSelect={(d) => { setStartDate(d); setErrors((p) => ({ ...p, startDate: undefined })); }}
+                initialFocus className="pointer-events-auto" locale={dateLocale} />
             </PopoverContent>
           </Popover>
           {fieldError(errors.startDate)}
         </div>
 
-        {/* Mode tabs */}
+        {/* Mode */}
         <div>
           <Label className="mb-2 block">{t('form.generateBy')}</Label>
           <Tabs value={mode} onValueChange={(v) => setMode(v as Mode)}>
@@ -547,13 +463,9 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
         {mode === "count" ? (
           <div>
             <Label htmlFor="numberOfMeetings">{t('form.numberOfMeetings')}</Label>
-            <Input
-              id="numberOfMeetings"
-              type="number"
-              min="1"
-              max="366"
+            <Input id="numberOfMeetings" type="number" min="1" max="366"
               value={numberOfMeetings}
-              onChange={(e) => { setNumberOfMeetings(e.target.value); clearError('numberOfMeetings'); }}
+              onChange={(e) => { setNumberOfMeetings(e.target.value); setErrors((p) => ({ ...p, numberOfMeetings: undefined })); }}
               data-invalid={!!errors.numberOfMeetings}
               aria-invalid={!!errors.numberOfMeetings}
               className={cn("mt-2", errors.numberOfMeetings && "border-destructive focus-visible:ring-destructive")}
@@ -565,105 +477,109 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
             <Label>{t('form.endDate')}</Label>
             <Popover>
               <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  data-invalid={!!errors.endDate}
-                  className={cn(
-                    "w-full justify-start text-left font-normal mt-2",
+                <Button variant="outline" data-invalid={!!errors.endDate}
+                  className={cn("w-full justify-start text-left font-normal mt-2",
                     !endDate && "text-muted-foreground",
                     errors.endDate && "border-destructive"
-                  )}
-                >
+                  )}>
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {endDate ? format(endDate, "PPP", { locale: dateLocale }) : t('form.pickEndDate')}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={endDate}
-                  onSelect={(d) => { setEndDate(d); clearError('endDate'); }}
-                  initialFocus
-                  className="pointer-events-auto"
-                  locale={dateLocale}
-                  disabled={(date) => (startDate ? date < startDate : false)}
-                />
+                <Calendar mode="single" selected={endDate}
+                  onSelect={(d) => { setEndDate(d); setErrors((p) => ({ ...p, endDate: undefined })); }}
+                  initialFocus className="pointer-events-auto" locale={dateLocale}
+                  disabled={(date) => (startDate ? date < startDate : false)} />
               </PopoverContent>
             </Popover>
             {fieldError(errors.endDate)}
           </div>
         )}
 
-        {/* Weekdays — shown for weekly recurrence (most users) */}
+        {/* Track tabs */}
+        <div className="space-y-3">
+          <div className="flex items-baseline justify-between">
+            <Label className="text-sm">{t('tracks.title')}</Label>
+            <span className="text-xs text-muted-foreground">{t('tracks.hint')}</span>
+          </div>
+          <TrackTabs
+            tracks={drafts.map((d) => ({ id: d.id, name: d.name, color: d.color }))}
+            activeId={active.id}
+            onSelect={setActiveId}
+            onAdd={addTrack}
+            onRename={renameTrack}
+            onDuplicate={duplicateTrack}
+            onDelete={deleteTrack}
+            onSetColor={setTrackColor}
+          />
+        </div>
+
+        {/* Track name */}
+        <div>
+          <Label htmlFor={`trackName-${active.id}`}>{t('form.eventName')}</Label>
+          <Input
+            id={`trackName-${active.id}`}
+            value={active.name}
+            onChange={(e) => updateActive({ name: e.target.value })}
+            placeholder={t('form.eventNamePlaceholder')}
+            maxLength={100}
+            className={cn("mt-2", trackErr && "border-destructive focus-visible:ring-destructive")}
+            data-invalid={!!trackErr}
+          />
+          {trackErr && <p className="text-sm font-medium text-destructive mt-1">{trackErr}</p>}
+        </div>
+
+        {/* Weekdays */}
         {needsWeekdays && (
-          <div data-invalid={!!errors.selectedDays} tabIndex={-1}>
+          <div tabIndex={-1}>
             <Label className="mb-1 block">{t('form.meetingDays')}</Label>
             <p className="text-xs text-muted-foreground mb-3">{t('form.selectDays')}</p>
             <div className="grid grid-rows-4 grid-flow-col gap-x-6 gap-y-2">
               {WEEKDAYS.map((day) => (
                 <div key={day.id} className="flex items-center space-x-2 min-h-[36px]">
                   <Checkbox
-                    id={`day-${day.id}`}
+                    id={`day-${active.id}-${day.id}`}
                     checked={selectedDays.includes(day.id)}
-                    onCheckedChange={() => { handleDayToggle(day.id); clearError('selectedDays'); }}
+                    onCheckedChange={() => handleDayToggle(day.id)}
                   />
-                  <Label
-                    htmlFor={`day-${day.id}`}
-                    className="text-sm font-normal cursor-pointer"
-                  >
+                  <Label htmlFor={`day-${active.id}-${day.id}`} className="text-sm font-normal cursor-pointer">
                     {t(`weekdays.${day.key}`)}
                   </Label>
                 </div>
               ))}
             </div>
-            {fieldError(errors.selectedDays)}
           </div>
         )}
 
-        {/* Primary time slot — simple start/end */}
+        {/* Primary time slot */}
         <div>
           <Label className="mb-1 block">{t('form.sections.time')}</Label>
           <p className="text-xs text-muted-foreground mb-2">{t('form.helper.time')}</p>
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <Label htmlFor="slot-start-0" className="text-xs text-muted-foreground">
-                {t('form.startTime')}
-              </Label>
-              <Input
-                id="slot-start-0"
-                type="time"
+              <Label htmlFor={`slot-start-0-${active.id}`} className="text-xs text-muted-foreground">{t('form.startTime')}</Label>
+              <Input id={`slot-start-0-${active.id}`} type="time"
                 value={firstSlot?.startTime ?? ""}
-                onChange={(e) => { updateSlot(0, { startTime: e.target.value }); clearError('timeSlots'); }}
-                data-invalid={!!errors.timeSlots}
-                aria-invalid={!!errors.timeSlots}
-                className={cn("mt-1", errors.timeSlots && "border-destructive focus-visible:ring-destructive")}
-              />
+                onChange={(e) => updateSlot(0, { startTime: e.target.value })}
+                className="mt-1" />
             </div>
             <div>
-              <Label htmlFor="slot-end-0" className="text-xs text-muted-foreground">
-                {t('form.endTime')}
-              </Label>
-              <Input
-                id="slot-end-0"
-                type="time"
+              <Label htmlFor={`slot-end-0-${active.id}`} className="text-xs text-muted-foreground">{t('form.endTime')}</Label>
+              <Input id={`slot-end-0-${active.id}`} type="time"
                 value={firstSlot?.endTime ?? ""}
-                onChange={(e) => { updateSlot(0, { endTime: e.target.value }); clearError('timeSlots'); }}
-                aria-invalid={!!errors.timeSlots}
-                className={cn("mt-1", errors.timeSlots && "border-destructive focus-visible:ring-destructive")}
-              />
+                onChange={(e) => updateSlot(0, { endTime: e.target.value })}
+                className="mt-1" />
             </div>
           </div>
-          {fieldError(errors.timeSlots)}
         </div>
       </div>
 
       {/* ===================== ADVANCED ===================== */}
       <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>
         <CollapsibleTrigger asChild>
-          <button
-            type="button"
-            className="flex w-full items-center justify-between rounded-lg border border-border bg-secondary/30 px-4 py-3 text-sm font-medium hover:bg-secondary/50 transition-colors"
-          >
+          <button type="button"
+            className="flex w-full items-center justify-between rounded-lg border border-border bg-secondary/30 px-4 py-3 text-sm font-medium hover:bg-secondary/50 transition-colors">
             <span className="flex items-center gap-2">
               <Settings2 className="h-4 w-4 text-primary" />
               {t('form.advanced.title')}
@@ -673,39 +589,24 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
                 </span>
               )}
             </span>
-            <ChevronDown
-              className={cn(
-                "h-4 w-4 text-muted-foreground transition-transform",
-                advancedOpen && "rotate-180"
-              )}
-            />
+            <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", advancedOpen && "rotate-180")} />
           </button>
         </CollapsibleTrigger>
 
         <CollapsibleContent className="space-y-8 pt-6">
-          {/* ----- Sub-section: Repeat pattern ----- */}
+          {/* Repeat */}
           <section>
-            <SectionHeader
-              icon={Repeat}
-              title={t('form.sections.repeat')}
-              hint={t('form.helper.repeat')}
-            />
+            <SectionHeader icon={Repeat} title={t('form.sections.repeat')} hint={t('form.helper.repeat')} />
             <div className="space-y-4">
               <Select
-                value={
-                  recurrenceType === "weekly"
-                    ? `weekly-${weeklyInterval}`
-                    : recurrenceType
-                }
+                value={recurrenceType === "weekly" ? `weekly-${weeklyInterval}` : recurrenceType}
                 onValueChange={(v) => {
                   if (v.startsWith("weekly-")) {
-                    setRecurrenceType("weekly");
-                    setWeeklyInterval(Number(v.split("-")[1]));
+                    updateActive({ recurrenceType: "weekly", weeklyInterval: Number(v.split("-")[1]) });
                   } else {
-                    setRecurrenceType(v as FormRecurrence["type"]);
+                    updateActive({ recurrenceType: v as RecType });
                   }
-                }}
-              >
+                }}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="weekly-1">{t('form.recurrence.weekly')}</SelectItem>
@@ -721,29 +622,17 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
                 <div>
                   <Label className="mb-2 block text-sm">{t('form.recurrence.ordinalsLabel')}</Label>
                   <div className="flex flex-wrap gap-2">
-                    {[
-                      { v: 1, k: 'first' },
-                      { v: 2, k: 'second' },
-                      { v: 3, k: 'third' },
-                      { v: 4, k: 'fourth' },
-                      { v: -1, k: 'last' },
-                    ].map((o) => (
-                      <button
-                        type="button"
-                        key={o.v}
-                        onClick={() => toggleOrdinal(o.v)}
-                        className={cn(
-                          "px-3 py-1.5 rounded-md text-sm border transition-colors",
+                    {[{ v: 1, k: 'first' }, { v: 2, k: 'second' }, { v: 3, k: 'third' }, { v: 4, k: 'fourth' }, { v: -1, k: 'last' }].map((o) => (
+                      <button type="button" key={o.v} onClick={() => toggleOrdinal(o.v)}
+                        className={cn("px-3 py-1.5 rounded-md text-sm border transition-colors",
                           ordinals.includes(o.v)
                             ? "bg-primary text-primary-foreground border-primary"
                             : "bg-background border-border hover:bg-secondary"
-                        )}
-                      >
+                        )}>
                         {t(`form.recurrence.ordinal.${o.k}`)}
                       </button>
                     ))}
                   </div>
-                  {fieldError(errors.ordinals)}
                 </div>
               )}
 
@@ -752,142 +641,80 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
                   <Label className="mb-2 block text-sm">{t('form.recurrence.daysOfMonthLabel')}</Label>
                   <div className="grid grid-cols-7 gap-1.5">
                     {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
-                      <button
-                        type="button"
-                        key={d}
-                        onClick={() => toggleDayOfMonth(d)}
-                        className={cn(
-                          "h-9 rounded-md text-sm border transition-colors",
+                      <button type="button" key={d} onClick={() => toggleDayOfMonth(d)}
+                        className={cn("h-9 rounded-md text-sm border transition-colors",
                           daysOfMonth.includes(d)
                             ? "bg-primary text-primary-foreground border-primary"
                             : "bg-background border-border hover:bg-secondary"
-                        )}
-                      >
-                        {d}
-                      </button>
+                        )}>{d}</button>
                     ))}
-                    <button
-                      type="button"
-                      onClick={() => toggleDayOfMonth(-1)}
-                      className={cn(
-                        "col-span-2 h-9 rounded-md text-sm border transition-colors",
+                    <button type="button" onClick={() => toggleDayOfMonth(-1)}
+                      className={cn("col-span-2 h-9 rounded-md text-sm border transition-colors",
                         daysOfMonth.includes(-1)
                           ? "bg-primary text-primary-foreground border-primary"
                           : "bg-background border-border hover:bg-secondary"
-                      )}
-                    >
-                      {t('form.recurrence.lastDay')}
-                    </button>
+                      )}>{t('form.recurrence.lastDay')}</button>
                   </div>
                   <p className="text-xs text-muted-foreground mt-2">{t('form.recurrence.daysOfMonthHint')}</p>
-                  {fieldError(errors.daysOfMonth)}
                 </div>
               )}
             </div>
           </section>
 
-          {/* ----- Sub-section: Time slots & holidays ----- */}
+          {/* Slots & holidays */}
           <section>
-            <SectionHeader
-              icon={Clock}
-              title={t('form.sections.slotsHolidays')}
-              hint={t('form.helper.slotsHolidays')}
-            />
-
+            <SectionHeader icon={Clock} title={t('form.sections.slotsHolidays')} hint={t('form.helper.slotsHolidays')} />
             <div className="space-y-5">
-              {/* Slot 0 label + extra slots editor */}
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <Label className="text-sm">{t('form.timeSlots.title')}</Label>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={addSlot}
-                    disabled={timeSlots.length >= MAX_SLOTS}
-                    className="h-8 gap-1"
-                  >
-                    <Plus className="h-4 w-4" />
-                    {t('form.timeSlots.add')}
+                  <Button type="button" variant="ghost" size="sm" onClick={addSlot}
+                    disabled={timeSlots.length >= MAX_SLOTS} className="h-8 gap-1">
+                    <Plus className="h-4 w-4" />{t('form.timeSlots.add')}
                   </Button>
                 </div>
-
-                {/* Slot 0: just the optional label (times live in essentials above) */}
                 <div className="rounded-lg border border-border bg-secondary/20 p-3 mb-3">
-                  <Label htmlFor="slot-label-0" className="text-xs text-muted-foreground">
-                    {t('form.timeSlots.labelForFirst')}
-                  </Label>
-                  <Input
-                    id="slot-label-0"
-                    value={firstSlot?.label ?? ""}
+                  <Label htmlFor={`slot-label-0-${active.id}`} className="text-xs text-muted-foreground">{t('form.timeSlots.labelForFirst')}</Label>
+                  <Input id={`slot-label-0-${active.id}`} value={firstSlot?.label ?? ""}
                     onChange={(e) => updateSlot(0, { label: e.target.value })}
-                    placeholder={t('form.timeSlots.labelPlaceholder')}
-                    maxLength={50}
-                    className="mt-1 h-9"
-                  />
+                    placeholder={t('form.timeSlots.labelPlaceholder')} maxLength={50}
+                    className="mt-1 h-9" />
                 </div>
-
-                {/* Extra slots */}
                 {extraSlots.length > 0 && (
                   <div className="space-y-3">
                     {extraSlots.map((slot, i) => {
-                      const index = i + 1;
+                      const idx = i + 1;
                       return (
-                        <div
-                          key={index}
-                          className="rounded-lg border border-border bg-secondary/20 p-3 space-y-2"
-                        >
+                        <div key={idx} className="rounded-lg border border-border bg-secondary/20 p-3 space-y-2">
                           <div className="flex items-end gap-2">
                             <div className="flex-1 min-w-0">
-                              <Label htmlFor={`slot-label-${index}`} className="text-xs text-muted-foreground">
-                                {t('form.timeSlots.labelOptional')}
-                              </Label>
-                              <Input
-                                id={`slot-label-${index}`}
-                                value={slot.label}
-                                onChange={(e) => updateSlot(index, { label: e.target.value })}
-                                placeholder={t('form.timeSlots.labelPlaceholder')}
-                                maxLength={50}
-                                className="mt-1 h-9"
-                              />
+                              <Label htmlFor={`slot-label-${idx}-${active.id}`} className="text-xs text-muted-foreground">{t('form.timeSlots.labelOptional')}</Label>
+                              <Input id={`slot-label-${idx}-${active.id}`} value={slot.label}
+                                onChange={(e) => updateSlot(idx, { label: e.target.value })}
+                                placeholder={t('form.timeSlots.labelPlaceholder')} maxLength={50}
+                                className="mt-1 h-9" />
                             </div>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => removeSlot(index)}
+                            <Button type="button" variant="ghost" size="icon"
+                              onClick={() => removeSlot(idx)}
                               aria-label={t('form.timeSlots.remove')}
-                              className="h-9 w-9 shrink-0 text-muted-foreground hover:text-destructive"
-                            >
+                              className="h-9 w-9 shrink-0 text-muted-foreground hover:text-destructive">
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
                           <div className="grid grid-cols-2 gap-2">
                             <div>
-                              <Label htmlFor={`slot-start-${index}`} className="text-xs text-muted-foreground">
-                                {t('form.startTime')}
-                              </Label>
-                              <Input
-                                id={`slot-start-${index}`}
-                                type="time"
+                              <Label htmlFor={`slot-start-${idx}-${active.id}`} className="text-xs text-muted-foreground">{t('form.startTime')}</Label>
+                              <Input id={`slot-start-${idx}-${active.id}`} type="time"
                                 value={slot.startTime}
-                                onChange={(e) => updateSlot(index, { startTime: e.target.value })}
-                                required
-                                className="mt-1 h-9"
-                              />
+                                onChange={(e) => updateSlot(idx, { startTime: e.target.value })}
+                                className="mt-1 h-9" />
                             </div>
                             <div>
-                              <Label htmlFor={`slot-end-${index}`} className="text-xs text-muted-foreground">
-                                {t('form.endTime')}
-                              </Label>
-                              <Input
-                                id={`slot-end-${index}`}
-                                type="time"
+                              <Label htmlFor={`slot-end-${idx}-${active.id}`} className="text-xs text-muted-foreground">{t('form.endTime')}</Label>
+                              <Input id={`slot-end-${idx}-${active.id}`} type="time"
                                 value={slot.endTime}
-                                onChange={(e) => updateSlot(index, { endTime: e.target.value })}
-                                required
-                                className="mt-1 h-9"
-                              />
+                                onChange={(e) => updateSlot(idx, { endTime: e.target.value })}
+                                className="mt-1 h-9" />
                             </div>
                           </div>
                         </div>
@@ -898,53 +725,33 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
                 <p className="text-xs text-muted-foreground mt-2">{t('form.timeSlots.description')}</p>
               </div>
 
-              {/* Holidays */}
               <div>
                 <Label className="mb-1 block text-sm">{t('form.holidays')}</Label>
                 <p className="text-xs text-muted-foreground mb-2">{t('form.holidaysDescription')}</p>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="w-full justify-start text-left font-normal"
-                    >
+                    <Button variant="outline" className="w-full justify-start text-left font-normal">
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {holidays.length > 0
-                        ? t('form.holidaysSelected', { count: holidays.length })
-                        : t('form.selectHolidays')}
+                      {holidays.length > 0 ? t('form.holidaysSelected', { count: holidays.length }) : t('form.selectHolidays')}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="multiple"
-                      selected={holidays}
+                    <Calendar mode="multiple" selected={holidays}
                       onSelect={(dates) => setHolidays(dates || [])}
-                      initialFocus
-                      className="pointer-events-auto"
-                      locale={dateLocale}
-                    />
+                      initialFocus className="pointer-events-auto" locale={dateLocale} />
                   </PopoverContent>
                 </Popover>
-
                 {holidays.length > 0 && (
                   <div className="mt-4 space-y-2">
                     <Label className="text-sm">{t('form.holidayBehavior.label')}</Label>
-                    <RadioGroup
-                      value={holidayBehavior}
-                      onValueChange={(v) => setHolidayBehavior(v as HolidayBehavior)}
-                      className="space-y-1"
-                    >
+                    <RadioGroup value={holidayBehavior} onValueChange={(v) => setHolidayBehavior(v as HolidayBehavior)} className="space-y-1">
                       <div className="flex items-center space-x-2">
                         <RadioGroupItem value="skip" id="hb-skip" />
-                        <Label htmlFor="hb-skip" className="text-sm font-normal cursor-pointer">
-                          {t('form.holidayBehavior.skip')}
-                        </Label>
+                        <Label htmlFor="hb-skip" className="text-sm font-normal cursor-pointer">{t('form.holidayBehavior.skip')}</Label>
                       </div>
                       <div className="flex items-center space-x-2">
                         <RadioGroupItem value="rollForward" id="hb-roll" />
-                        <Label htmlFor="hb-roll" className="text-sm font-normal cursor-pointer">
-                          {t('form.holidayBehavior.rollForward')}
-                        </Label>
+                        <Label htmlFor="hb-roll" className="text-sm font-normal cursor-pointer">{t('form.holidayBehavior.rollForward')}</Label>
                       </div>
                     </RadioGroup>
                     <p className="text-xs text-muted-foreground">{t('form.holidayBehavior.description')}</p>
@@ -954,70 +761,39 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
             </div>
           </section>
 
-          {/* ----- Sub-section: Event details & calendar ----- */}
+          {/* Details */}
           <section>
-            <SectionHeader
-              icon={MapPin}
-              title={t('form.sections.details')}
-              hint={t('form.helper.details')}
-            />
-
+            <SectionHeader icon={MapPin} title={t('form.sections.details')} hint={t('form.helper.details')} />
             <div className="space-y-5">
               <div>
-                <Label htmlFor="location" className="text-sm">{t('form.location')}</Label>
-                <Input
-                  id="location"
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  placeholder={t('form.locationPlaceholder')}
-                  maxLength={200}
-                  className="mt-2"
-                />
+                <Label htmlFor={`location-${active.id}`} className="text-sm">{t('form.location')}</Label>
+                <Input id={`location-${active.id}`} value={location}
+                  onChange={(e) => updateActive({ location: e.target.value })}
+                  placeholder={t('form.locationPlaceholder')} maxLength={200} className="mt-2" />
               </div>
-
               <div>
-                <Label htmlFor="notes" className="text-sm">{t('form.notes')}</Label>
-                <Textarea
-                  id="notes"
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder={t('form.notesPlaceholder')}
-                  maxLength={2000}
-                  rows={3}
-                  className="mt-2"
-                />
+                <Label htmlFor={`notes-${active.id}`} className="text-sm">{t('form.notes')}</Label>
+                <Textarea id={`notes-${active.id}`} value={notes}
+                  onChange={(e) => updateActive({ notes: e.target.value })}
+                  placeholder={t('form.notesPlaceholder')} maxLength={2000} rows={3} className="mt-2" />
               </div>
-
               <div>
                 <Label htmlFor="reminder" className="text-sm">{t('form.reminder')}</Label>
-                <Select
-                  value={String(reminderMinutes)}
-                  onValueChange={(v) => setReminderMinutes(Number(v))}
-                >
-                  <SelectTrigger id="reminder" className="mt-2">
-                    <SelectValue />
-                  </SelectTrigger>
+                <Select value={String(reminderMinutes)} onValueChange={(v) => setReminderMinutes(Number(v))}>
+                  <SelectTrigger id="reminder" className="mt-2"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {REMINDER_OPTIONS.map((m) => (
-                      <SelectItem key={m} value={String(m)}>
-                        {reminderLabel(t, m)}
-                      </SelectItem>
+                      <SelectItem key={m} value={String(m)}>{reminderLabel(t, m)}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-
               <div>
                 <Label className="text-sm">{t('form.timezone')}</Label>
                 <Popover open={tzOpen} onOpenChange={setTzOpen}>
                   <PopoverTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={tzOpen}
-                      className="w-full justify-between mt-2 font-normal"
-                    >
+                    <Button type="button" variant="outline" role="combobox" aria-expanded={tzOpen}
+                      className="w-full justify-between mt-2 font-normal">
                       <span className="truncate">{timezone}</span>
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
@@ -1029,20 +805,8 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
                         <CommandEmpty>{t('form.timezoneEmpty')}</CommandEmpty>
                         <CommandGroup>
                           {timezones.map((tz) => (
-                            <CommandItem
-                              key={tz}
-                              value={tz}
-                              onSelect={(v) => {
-                                setTimezone(v);
-                                setTzOpen(false);
-                              }}
-                            >
-                              <Check
-                                className={cn(
-                                  "mr-2 h-4 w-4",
-                                  timezone === tz ? "opacity-100" : "opacity-0"
-                                )}
-                              />
+                            <CommandItem key={tz} value={tz} onSelect={(v) => { setTimezone(v); setTzOpen(false); }}>
+                              <Check className={cn("mr-2 h-4 w-4", timezone === tz ? "opacity-100" : "opacity-0")} />
                               {tz}
                             </CommandItem>
                           ))}
@@ -1059,11 +823,7 @@ export function ScheduleForm({ onGenerate, initialState }: ScheduleFormProps) {
       </Collapsible>
 
       <div className="sticky bottom-0 -mx-4 px-4 py-3 bg-card/95 backdrop-blur border-t border-border lg:static lg:bg-transparent lg:border-0 lg:p-0 lg:mx-0 lg:backdrop-blur-none z-10">
-        <Button
-          type="submit"
-          className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity gap-2"
-          size="lg"
-        >
+        <Button type="submit" className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity gap-2" size="lg">
           <span>{t('form.generateButton')}</span>
           <kbd className="hidden sm:inline-flex text-[10px] font-mono bg-primary-foreground/15 px-1.5 py-0.5 rounded border border-primary-foreground/20">
             {modLabel}+Enter

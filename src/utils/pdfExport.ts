@@ -12,12 +12,16 @@ interface PdfSession {
   slotLabel?: string;
   location?: string;
   notes?: string;
+  trackName?: string;
+  trackColor?: string;
 }
 
 interface ExportOpts {
   location?: string;
   notes?: string;
   timezone?: string;
+  includeTrackColumn?: boolean;
+  filename?: string;
 }
 
 const DEFAULT_ACCENT = "#0ea5e9";
@@ -169,6 +173,7 @@ export function exportToPDF(
   // Table
   const hasLocation = sessions.some((s) => s.location || opts.location);
   const hasNotes = sessions.some((s) => s.notes || opts.notes);
+  const hasTrack = !!opts.includeTrackColumn && sessions.some((s) => s.trackName);
 
   const head: string[] = [
     t("pdf.col.num"),
@@ -176,6 +181,7 @@ export function exportToPDF(
     t("pdf.col.day"),
     t("pdf.col.time"),
   ];
+  if (hasTrack) head.push(t("pdf.col.class"));
   if (hasLocation) head.push(t("pdf.col.location"));
   if (hasNotes) head.push(t("pdf.col.notes"));
 
@@ -186,16 +192,14 @@ export function exportToPDF(
       format(s.date, "EEE", { locale: dateLocale }),
       `${s.startTime} – ${s.endTime}${s.slotLabel ? ` (${s.slotLabel})` : ""}`,
     ];
+    if (hasTrack) row.push(s.trackName ?? "");
     if (hasLocation) row.push(s.location ?? opts.location ?? "");
     if (hasNotes) row.push(s.notes ?? "");
     return row;
   });
 
-  // Compute a Time column width wide enough for "HH:MM – HH:MM (Label)" so
-  // it doesn't wrap on every row and balloon the page count for long schedules.
   const timeSamples = body.map((r) => r[3]);
   const longestTime = timeSamples.reduce((a, b) => (b.length > a.length ? b : a), "00:00 – 00:00");
-  // Approximate width: 9pt helvetica avg ~5pt per char, plus 12pt padding.
   const timeColW = Math.min(140, Math.max(60, Math.ceil(longestTime.length * 5.2) + 12));
 
   const colStyles: Record<number, { cellWidth?: number; halign?: "left" | "right" | "center" }> = {
@@ -204,6 +208,8 @@ export function exportToPDF(
     2: { cellWidth: 36 },
     3: { cellWidth: timeColW },
   };
+  const trackColIdx = hasTrack ? 4 : -1;
+  if (hasTrack) colStyles[4] = { cellWidth: 90 };
 
   autoTable(doc, {
     startY: y,
@@ -218,9 +224,30 @@ export function exportToPDF(
     },
     alternateRowStyles: { fillColor: [245, 247, 250] },
     columnStyles: colStyles,
+    didParseCell: (data) => {
+      if (hasTrack && data.section === "body" && data.column.index === trackColIdx) {
+        // reserve left padding for dot
+        data.cell.styles.cellPadding = { top: 6, right: 6, bottom: 6, left: 16 };
+      }
+    },
+    didDrawCell: (data) => {
+      if (
+        hasTrack &&
+        data.section === "body" &&
+        data.column.index === trackColIdx &&
+        data.row.index < sessions.length
+      ) {
+        const s = sessions[data.row.index];
+        if (s.trackColor) {
+          const [r, g, b] = hexToRgb(s.trackColor);
+          doc.setFillColor(r, g, b);
+          const cx = data.cell.x + 7;
+          const cy = data.cell.y + data.cell.height / 2;
+          doc.circle(cx, cy, 3, "F");
+        }
+      }
+    },
     didDrawPage: (data) => {
-      // Continuation-page brand strip: thin accent bar + org/event name + page label.
-      // Skip on page 1 — it already has the full header band.
       if (data.pageNumber > 1) {
         doc.setFillColor(accent[0], accent[1], accent[2]);
         doc.rect(0, 0, pageW, 18, "F");
@@ -238,7 +265,6 @@ export function exportToPDF(
     },
   });
 
-  // Stamp footer on every page after table is complete (so totals are correct)
   const pageCount = doc.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
@@ -249,7 +275,6 @@ export function exportToPDF(
     const pageLabel = t("pdf.page", { current: i, total: pageCount });
     const pageLabelW = doc.getTextWidth(pageLabel);
     if (branding.footerText) {
-      // Reserve space for the right-aligned page label so they never overlap.
       const reserved = pageLabelW + 16;
       const footerMaxW = pageW - marginX * 2 - reserved * 2;
       const fitted = fitText(branding.footerText, footerMaxW, 9, 7, "normal");
@@ -260,6 +285,5 @@ export function exportToPDF(
     doc.text(pageLabel, pageW - marginX, footerY, { align: "right" });
   }
 
-
-  doc.save(`${sanitizeFilename(eventName)}.pdf`);
+  doc.save(`${sanitizeFilename(opts.filename || eventName)}.pdf`);
 }
