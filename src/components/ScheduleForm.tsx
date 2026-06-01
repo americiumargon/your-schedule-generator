@@ -353,11 +353,34 @@ export function ScheduleForm({ onGenerate, onSaveDraft, initialState }: Props) {
     startDate?: string;
     numberOfMeetings?: string;
     endDate?: string;
+    timezone?: string;
+    reminderMinutes?: string;
     perTrack?: Record<string, string>;
   }
   const [errors, setErrors] = useState<FormErrors>({});
   const fieldError = (msg?: string) =>
     msg ? <p className="text-sm font-medium text-destructive mt-1">{msg}</p> : null;
+
+  const tCode = (code: ValidationCode): string => {
+    const map: Record<ValidationCode, string> = {
+      dateInvalid: t('form.validation.dateRequired'),
+      dateOutOfRange: t('form.validation.dateOutOfRange', { min: MIN_YEAR, max: MAX_YEAR }),
+      endBeforeStart: t('form.validation.endDateAfterStart'),
+      timezoneInvalid: t('form.validation.timezoneInvalid'),
+      meetingsInvalid: t('form.validation.meetingsRequired'),
+      meetingsOutOfRange: t('form.validation.meetingsOutOfRange', { max: MAX_MEETINGS }),
+      intervalInvalid: t('form.validation.intervalInvalid'),
+      ordinalsInvalid: t('form.validation.ordinalsRequired'),
+      daysOfMonthInvalid: t('form.validation.daysOfMonthRequired'),
+      daysOfWeekInvalid: t('form.validation.daysRequired'),
+      timeSlotInvalid: t('form.validation.timeRequired'),
+      timeSlotOrder: t('form.validation.timeOrder'),
+      timeSlotsCount: t('form.validation.timeRequired'),
+      reminderInvalid: t('form.validation.reminderInvalid'),
+      textTooLong: t('form.validation.textTooLong'),
+    };
+    return map[code];
+  };
 
   const eventNameRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
