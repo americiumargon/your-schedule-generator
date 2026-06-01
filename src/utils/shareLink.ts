@@ -203,6 +203,7 @@ function decodeV2(parsed: z.infer<typeof v2Token>): ShareFormState | null {
     recurrence: decRec(tr.rec),
     location: tr.l,
     notes: tr.nt,
+    startDate: tr.sd ? parseDate(tr.sd) ?? undefined : undefined,
   }));
   return {
     projectName: parsed.pn,
