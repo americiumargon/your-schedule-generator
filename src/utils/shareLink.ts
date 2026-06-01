@@ -189,7 +189,7 @@ export function encodeShareState(state: ShareFormState): string {
       ...(t.startsAfter ? { sa: t.startsAfter } : {}),
     })),
   };
-  return b64urlEnc(JSON.stringify(token));
+  return encodeToken(JSON.stringify(token));
 }
 
 function decodeV1(parsed: z.infer<typeof v1Token>): ShareFormState | null {
