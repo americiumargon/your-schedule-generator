@@ -420,6 +420,15 @@ export function ScheduleDisplay({ eventName, sessions, location, notes, timezone
           <Button
             variant="outline"
             size="sm"
+            onClick={() => handleExport("pdf")}
+            className="gap-2"
+          >
+            <FileText className="h-4 w-4" />
+            {t('schedule.pdfButton')}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
             onClick={handlePrint}
             className="gap-2"
           >
