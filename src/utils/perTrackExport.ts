@@ -9,6 +9,7 @@ import type { Branding } from "./branding";
 import type { Track } from "./tracks";
 import type { Session, ExportOptions } from "./scheduleGenerator";
 import { sanitizeTzid } from "./scheduleGenerator";
+import { validateExportOptions, assertValidSessionDates } from "./validation";
 
 type T = (key: string, opts?: Record<string, unknown>) => string;
 
