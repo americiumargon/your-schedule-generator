@@ -203,6 +203,8 @@ export interface ExportOptions {
   notes?: string;
   reminderMinutes?: number;
   timezone?: string;
+  includeTrackColumn?: boolean;
+  filename?: string;
 }
 
 function escapeICS(text: string): string {
