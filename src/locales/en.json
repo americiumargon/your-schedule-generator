@@ -151,10 +151,10 @@
     "useDefaultPlaceholder": "Using default: {{value}}",
     "clearOverride": "Clear override",
     "overrideBadge": "override",
-    "colTrack": "Track",
+    "colTrack": "Group",
     "exportScope": "Export as",
     "exportScopeCombined": "Combined file",
-    "exportScopePerTrack": "One file per track (ZIP)"
+    "exportScopePerTrack": "One file per group (ZIP)"
   },
   "summary": {
     "totalSessions": "Sessions",
