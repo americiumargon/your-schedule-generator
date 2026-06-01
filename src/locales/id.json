@@ -237,14 +237,14 @@
     "toggleDark": "Ganti ke mode gelap"
   },
   "tracks": {
-    "title": "Trek",
-    "hint": "Rencanakan beberapa trek dalam satu proyek",
-    "add": "Tambah trek",
+    "title": "Grup",
+    "hint": "Rencanakan beberapa grup dalam satu program",
+    "add": "Tambah grup lain",
     "rename": "Ganti nama",
     "duplicate": "Duplikat",
     "delete": "Hapus",
     "color": "Warna",
-    "newName": "Trek",
-    "minOne": "Minimal satu trek diperlukan"
+    "newName": "Grup",
+    "minOne": "Minimal satu grup diperlukan"
   }
 }
