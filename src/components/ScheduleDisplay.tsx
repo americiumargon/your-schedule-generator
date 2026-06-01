@@ -43,7 +43,12 @@ interface Session {
   rolledFrom?: Date;
   location?: string;
   notes?: string;
+  trackId?: string;
+  trackName?: string;
+  trackColor?: string;
 }
+
+export type ExportScope = "combined" | "perTrack";
 
 interface ScheduleDisplayProps {
   eventName: string;
@@ -51,7 +56,7 @@ interface ScheduleDisplayProps {
   location?: string;
   notes?: string;
   timezone?: string;
-  onExport: (format: "csv" | "ics" | "pdf", enabledSessions: Session[], language: string) => void;
+  onExport: (format: "csv" | "ics" | "pdf", enabledSessions: Session[], language: string, scope: ExportScope) => void;
   onClear: () => void;
   onUpdateSession?: (
     index: number,
