@@ -157,20 +157,45 @@ export function exportToPDF(
     return row;
   });
 
+  // Compute a Time column width wide enough for "HH:MM – HH:MM (Label)" so
+  // it doesn't wrap on every row and balloon the page count for long schedules.
+  const timeSamples = body.map((r) => r[3]);
+  const longestTime = timeSamples.reduce((a, b) => (b.length > a.length ? b : a), "00:00 – 00:00");
+  // Approximate width: 9pt helvetica avg ~5pt per char, plus 12pt padding.
+  const timeColW = Math.min(140, Math.max(60, Math.ceil(longestTime.length * 5.2) + 12));
+
+  const colStyles: Record<number, { cellWidth?: number; halign?: "left" | "right" | "center" }> = {
+    0: { cellWidth: 28, halign: "right" },
+    1: { cellWidth: 70 },
+    2: { cellWidth: 36 },
+    3: { cellWidth: timeColW },
+  };
+
   autoTable(doc, {
     startY: y,
     head: [head],
     body,
-    margin: { left: marginX, right: marginX, bottom: 40 },
-    styles: { fontSize: 9, cellPadding: 6, overflow: "linebreak" },
+    margin: { left: marginX, right: marginX, top: 32, bottom: 40 },
+    styles: { fontSize: 9, cellPadding: 6, overflow: "linebreak", valign: "middle" },
     headStyles: {
       fillColor: [accent[0], accent[1], accent[2]],
       textColor: [255, 255, 255],
       fontStyle: "bold",
     },
     alternateRowStyles: { fillColor: [245, 247, 250] },
-    columnStyles: {
-      0: { cellWidth: 28, halign: "right" },
+    columnStyles: colStyles,
+    didDrawPage: (data) => {
+      // Continuation-page brand strip: thin accent bar + org/event name + page label.
+      // Skip on page 1 — it already has the full header band.
+      if (data.pageNumber > 1) {
+        doc.setFillColor(accent[0], accent[1], accent[2]);
+        doc.rect(0, 0, pageW, 18, "F");
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(9);
+        doc.setTextColor(255, 255, 255);
+        const brand = branding.orgName || eventName || "";
+        if (brand) doc.text(brand, marginX, 12);
+      }
     },
   });
 
