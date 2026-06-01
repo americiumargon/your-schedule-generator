@@ -586,7 +586,7 @@ export function ScheduleForm({ onGenerate, initialState }: Props) {
                 value=""
                 onValueChange={(v) => { if (v) applyStartAfter(v); }}
               >
-                <SelectTrigger size="sm" className="w-auto min-w-[10rem]">
+                <SelectTrigger className="h-9 w-auto min-w-[10rem]">
                   <SelectValue placeholder={t('tracks.startAfterPlaceholder')} />
                 </SelectTrigger>
                 <SelectContent>
