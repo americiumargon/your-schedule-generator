@@ -399,23 +399,31 @@ export function exportToPDF(
   });
 
   const pageCount = doc.getNumberOfPages();
+  const firstSchedulePage = wantsCover ? 2 : 1;
+  const scheduleTotal = pageCount - firstSchedulePage + 1;
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
     doc.setTextColor(120, 120, 120);
     const footerY = pageH - 20;
-    const pageLabel = t("pdf.page", { current: i, total: pageCount });
-    const pageLabelW = doc.getTextWidth(pageLabel);
-    if (branding.footerText) {
-      const reserved = pageLabelW + 16;
-      const footerMaxW = pageW - marginX * 2 - reserved * 2;
-      const fitted = fitText(branding.footerText, footerMaxW, 9, 7, "normal");
-      doc.setFontSize(fitted.size);
-      doc.text(fitted.text, pageW / 2, footerY, { align: "center" });
-      doc.setFontSize(9);
+    const isCover = wantsCover && i === 1;
+    if (!isCover) {
+      const pageLabel = t("pdf.page", {
+        current: i - firstSchedulePage + 1,
+        total: scheduleTotal,
+      });
+      const pageLabelW = doc.getTextWidth(pageLabel);
+      if (branding.footerText) {
+        const reserved = pageLabelW + 16;
+        const footerMaxW = pageW - marginX * 2 - reserved * 2;
+        const fitted = fitText(branding.footerText, footerMaxW, 9, 7, "normal");
+        doc.setFontSize(fitted.size);
+        doc.text(fitted.text, pageW / 2, footerY, { align: "center" });
+        doc.setFontSize(9);
+      }
+      doc.text(pageLabel, pageW - marginX, footerY, { align: "right" });
     }
-    doc.text(pageLabel, pageW - marginX, footerY, { align: "right" });
   }
 
   doc.save(`${sanitizeFilename(opts.filename || eventName)}.pdf`);
