@@ -656,6 +656,7 @@ export function ScheduleForm({ onGenerate, initialState }: Props) {
             </p>
           )}
         </div>
+        )}
 
 
 
