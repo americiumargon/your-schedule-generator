@@ -51,7 +51,7 @@ interface ScheduleDisplayProps {
   location?: string;
   notes?: string;
   timezone?: string;
-  onExport: (format: "csv" | "ics", enabledSessions: Session[], language: string) => void;
+  onExport: (format: "csv" | "ics" | "pdf", enabledSessions: Session[], language: string) => void;
   onClear: () => void;
   onUpdateSession?: (
     index: number,
