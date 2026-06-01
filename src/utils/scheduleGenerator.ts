@@ -311,6 +311,8 @@ function sanitizeUidPart(s: string | undefined): string {
 }
 
 export function exportToICS(sessions: Session[], eventName: string, language: string = 'en', opts: ExportOptions = {}): void {
+  validateExportOptions(opts);
+  assertValidSessionDates(sessions);
   const t = language === 'id' ? id : en;
   const tz = sanitizeTzid(opts.timezone);
   const useFloatingTzid = tz !== "UTC";
