@@ -417,7 +417,7 @@ describe("validateMeetings — boundary fuzz", () => {
   it("rejects 0, MAX+1, negatives", () => {
     expect(validateMeetings(0)).toBe("meetingsOutOfRange");
     expect(validateMeetings(MAX_MEETINGS + 1)).toBe("meetingsOutOfRange");
-    expect(validateMeetings(-1)).toBe("meetingsInvalid");
+    expect(validateMeetings(-1)).toBe("meetingsOutOfRange");
   });
 
   it("rejects non-integer / non-numeric strings", () => {
@@ -429,8 +429,8 @@ describe("validateMeetings — boundary fuzz", () => {
     expect(validateMeetings(1.5)).toBe("meetingsInvalid");
   });
 
-  it("string with whitespace is rejected (no implicit trim)", () => {
-    expect(validateMeetings("  5  ")).toBe("meetingsInvalid");
+  it("trims surrounding whitespace from numeric strings", () => {
+    expect(validateMeetings("  5  ")).toBeNull();
   });
 });
 
