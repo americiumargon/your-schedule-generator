@@ -94,7 +94,7 @@
     "generateButton": "Buat jadwal",
     "validation": {
       "eventNameRequired": "Masukkan label sesi",
-      "projectNameRequired": "Masukkan nama program",
+      "projectNameRequired": "Masukkan nama jadwal",
       "dateRequired": "Pilih tanggal mulai",
       "meetingsRequired": "Jumlah sesi minimal 1",
       "daysRequired": "Pilih setidaknya satu hari dalam seminggu",
