@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { format, parseISO, isValid } from "date-fns";
+import LZString from "lz-string";
 import { createTrack, type ProjectState, type Track } from "./tracks";
 import type { TimeSlot, Recurrence, HolidayBehavior } from "./scheduleGenerator";
 
