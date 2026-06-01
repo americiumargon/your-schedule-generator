@@ -325,7 +325,7 @@ function decodeV3(parsed: z.infer<typeof v3Token>): ShareFormState {
 
 export function decodeShareState(token: string): ShareFormState | null {
   try {
-    const json = b64urlDec(token);
+    const json = decodeToken(token);
     const parsed = tokenSchema.parse(JSON.parse(json));
     if (parsed.v === 3) return decodeV3(parsed);
     if (parsed.v === 2) return decodeV2(parsed);
