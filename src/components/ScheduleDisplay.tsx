@@ -249,7 +249,7 @@ export function ScheduleDisplay({ eventName, sessions, location, notes, timezone
     return sessions.filter((_, idx) => enabledSessions.has(idx));
   };
 
-  const handleExport = (format: "csv" | "ics") => {
+  const handleExport = (format: "csv" | "ics" | "pdf") => {
     const enabled = getEnabledSessions();
     if (enabled.length === 0) {
       toast.error(t('export.errorNoSessions'));
