@@ -8,7 +8,7 @@ export interface TimeSlot {
   label?: string;
 }
 
-interface Session {
+export interface Session {
   date: Date;
   sessionNumber: number;
   startTime: string;
@@ -17,6 +17,9 @@ interface Session {
   rolledFrom?: Date;
   location?: string;
   notes?: string;
+  trackId?: string;
+  trackName?: string;
+  trackColor?: string;
 }
 
 const MAX_SESSIONS = 1000;
