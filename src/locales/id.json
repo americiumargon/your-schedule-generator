@@ -245,6 +245,14 @@
     "delete": "Hapus",
     "color": "Warna",
     "newName": "Grup",
-    "minOne": "Minimal satu grup diperlukan"
+    "minOne": "Minimal satu grup diperlukan",
+    "groupStartDate": "Tanggal mulai grup",
+    "usesProjectStart": "Pakai tanggal mulai program ({{date}})",
+    "pickOverride": "Pilih tanggal pengganti",
+    "startAfterPlaceholder": "Mulai setelah grup…",
+    "resetOverride": "Reset",
+    "startBeforeProject": "Tanggal mulai grup tidak boleh sebelum tanggal mulai program.",
+    "startAfterProjectEnd": "Setelah tanggal selesai program — grup ini tidak akan memiliki sesi.",
+    "sourceGroupNotReady": "Atur hari dan waktu untuk {{name}} terlebih dahulu."
   }
 }
