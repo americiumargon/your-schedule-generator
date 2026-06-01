@@ -1,54 +1,74 @@
 ## Goal
-Add validation so a group cannot be its own predecessor and so circular "Start after group…" chains are blocked.
+Simplify the form for casual users (single schedule, no jargon) while keeping every existing feature one click away under **More options**.
 
-## Background
-The "Start after group…" dropdown already hides the active group from itself (self-reference is filtered at the UI level), but there is no guard in the helper function and no detection of multi-group cycles (A→B→A, A→B→C→A, etc.).
+## Guiding principle
+*One group = one schedule.* The words "group" and "session label" should not appear in the UI until the user opts into multi-group mode by clicking **Add another group**.
+
+## Decisions
+- Keep the term **"Groups"** (no rename) — minimal churn, i18n stays intact.
+- **Auto-mirror** the session label to the schedule name when only one group exists.
+- Skip the "one-click preset chips" empty state for this pass.
+- Timezone, location, reminder, branding stay in **More options** (already there).
 
 ## Changes
 
-### 1. Data model – store the dependency link
-Add an optional `startsAfter?: string` field (track ID of predecessor) to:
-- `Track` interface in `src/utils/tracks.ts`
-- `TrackDraft` interface in `src/components/ScheduleForm.tsx`
+### 1. `ScheduleForm.tsx` — Essentials, single-group mode
+When `drafts.length === 1`:
+- **Hide the `TrackTabs`** block entirely (lines ~468-483).
+- **Hide the "Session label" (eventName) input** (lines ~485-513). The active group's `name` is kept in sync with `projectName` automatically via a `useEffect`: `if (drafts.length === 1) updateActive({ name: projectName })`.
+- **Hide the entire "Per-group start date override" block** (lines ~543-621).
+- **Rename label** `form.projectName` from "Program name" → **"Schedule name"** (EN) / **"Nama jadwal"** (ID). Update placeholder accordingly.
 
-This field is set only when the helper button is used; cleared when the user manually picks a date.
+When `drafts.length >= 2`:
+- All hidden blocks reappear, and the "Session label" field is editable inside each group's tab (current behavior).
+- Add a small **"Add another group"** button visible in single-group mode too, so the upgrade path is discoverable. Place it as a subtle text button under the form near the bottom of Essentials: `+ Add another group`.
 
-### 2. Cycle-detection helper
-Add a `wouldCreateCycle(activeId, sourceId, drafts)` function that walks `startsAfter` chains starting from `sourceId`. If it ever reaches `activeId`, a cycle would be created.
+### 2. Reorder Essentials
+New order:
+```
+1. Schedule name
+2. Start date
+3. End the schedule  [After N sessions | On specific date]
+4. Days of the week
+5. Session time
+( + Add another group  — text button, single-group mode only )
+```
+The "End the schedule" mode block moves up to sit directly under Start date (currently it sits after the per-group override block).
 
-### 3. UI filtering
-In the "Start after group…" dropdown (`ScheduleForm.tsx` lines 584-602):
-- Keep the existing `d.id !== active.id` filter (self-reference).
-- Add a second filter: exclude any group where `wouldCreateCycle(active.id, d.id, drafts)` is true.
+### 3. Smarter defaults (only when `initialState` is absent)
+- `startDate` defaults to **next Monday** at form mount (using `date-fns` `nextMonday(new Date())`).
+- First time slot defaults to **`09:00`–`10:00`**.
+- `numberOfMeetings` default input value = **`"8"`**.
+- These defaults only apply on fresh mount, never when loading from share link / recent.
 
-Disabled/circular items can optionally be rendered as non-selectable with a "(would create cycle)" caption, or simply hidden.
+### 4. `ScheduleDisplay.tsx` — single-group polish
+When the generated project has only one group:
+- Hide the **"Export as: Combined / One file per group"** scope toggle.
+- Hide the **"Group" column** in the schedule table (verify current behavior; conditionally render).
 
-### 4. Helper function guard
-In `applyStartAfter`:
-- If `sourceTrackId === active.id`, error (defense-in-depth).
-- If `wouldCreateCycle(active.id, sourceTrackId, drafts)`, toast an error and abort.
-- Only on success: set `startDate` **and** `startsAfter: sourceTrackId`.
+### 5. i18n
+Update existing keys, no new keys required:
+- EN `form.projectName`: "Program name" → "Schedule name"
+- EN `form.projectNamePlaceholder`: → "e.g. Yoga class, Team standup, Spring semester"
+- ID `form.projectName`: "Nama program" → "Nama jadwal"
+- ID `form.projectNamePlaceholder`: → "contoh: Kelas yoga, Rapat tim, Semester genap"
+- EN `tracks.add`: keep "Add another group" (already exists, just surfaced in a new spot).
 
-### 5. Manual date picker behavior
-When the user picks a date via the calendar popover for a group, also clear `startsAfter: undefined` so the group is no longer considered part of a dependency chain.
+### 6. Validation tweak
+`form.validation.eventNameRequired` is currently checked per draft. When single-group + auto-mirrored, the eventName comes from projectName, so projectName-required is sufficient. Keep the per-draft check (still relevant for multi-group), but make sure the toast doesn't fire if the only failure is the auto-mirrored name being empty (the projectName error already covers it).
 
-### 6. i18n
-Add to `src/locales/en.json` and `src/locales/id.json`:
-- `tracks.circularDependency` – e.g. "That would create a circular dependency."
+## What stays exactly the same
+- Generation logic, exports (CSV/ICS/PDF/Google), share links, recent schedules, branding, recurrence types, holidays, per-group startsAfter/cycle detection — untouched.
+- Multi-group experience is unchanged once unlocked.
 
-### 7. Persistence (`src/utils/shareLink.ts`)
-- Add `sa: z.string().min(1).max(64).optional()` to `trackSchema`.
-- Encode: `...(t.startsAfter ? { sa: t.startsAfter } : {})`.
-- Decode: map `tr.sa` to `startsAfter`.
-
-### 8. Submit validation
-In `handleSubmit`, after the existing per-track validation loop, run a full-project cycle check. If any track forms part of a cycle, add a per-track error and abort.
-
-### 9. Tests
-Extend `src/utils/__tests__/projectGenerator.test.ts` (or add a small standalone test) to verify:
-- `wouldCreateCycle` correctly identifies A→B→A and A→B→C→A.
-- Self-reference is rejected.
+## Files touched
+- `src/components/ScheduleForm.tsx` (bulk of work: conditional rendering, reorder, auto-mirror effect, defaults, "Add another group" CTA)
+- `src/components/ScheduleDisplay.tsx` (conditional hide of scope toggle + Group column)
+- `src/locales/en.json`, `src/locales/id.json` (label rewording)
 
 ## Out of scope
-- Auto-recomputing dates when a predecessor changes (dates remain fixed; the link is for validation only).
-- Visual dependency graph or arrows between tabs.
+- Visual redesign / color / typography changes.
+- New empty-state preset chips.
+- Renaming "Groups" to "Classes."
+- Removing any feature.
+- Changes to exports, scheduling math, or share-link format.
