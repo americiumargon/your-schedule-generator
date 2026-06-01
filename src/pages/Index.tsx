@@ -97,34 +97,36 @@ const Index = () => {
     const hasMultipleTracks = new Set(enabledSessions.map((s) => s.trackId)).size > 1;
     const opts = { reminderMinutes, timezone, includeTrackColumn: hasMultipleTracks };
     const branding = loadBranding();
-    if (scope === "perTrack" && hasMultipleTracks) {
-      // Filter byTrack to only enabled sessions
-      const enabledIds = new Set(enabledSessions.map((s) => `${s.trackId}#${s.sessionNumber}`));
-      const enabledByTrack: Record<string, TrackedSession[]> = {};
-      for (const tr of tracks) {
-        const list = (byTrack[tr.id] ?? []).filter((s) =>
-          enabledSessions.some(
-            (e) => e.trackId === s.trackId && e.date.getTime() === s.date.getTime() && e.startTime === s.startTime,
-          ),
+    try {
+      if (scope === "perTrack" && hasMultipleTracks) {
+        const enabledByTrack: Record<string, TrackedSession[]> = {};
+        for (const tr of tracks) {
+          const list = (byTrack[tr.id] ?? []).filter((s) =>
+            enabledSessions.some(
+              (e) => e.trackId === s.trackId && e.date.getTime() === s.date.getTime() && e.startTime === s.startTime,
+            ),
+          );
+          if (list.length > 0) enabledByTrack[tr.id] = list;
+        }
+        await exportPerTrackZip(enabledByTrack, tracks, projectName, format, opts, branding, t, language);
+        toast.success(
+          format === "csv" ? t('export.successCsv') : format === "ics" ? t('export.successIcs') : t('export.successPdf'),
         );
-        if (list.length > 0) enabledByTrack[tr.id] = list;
+        return;
       }
-      void enabledIds;
-      await exportPerTrackZip(enabledByTrack, tracks, projectName, format, opts, branding, t, language);
-      toast.success(
-        format === "csv" ? t('export.successCsv') : format === "ics" ? t('export.successIcs') : t('export.successPdf'),
-      );
-      return;
-    }
-    if (format === "csv") {
-      exportToCSV(enabledSessions, projectName, language, opts);
-      toast.success(t('export.successCsv'));
-    } else if (format === "ics") {
-      exportToICS(enabledSessions, projectName, language, opts);
-      toast.success(t('export.successIcs'));
-    } else {
-      exportToPDF(enabledSessions, projectName, language, opts, branding, t);
-      toast.success(t('export.successPdf'));
+      if (format === "csv") {
+        exportToCSV(enabledSessions, projectName, language, opts);
+        toast.success(t('export.successCsv'));
+      } else if (format === "ics") {
+        exportToICS(enabledSessions, projectName, language, opts);
+        toast.success(t('export.successIcs'));
+      } else {
+        exportToPDF(enabledSessions, projectName, language, opts, branding, t);
+        toast.success(t('export.successPdf'));
+      }
+    } catch (err) {
+      console.error("Export failed", err);
+      toast.error(t('toast.exportInvalid'));
     }
   };
 

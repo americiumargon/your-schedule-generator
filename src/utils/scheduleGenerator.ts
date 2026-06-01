@@ -1,6 +1,7 @@
 import { addDays, getDay, getDate, getDaysInMonth, differenceInCalendarWeeks, startOfWeek, format } from "date-fns";
 import en from "@/locales/en.json";
 import id from "@/locales/id.json";
+import { validateExportOptions, assertValidSessionDates } from "./validation";
 
 export interface TimeSlot {
   startTime: string;
@@ -223,6 +224,8 @@ function subjectFor(eventName: string, sessionNumber: number, sessionWord: strin
 }
 
 export function exportToCSV(sessions: Session[], eventName: string, language: string = 'en', opts: ExportOptions = {}): void {
+  validateExportOptions(opts);
+  assertValidSessionDates(sessions);
   const t = language === 'id' ? id : en;
   const includeTrack = !!opts.includeTrackColumn;
 
@@ -308,6 +311,8 @@ function sanitizeUidPart(s: string | undefined): string {
 }
 
 export function exportToICS(sessions: Session[], eventName: string, language: string = 'en', opts: ExportOptions = {}): void {
+  validateExportOptions(opts);
+  assertValidSessionDates(sessions);
   const t = language === 'id' ? id : en;
   const tz = sanitizeTzid(opts.timezone);
   const useFloatingTzid = tz !== "UTC";

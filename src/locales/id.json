@@ -105,7 +105,14 @@
       "endDateRequired": "Pilih tanggal selesai",
       "endDateAfterStart": "Tanggal selesai harus sama dengan atau setelah tanggal mulai",
       "noSessionsInRange": "Tidak ada sesi yang cocok dengan rentang tanggal ini",
-      "invalid": "Periksa formulir dan coba lagi"
+      "invalid": "Periksa formulir dan coba lagi",
+      "dateOutOfRange": "Tanggal harus antara {{min}} dan {{max}}",
+      "meetingsOutOfRange": "Jumlah sesi harus antara 1 dan {{max}}",
+      "timezoneInvalid": "Pilih zona waktu yang valid",
+      "intervalInvalid": "Interval pengulangan harus antara 1 dan 12",
+      "reminderInvalid": "Pilih opsi pengingat yang valid",
+      "timeOrder": "Waktu selesai harus setelah waktu mulai",
+      "textTooLong": "Teks terlalu panjang"
     }
   },
   "weekdays": {
@@ -223,7 +230,8 @@
     "undo": "Batalkan",
     "sessionUpdated": "Sesi diperbarui",
     "gcalTooMany": "Terlalu banyak sesi untuk satu tautan Google Calendar. Gunakan ICS sebagai gantinya.",
-    "gcalNotRepresentable": "Google Calendar tidak bisa mengimpor jadwal ini dalam satu tautan — gunakan ekspor ICS."
+    "gcalNotRepresentable": "Google Calendar tidak bisa mengimpor jadwal ini dalam satu tautan — gunakan ekspor ICS.",
+    "exportInvalid": "Ekspor diblokir: opsi tidak valid"
   },
   "recent": {
     "title": "Jadwal terbaru",

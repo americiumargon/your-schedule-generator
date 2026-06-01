@@ -9,6 +9,7 @@ import type { Branding } from "./branding";
 import type { Track } from "./tracks";
 import type { Session, ExportOptions } from "./scheduleGenerator";
 import { sanitizeTzid } from "./scheduleGenerator";
+import { validateExportOptions, assertValidSessionDates } from "./validation";
 
 type T = (key: string, opts?: Record<string, unknown>) => string;
 
@@ -160,10 +161,12 @@ export async function exportPerTrackZip(
   t: T,
   language: string,
 ): Promise<void> {
+  validateExportOptions(opts);
   const zip = new JSZip();
   for (const track of tracks) {
     const list = byTrack[track.id] ?? [];
     if (list.length === 0) continue;
+    assertValidSessionDates(list);
     const fileBase = sanitize(`${projectName || "schedule"}-${track.name}`);
     const trackOpts: ExportOptions = {
       ...opts,
