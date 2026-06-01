@@ -81,11 +81,7 @@ export const timezoneSchema = z
   .min(1, "timezoneInvalid")
   .max(64, "timezoneInvalid")
   .refine((s) => !/[\r\n\t\x00-\x1F\x7F]/.test(s), { message: "timezoneInvalid" })
-  .refine((s) => {
-    // sanitizeTzid returns "UTC" for anything invalid; only accept if it round-trips.
-    const sanitized = sanitizeTzid(s);
-    return sanitized === s || (s === "UTC" && sanitized === "UTC");
-  }, { message: "timezoneInvalid" });
+  .refine((s) => isValidTimezone(s), { message: "timezoneInvalid" });
 
 export function validateTimezone(tz: unknown): ValidationCode | null {
   const res = timezoneSchema.safeParse(tz);
