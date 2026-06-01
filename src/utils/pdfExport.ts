@@ -220,22 +220,24 @@ export function exportToPDF(
   };
 
 
-  const titleSrc = branding.orgName || eventName || "Schedule";
-  const title = fitText(titleSrc, headerTextMaxW, 18, 12, "bold");
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(title.size);
-  doc.text(title.text, textX, 36);
-  if (branding.tagline) {
-    const tag = fitText(branding.tagline, headerTextMaxW, 11, 8, "normal");
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(tag.size);
-    doc.text(tag.text, textX, 56);
+  if (!wantsCover) {
+    const titleSrc = branding.orgName || eventName || "Schedule";
+    const title = fitText(titleSrc, headerTextMaxW, 18, 12, "bold");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(title.size);
+    doc.text(title.text, textX, 36);
+    if (branding.tagline) {
+      const tag = fitText(branding.tagline, headerTextMaxW, 11, 8, "normal");
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(tag.size);
+      doc.text(tag.text, textX, 56);
+    }
   }
 
 
   // Info block
   doc.setTextColor(20, 20, 20);
-  let y = headerH + 28;
+  let y = (wantsCover ? 40 : headerH + 28);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(14);
   doc.text(eventName || t("schedule.title"), marginX, y);
