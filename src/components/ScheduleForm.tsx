@@ -245,6 +245,10 @@ export function ScheduleForm({ onGenerate, initialState }: Props) {
 
   // Compute & apply "Start after group X": sets active group's startDate to (last session of source group) + 1 day.
   const applyStartAfter = (sourceTrackId: string) => {
+    if (sourceTrackId === active.id || wouldCreateCycle(active.id, sourceTrackId, drafts)) {
+      toast.error(t('tracks.circularDependency'));
+      return;
+    }
     const src = drafts.find((d) => d.id === sourceTrackId);
     if (!src || !startDate) {
       toast.error(t('tracks.sourceGroupNotReady', { name: src?.name ?? '' }));
@@ -269,11 +273,12 @@ export function ScheduleForm({ onGenerate, initialState }: Props) {
         return;
       }
       const last = sessions[sessions.length - 1].date;
-      updateActive({ startDate: addDays(last, 1) });
+      updateActive({ startDate: addDays(last, 1), startsAfter: sourceTrackId });
     } catch {
       toast.error(t('tracks.sourceGroupNotReady', { name: src.name }));
     }
   };
+
 
 
   // Per-track field shortcuts
