@@ -1,28 +1,39 @@
-## Verify PDF export works
+# Automated CI test for PDF export
 
-Reuse the headless-export approach from the prior verification, scoped to PDF only.
+Port the ad-hoc PDF verification script into a proper Vitest test that runs in CI for both export scopes.
 
-### Steps
+## What gets added
 
-1. Recreate `scripts/verify-pdf-export.mjs` with minimal DOM shims (`document`, `URL.createObjectURL/revokeObjectURL`, anchor `click` capture).
-2. Import `generateProject` from `src/utils/projectGenerator.ts`, `exportToPDF` from `src/utils/pdfExport.ts`, and `exportPerTrackZip` from `src/utils/perTrackExport.ts`.
-3. Build a `ProjectState` with two tracks:
-   - "Beginner" Mon/Wed 09:00–10:00
-   - "Advanced" Tue/Thu 18:00–19:30
-   - 4-week range, no holidays, default reminder/timezone.
-4. Run two cases:
-   - **Combined PDF** — single file capture, save to `/tmp/qa/combined.pdf`.
-   - **Per-track ZIP** — unzip in memory (`jszip`), save each entry to `/tmp/qa/<track>.pdf`.
-5. Assertions:
-   - File written and non-empty.
-   - `pypdf` extracts text containing project name, "Track" column header, and (combined) both track names; per-track files contain only their own track name.
-   - Page count > 0.
-6. Visual QA: `pdftoppm -jpeg -r 150` on each PDF and inspect every page for clipping, overlap, missing columns, or font box-glyphs.
-7. Report a 3-row pass/fail table (Combined, Beginner per-track, Advanced per-track) with any defects + fixes.
-8. Delete the temporary script and `/tmp/qa/` artifacts when done.
+### 1. Vitest setup
+- Add dev deps: `vitest`, `@vitest/coverage-v8` (optional), `jsdom`, `@types/node` (already present), `pypdf`-free — we'll parse PDFs in JS using `pdf-parse` or just inspect the raw `Uint8Array` for keywords (text streams in jsPDF are uncompressed enough to grep). To avoid extra deps, search the raw PDF bytes for required substrings.
+- Create `vitest.config.ts` with `environment: "jsdom"` and `setupFiles: ["src/test/setup.ts"]`.
+- Create `src/test/setup.ts` shimming `URL.createObjectURL` / `revokeObjectURL` and a fake `<a>` click so `jsPDF.save()` doesn't crash. Patch `jsPDF.API.save` to push the `arraybuffer` output into a module-level capture array (same trick used in the manual verification).
+- Add npm scripts: `"test": "vitest run"`, `"test:watch": "vitest"`.
 
-### Out of scope
-CSV/ICS verification, UI click-path testing, branding/logo variations.
+### 2. The test — `src/utils/__tests__/pdfExport.test.ts`
+Fixture: 2 tracks (Beginner Mon/Wed 09:00–10:00, Advanced Tue/Thu 18:00–19:30), 4-week range, no holidays. Built via existing `scheduleGenerator` / `projectGenerator` helpers so the test exercises the real pipeline.
 
-### Deliverable
-A short pass/fail summary per case with anomalies noted.
+Cases:
+1. **Combined PDF** — call `exportToPDF(sessions, "QA Term", t, { includeTrackColumn: true })`. Assert: 1 captured PDF, byte length > 1KB, raw bytes contain `"QA Term"`, `"Track"`, `"Beginner"`, `"Advanced"`, `"09:00"`, `"18:00"`.
+2. **Per-track ZIP** — call `exportPerTrackZip(...)` with `formats: ["pdf"]`. Use `JSZip.loadAsync` on the captured Blob, assert entries `Beginner.pdf` and `Advanced.pdf` exist. For each, assert byte length > 1KB, own track name present, the other track name absent, no `"Track"` column header.
+
+Shared `t()` resolver reads `src/locales/en.json` (dotted-key lookup, same as the manual script).
+
+### 3. GitHub Actions workflow — `.github/workflows/test.yml`
+- Triggers: `push` and `pull_request` on all branches.
+- Steps: checkout → setup-node 20 → `npm ci` → `npm test`.
+- No artifacts uploaded; failures surface via the test runner.
+
+## Technical details
+
+- Capture mechanism: monkey-patch `jsPDF.API.save` once in `setup.ts` so every `doc.save()` call inside `pdfExport.ts` / `perTrackExport.ts` pushes `{ name, buffer }` to a global `__pdfCaptures` array; tests clear and read it.
+- For the ZIP case, monkey-patch `URL.createObjectURL` to retain the most recent `Blob` on a `globalThis.__lastBlob` reference, since `perTrackExport` builds a Blob and triggers a download via anchor click.
+- Raw-byte assertions: decode the captured `ArrayBuffer` with `TextDecoder("latin1")` and run `includes()` checks. jsPDF writes table cell text uncompressed by default, so plain substring matches are reliable for ASCII content like track names, times, and column headers.
+- No production code changes — purely additive test + workflow + config.
+
+## Files touched
+- `package.json` (devDeps + scripts)
+- `vitest.config.ts` (new)
+- `src/test/setup.ts` (new)
+- `src/utils/__tests__/pdfExport.test.ts` (new)
+- `.github/workflows/test.yml` (new)
