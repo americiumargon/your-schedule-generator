@@ -285,7 +285,7 @@ export function exportToCSV(sessions: Session[], eventName: string, language: st
   downloadFile(csvContent, `${opts.filename || eventName || "schedule"}.csv`, "text/csv");
 }
 
-function sanitizeTzid(tz: string | undefined): string {
+export function sanitizeTzid(tz: string | undefined): string {
   if (!tz) return "UTC";
   const stripped = tz.replace(/[\r\n\t\x00-\x1F\x7F]/g, "").trim();
   if (!stripped) return "UTC";
