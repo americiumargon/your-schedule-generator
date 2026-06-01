@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from "react";
-import { ScheduleForm, type FormTimeSlot } from "@/components/ScheduleForm";
+import { ScheduleForm } from "@/components/ScheduleForm";
 import { ScheduleDisplay } from "@/components/ScheduleDisplay";
 import { LanguageToggle } from "@/components/LanguageToggle";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { RecentSchedules } from "@/components/RecentSchedules";
 import { BrandingSection } from "@/components/BrandingSection";
 import { Button } from "@/components/ui/button";
-import { generateSchedule, exportToCSV, exportToICS } from "@/utils/scheduleGenerator";
+import { exportToCSV, exportToICS } from "@/utils/scheduleGenerator";
 import { exportToPDF } from "@/utils/pdfExport";
+import { generateProject, type TrackedSession } from "@/utils/projectGenerator";
 import { loadBranding } from "@/utils/branding";
 import { Calendar, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -20,24 +21,12 @@ import {
 } from "@/utils/shareLink";
 import { saveRecent } from "@/utils/recentSchedules";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
-
-interface Session {
-  date: Date;
-  sessionNumber: number;
-  startTime: string;
-  endTime: string;
-  slotLabel?: string;
-  rolledFrom?: Date;
-  location?: string;
-  notes?: string;
-}
+import type { ProjectState } from "@/utils/tracks";
 
 const Index = () => {
   const { t } = useTranslation();
-  const [sessions, setSessions] = useState<Session[]>([]);
-  const [eventName, setEventName] = useState("");
-  const [location, setLocation] = useState("");
-  const [notes, setNotes] = useState("");
+  const [sessions, setSessions] = useState<TrackedSession[]>([]);
+  const [projectName, setProjectName] = useState("");
   const [reminderMinutes, setReminderMinutes] = useState<number>(0);
   const [timezone, setTimezone] = useState<string>(() => {
     try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"; } catch { return "UTC"; }
@@ -68,67 +57,20 @@ const Index = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleGenerate = (data: {
-    eventName: string;
-    startDate: Date;
-    selectedDays: number[];
-    timeSlots: FormTimeSlot[];
-    holidays: Date[];
-    holidayBehavior: "skip" | "rollForward";
-    recurrence:
-      | { type: "weekly"; interval: number }
-      | { type: "monthlyByWeekday"; ordinals: number[] }
-      | { type: "monthlyByDate"; daysOfMonth: number[] };
-    mode: "count" | "endDate";
-    numberOfMeetings?: number;
-    endDate?: Date;
-    location?: string;
-    notes?: string;
-    reminderMinutes?: number;
-    timezone?: string;
-  }) => {
-    const generatedSessions = generateSchedule({
-      startDate: data.startDate,
-      selectedDays: data.selectedDays,
-      timeSlots: data.timeSlots,
-      holidays: data.holidays,
-      holidayBehavior: data.holidayBehavior,
-      recurrence: data.recurrence,
-      mode: data.mode,
-      numberOfMeetings: data.numberOfMeetings,
-      endDate: data.endDate,
-    });
-    if (generatedSessions.length === 0) {
+  const handleGenerate = (project: ProjectState) => {
+    const { combined } = generateProject(project);
+    if (combined.length === 0) {
       toast.error(t('form.validation.noSessionsInRange'));
       return;
     }
-    const tz = data.timezone ?? timezone;
-    setSessions(generatedSessions);
-    setEventName(data.eventName);
-    setLocation(data.location ?? "");
-    setNotes(data.notes ?? "");
-    setReminderMinutes(data.reminderMinutes ?? 0);
-    if (data.timezone) setTimezone(data.timezone);
-    const newFormState: ShareFormState = {
-      eventName: data.eventName,
-      startDate: data.startDate,
-      mode: data.mode,
-      numberOfMeetings: data.numberOfMeetings,
-      endDate: data.endDate,
-      selectedDays: data.selectedDays,
-      timeSlots: data.timeSlots,
-      holidays: data.holidays,
-      holidayBehavior: data.holidayBehavior,
-      recurrence: data.recurrence,
-      location: data.location,
-      notes: data.notes,
-      reminderMinutes: data.reminderMinutes ?? 0,
-      timezone: tz,
-    };
-    setLastFormState(newFormState);
-    saveRecent(data.eventName, newFormState);
+    setSessions(combined);
+    setProjectName(project.projectName);
+    setReminderMinutes(project.reminderMinutes);
+    setTimezone(project.timezone);
+    setLastFormState(project);
+    saveRecent(project.projectName, project);
     setRecentRefresh((n) => n + 1);
-    toast.success(t('toast.generated', { count: generatedSessions.length }));
+    toast.success(t('toast.generated', { count: combined.length }));
   };
 
   const handleLoadRecent = (state: ShareFormState) => {
@@ -139,17 +81,18 @@ const Index = () => {
     });
   };
 
-  const handleExport = (format: "csv" | "ics" | "pdf", enabledSessions: Session[], language: string) => {
-    const opts = { location, notes, reminderMinutes, timezone };
+  const handleExport = (format: "csv" | "ics" | "pdf", enabledSessions: TrackedSession[], language: string) => {
+    const hasMultipleTracks = new Set(enabledSessions.map((s) => s.trackId)).size > 1;
+    const opts = { reminderMinutes, timezone, includeTrackColumn: hasMultipleTracks };
     if (format === "csv") {
-      exportToCSV(enabledSessions, eventName, language, opts);
+      exportToCSV(enabledSessions, projectName, language, opts);
       toast.success(t('export.successCsv'));
     } else if (format === "ics") {
-      exportToICS(enabledSessions, eventName, language, opts);
+      exportToICS(enabledSessions, projectName, language, opts);
       toast.success(t('export.successIcs'));
     } else {
       const branding = loadBranding();
-      exportToPDF(enabledSessions, eventName, language, opts, branding, t);
+      exportToPDF(enabledSessions, projectName, language, opts, branding, t);
       toast.success(t('export.successPdf'));
     }
   };
@@ -168,23 +111,17 @@ const Index = () => {
   const handleClear = () => {
     if (sessions.length === 0) return;
     const prevSessions = sessions;
-    const prevName = eventName;
-    const prevLocation = location;
-    const prevNotes = notes;
+    const prevName = projectName;
     const prevReminder = reminderMinutes;
     setSessions([]);
-    setEventName("");
-    setLocation("");
-    setNotes("");
+    setProjectName("");
     setReminderMinutes(0);
     toast.success(t('toast.cleared'), {
       action: {
         label: t('toast.undo'),
         onClick: () => {
           setSessions(prevSessions);
-          setEventName(prevName);
-          setLocation(prevLocation);
-          setNotes(prevNotes);
+          setProjectName(prevName);
           setReminderMinutes(prevReminder);
         },
       },
@@ -230,7 +167,6 @@ const Index = () => {
       key: "Escape",
       handler: () => {
         if (sessions.length === 0) return;
-        // Skip if a Radix popover/dialog is open
         if (document.querySelector('[data-radix-popper-content-wrapper], [role="dialog"][data-state="open"]')) return;
         handleClear();
       },
@@ -283,7 +219,7 @@ const Index = () => {
               {/* Header - Always visible */}
               <div className="flex items-center justify-between mb-6 print:hidden">
                 <h2 className="text-xl font-semibold">
-                  {sessions.length > 0 ? eventName || t('schedule.title') : t('emptyState.title')}
+                  {sessions.length > 0 ? projectName || t('schedule.title') : t('emptyState.title')}
                 </h2>
                 <Button
                   variant="destructive"
@@ -300,9 +236,7 @@ const Index = () => {
               {/* Content */}
               {sessions.length > 0 ? (
                 <ScheduleDisplay
-                  eventName={eventName}
-                  location={location}
-                  notes={notes}
+                  eventName={projectName}
                   timezone={timezone}
                   sessions={sessions}
                   onExport={handleExport}
