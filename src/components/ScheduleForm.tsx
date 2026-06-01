@@ -134,8 +134,12 @@ function draftToTrack(d: TrackDraft): Track {
   };
 }
 
-function defaultDraft(idx = 0): TrackDraft {
-  return trackToDraft(createTrack({}, idx));
+function defaultDraft(idx = 0, withDefaultTime = false): TrackDraft {
+  const d = trackToDraft(createTrack({}, idx));
+  if (withDefaultTime) {
+    d.timeSlots = [{ startTime: "09:00", endTime: "10:00", label: "" }];
+  }
+  return d;
 }
 
 interface Props {
