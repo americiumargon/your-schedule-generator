@@ -310,6 +310,7 @@ export function ScheduleDisplay({ eventName, sessions, location, notes, timezone
   const enabledCount = enabledSessions.size;
   const allSelected = enabledCount === sessions.length;
   const someSelected = enabledCount > 0 && enabledCount < sessions.length;
+  const isMultiTrack = new Set(sessions.map((s) => s.trackId).filter(Boolean)).size > 1;
 
   const enabledList = getEnabledSessions();
   const firstDate = enabledList[0]?.date;
