@@ -56,11 +56,21 @@ const pendingClicks: Promise<void>[] = [];
 };
 
 // ---- Imports (after shims) ---------------------------------------------
+const jsPDFMod = await import("jspdf");
+const jsPDF: any = (jsPDFMod as any).default ?? jsPDFMod;
+// Patch save() to capture instead of write
+const origSave = jsPDF.API.save ?? jsPDF.prototype.save;
+jsPDF.API.save = function (filename: string) {
+  const buf = this.output("arraybuffer") as ArrayBuffer;
+  captured.push({ filename, bytes: new Uint8Array(buf), type: "application/pdf" });
+  return this;
+};
 const { generateProject } = await import("../src/utils/projectGenerator.ts");
 const { exportToCSV, exportToICS } = await import("../src/utils/scheduleGenerator.ts");
 const { exportToPDF } = await import("../src/utils/pdfExport.ts");
 const { exportPerTrackZip } = await import("../src/utils/perTrackExport.ts");
 const { createTrack } = await import("../src/utils/tracks.ts");
+void origSave;
 
 // ---- Test project -------------------------------------------------------
 const startDate = new Date(2026, 0, 5); // Mon 2026-01-05
