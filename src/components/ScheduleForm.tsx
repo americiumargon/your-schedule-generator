@@ -190,10 +190,19 @@ export function ScheduleForm({ onGenerate, initialState }: Props) {
   const [drafts, setDrafts] = useState<TrackDraft[]>(() => {
     const initial = initialState?.tracks;
     if (initial && initial.length > 0) return initial.map(trackToDraft);
-    return [defaultDraft(0)];
+    return [defaultDraft(0, true)];
   });
   const [activeId, setActiveId] = useState<string>(() => drafts[0].id);
   const active = drafts.find((d) => d.id === activeId) ?? drafts[0];
+  const isMulti = drafts.length > 1;
+
+  // Auto-mirror: in single-group mode, the schedule name IS the session label.
+  useEffect(() => {
+    if (drafts.length === 1 && drafts[0].name !== projectName && projectName) {
+      setDrafts((prev) => prev.map((d, i) => (i === 0 ? { ...d, name: projectName } : d)));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectName, drafts.length]);
 
   const updateActive = (patch: Partial<TrackDraft>) => {
     setDrafts((prev) => prev.map((d) => (d.id === active.id ? { ...d, ...patch } : d)));
