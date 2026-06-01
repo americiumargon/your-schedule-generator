@@ -173,6 +173,7 @@ export function exportToPDF(
   // Table
   const hasLocation = sessions.some((s) => s.location || opts.location);
   const hasNotes = sessions.some((s) => s.notes || opts.notes);
+  const hasTrack = !!opts.includeTrackColumn && sessions.some((s) => s.trackName);
 
   const head: string[] = [
     t("pdf.col.num"),
@@ -180,6 +181,7 @@ export function exportToPDF(
     t("pdf.col.day"),
     t("pdf.col.time"),
   ];
+  if (hasTrack) head.push(t("pdf.col.class"));
   if (hasLocation) head.push(t("pdf.col.location"));
   if (hasNotes) head.push(t("pdf.col.notes"));
 
@@ -190,16 +192,14 @@ export function exportToPDF(
       format(s.date, "EEE", { locale: dateLocale }),
       `${s.startTime} – ${s.endTime}${s.slotLabel ? ` (${s.slotLabel})` : ""}`,
     ];
+    if (hasTrack) row.push(s.trackName ?? "");
     if (hasLocation) row.push(s.location ?? opts.location ?? "");
     if (hasNotes) row.push(s.notes ?? "");
     return row;
   });
 
-  // Compute a Time column width wide enough for "HH:MM – HH:MM (Label)" so
-  // it doesn't wrap on every row and balloon the page count for long schedules.
   const timeSamples = body.map((r) => r[3]);
   const longestTime = timeSamples.reduce((a, b) => (b.length > a.length ? b : a), "00:00 – 00:00");
-  // Approximate width: 9pt helvetica avg ~5pt per char, plus 12pt padding.
   const timeColW = Math.min(140, Math.max(60, Math.ceil(longestTime.length * 5.2) + 12));
 
   const colStyles: Record<number, { cellWidth?: number; halign?: "left" | "right" | "center" }> = {
@@ -208,6 +208,8 @@ export function exportToPDF(
     2: { cellWidth: 36 },
     3: { cellWidth: timeColW },
   };
+  const trackColIdx = hasTrack ? 4 : -1;
+  if (hasTrack) colStyles[4] = { cellWidth: 90 };
 
   autoTable(doc, {
     startY: y,
