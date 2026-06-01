@@ -93,8 +93,8 @@
     "reminderDays": "{{count}} hari sebelumnya",
     "generateButton": "Buat jadwal",
     "validation": {
-      "eventNameRequired": "Masukkan nama aktivitas",
-      "projectNameRequired": "Masukkan nama proyek",
+      "eventNameRequired": "Masukkan label sesi",
+      "projectNameRequired": "Masukkan nama program",
       "dateRequired": "Pilih tanggal mulai",
       "meetingsRequired": "Jumlah sesi minimal 1",
       "daysRequired": "Pilih setidaknya satu hari dalam seminggu",
