@@ -156,6 +156,7 @@
   "export": {
     "successCsv": "Schedule exported as CSV",
     "successIcs": "Schedule exported as ICS",
+    "successPdf": "Schedule exported as PDF",
     "errorNoSessions": "Select at least one session to export",
     "sessionNumber": "Session Number",
     "date": "Date",
@@ -164,6 +165,34 @@
     "endTime": "End Time",
     "summary": "{{eventName}} - Session {{sessionNumber}}",
     "description": "Session {{sessionNumber}} of {{eventName}}"
+  },
+  "pdf": {
+    "sessions": "Sessions",
+    "dateRange": "Date range",
+    "location": "Location",
+    "timezone": "Timezone",
+    "page": "Page {{current}} / {{total}}",
+    "col": {
+      "num": "#",
+      "date": "Date",
+      "day": "Day",
+      "time": "Time",
+      "location": "Location",
+      "notes": "Notes"
+    }
+  },
+  "branding": {
+    "title": "Branding (for PDF export)",
+    "logo": "Logo",
+    "removeLogo": "Remove logo",
+    "orgName": "Organization name",
+    "tagline": "Tagline",
+    "accentColor": "Accent color",
+    "footer": "Footer text",
+    "reset": "Reset branding",
+    "logoTooLarge": "Logo must be under 500 KB",
+    "logoInvalid": "Logo must be PNG, JPG, or SVG",
+    "preview": "Your organization"
   },
   "emptyState": {
     "title": "No schedule yet",
