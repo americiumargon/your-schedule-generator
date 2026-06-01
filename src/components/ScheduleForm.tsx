@@ -540,6 +540,88 @@ export function ScheduleForm({ onGenerate, initialState }: Props) {
           {fieldError(errors.startDate)}
         </div>
 
+        {/* Per-group start date override */}
+        <div className="rounded-md border border-dashed border-border/60 bg-muted/20 p-3 space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <Label className="text-sm">{t('tracks.groupStartDate')}</Label>
+            <span className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground" aria-live="polite">
+              <span className="h-2 w-2 rounded-full" style={{ backgroundColor: active.color }} aria-hidden />
+              {t('form.sessionLabelEditing', { name: active.name })}
+            </span>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className={cn(
+                    "justify-start text-left font-normal min-w-[12rem]",
+                    !active.startDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {active.startDate
+                    ? format(active.startDate, "PPP", { locale: dateLocale })
+                    : startDate
+                    ? t('tracks.usesProjectStart', { date: format(startDate, "PPP", { locale: dateLocale }) })
+                    : t('tracks.pickOverride')}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={active.startDate}
+                  onSelect={(d) => updateActive({ startDate: d ?? undefined })}
+                  initialFocus
+                  className="pointer-events-auto"
+                  locale={dateLocale}
+                  disabled={(date) => (startDate ? date < startDate : false)}
+                />
+              </PopoverContent>
+            </Popover>
+
+            {drafts.length > 1 && (
+              <Select
+                value=""
+                onValueChange={(v) => { if (v) applyStartAfter(v); }}
+              >
+                <SelectTrigger size="sm" className="w-auto min-w-[10rem]">
+                  <SelectValue placeholder={t('tracks.startAfterPlaceholder')} />
+                </SelectTrigger>
+                <SelectContent>
+                  {drafts.filter((d) => d.id !== active.id).map((d) => (
+                    <SelectItem key={d.id} value={d.id}>
+                      <span className="inline-flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full" style={{ backgroundColor: d.color }} aria-hidden />
+                        {d.name}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+
+            {active.startDate && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => updateActive({ startDate: undefined })}
+              >
+                {t('tracks.resetOverride')}
+              </Button>
+            )}
+          </div>
+          {active.startDate && mode === 'endDate' && endDate && active.startDate > endDate && (
+            <p className="text-xs text-amber-600 dark:text-amber-400">
+              {t('tracks.startAfterProjectEnd')}
+            </p>
+          )}
+        </div>
+
+
+
         {/* Mode */}
         <div>
           <Label className="mb-2 block">{t('form.generateBy')}</Label>
