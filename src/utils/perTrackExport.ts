@@ -146,7 +146,7 @@ function buildPdfBlob(sessions: Session[], eventName: string, language: string, 
     alternateRowStyles: { fillColor: [245, 247, 250] },
     columnStyles: { 0: { cellWidth: 28, halign: "right" }, 1: { cellWidth: 70 }, 2: { cellWidth: 36 } },
   });
-  return doc.output("blob");
+  return doc.output("arraybuffer") as ArrayBuffer;
 }
 
 export async function exportPerTrackZip(

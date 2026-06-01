@@ -181,7 +181,7 @@ export function exportToPDF(
     t("pdf.col.day"),
     t("pdf.col.time"),
   ];
-  if (hasTrack) head.push(t("pdf.col.class"));
+  if (hasTrack) head.push(t("pdf.col.track"));
   if (hasLocation) head.push(t("pdf.col.location"));
   if (hasNotes) head.push(t("pdf.col.notes"));
 
