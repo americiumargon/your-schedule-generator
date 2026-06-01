@@ -392,7 +392,7 @@ export function exportToICS(sessions: Session[], eventName: string, language: st
     "END:VCALENDAR",
   ].join("\r\n");
 
-  downloadFile(icsContent, `${eventName || "schedule"}.ics`, "text/calendar");
+  downloadFile(icsContent, `${opts.filename || eventName || "schedule"}.ics`, "text/calendar");
 }
 
 function downloadFile(content: string, filename: string, mimeType: string): void {
