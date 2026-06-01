@@ -167,10 +167,12 @@ export function ScheduleForm({ onGenerate, initialState }: Props) {
 
   // Shared (project-level)
   const [projectName, setProjectName] = useState<string>(() => initialState?.projectName ?? "");
-  const [startDate, setStartDate] = useState<Date | undefined>(() => initialState?.startDate);
+  const [startDate, setStartDate] = useState<Date | undefined>(
+    () => initialState?.startDate ?? (initialState ? undefined : nextMonday(new Date()))
+  );
   const [mode, setMode] = useState<Mode>(() => initialState?.mode ?? "count");
   const [numberOfMeetings, setNumberOfMeetings] = useState<string>(() =>
-    initialState?.numberOfMeetings != null ? String(initialState.numberOfMeetings) : ""
+    initialState?.numberOfMeetings != null ? String(initialState.numberOfMeetings) : (initialState ? "" : "8")
   );
   const [endDate, setEndDate] = useState<Date | undefined>(() => initialState?.endDate);
   const [holidays, setHolidays] = useState<Date[]>(() => initialState?.holidays ?? []);
