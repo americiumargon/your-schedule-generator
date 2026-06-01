@@ -69,6 +69,9 @@ export function RecentSchedules({ onLoad, refreshKey }: RecentSchedulesProps) {
                     locale: dateLocale,
                   }),
                 })}
+                {entry.formState.tracks && entry.formState.tracks.length > 1 && (
+                  <> · {t("recent.trackCount", { count: entry.formState.tracks.length })}</>
+                )}
               </div>
             </div>
             <Button
