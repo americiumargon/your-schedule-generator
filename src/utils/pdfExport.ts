@@ -89,14 +89,46 @@ export function exportToPDF(
   }
 
   doc.setTextColor(255, 255, 255);
+
+  // Constrain header text to available width (after logo); shrink + truncate as needed.
+  const headerTextMaxW = pageW - textX - marginX;
+
+  const fitText = (
+    text: string,
+    maxW: number,
+    startSize: number,
+    minSize: number,
+    style: "bold" | "normal"
+  ): { text: string; size: number } => {
+    doc.setFont("helvetica", style);
+    let size = startSize;
+    while (size > minSize && doc.getStringUnitWidth(text) * size > maxW) {
+      size -= 1;
+    }
+    doc.setFontSize(size);
+    let out = text;
+    if (doc.getTextWidth(out) > maxW) {
+      const ellipsis = "…";
+      while (out.length > 1 && doc.getTextWidth(out + ellipsis) > maxW) {
+        out = out.slice(0, -1);
+      }
+      out = out.trimEnd() + ellipsis;
+    }
+    return { text: out, size };
+  };
+
+  const titleSrc = branding.orgName || eventName || "Schedule";
+  const title = fitText(titleSrc, headerTextMaxW, 18, 12, "bold");
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(18);
-  doc.text(branding.orgName || eventName || "Schedule", textX, 36);
+  doc.setFontSize(title.size);
+  doc.text(title.text, textX, 36);
   if (branding.tagline) {
+    const tag = fitText(branding.tagline, headerTextMaxW, 11, 8, "normal");
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(11);
-    doc.text(branding.tagline, textX, 56);
+    doc.setFontSize(tag.size);
+    doc.text(tag.text, textX, 56);
   }
+
 
   // Info block
   doc.setTextColor(20, 20, 20);
