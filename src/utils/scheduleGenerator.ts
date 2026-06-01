@@ -364,7 +364,7 @@ export function exportToICS(sessions: Session[], eventName: string, language: st
       `DESCRIPTION:${escapeICS(fullDescription)}`,
     ];
     if (effLocation) lines.push(`LOCATION:${escapeICS(effLocation)}`);
-    lines.push(`UID:${Date.now()}-${session.sessionNumber}-${sanitizeUidPart(session.slotLabel)}@schedule-generator.com`);
+    lines.push(`UID:${Date.now()}-${session.sessionNumber}-${sanitizeUidPart(session.trackId)}-${sanitizeUidPart(session.slotLabel)}@schedule-generator.com`);
     if (opts.reminderMinutes && opts.reminderMinutes > 0) {
       lines.push(
         "BEGIN:VALARM",
