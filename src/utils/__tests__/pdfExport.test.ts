@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import JSZip from "jszip";
 import { exportToPDF } from "@/utils/pdfExport";
 import { exportPerTrackZip } from "@/utils/perTrackExport";
