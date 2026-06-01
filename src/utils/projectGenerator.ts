@@ -37,7 +37,7 @@ export function generateProject(project: ProjectState): GeneratedProject {
 
   for (const track of project.tracks) {
     const raw = generateSchedule({
-      startDate: project.startDate,
+      startDate: track.startDate ?? project.startDate,
       selectedDays: track.selectedDays,
       timeSlots: track.timeSlots,
       holidays: project.holidays,
