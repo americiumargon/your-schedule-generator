@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { format, parseISO, isValid } from "date-fns";
+import LZString from "lz-string";
 import { createTrack, type ProjectState, type Track } from "./tracks";
 import type { TimeSlot, Recurrence, HolidayBehavior } from "./scheduleGenerator";
 
@@ -136,6 +137,21 @@ function b64urlDec(s: string): string {
   return decodeURIComponent(escape(atob(p)));
 }
 
+/** Compact, URL-safe encoding. Uses lz-string for ~40-60% shorter share links.
+ *  Prefixed with "1" so we can evolve the wire format later. */
+function encodeToken(json: string): string {
+  return "1" + LZString.compressToEncodedURIComponent(json);
+}
+/** Decodes new "1…" tokens (lz-string) and falls back to legacy base64url for
+ *  links generated before compression was introduced. */
+function decodeToken(token: string): string {
+  if (token.startsWith("1")) {
+    const out = LZString.decompressFromEncodedURIComponent(token.slice(1));
+    if (out) return out;
+  }
+  return b64urlDec(token);
+}
+
 function encRec(rec: Recurrence) {
   if (rec.type === "weekly") return { t: "weekly" as const, i: rec.interval };
   if (rec.type === "monthlyByWeekday") return { t: "monthlyByWeekday" as const, o: rec.ordinals };
@@ -173,7 +189,7 @@ export function encodeShareState(state: ShareFormState): string {
       ...(t.startsAfter ? { sa: t.startsAfter } : {}),
     })),
   };
-  return b64urlEnc(JSON.stringify(token));
+  return encodeToken(JSON.stringify(token));
 }
 
 function decodeV1(parsed: z.infer<typeof v1Token>): ShareFormState | null {
@@ -309,7 +325,7 @@ function decodeV3(parsed: z.infer<typeof v3Token>): ShareFormState {
 
 export function decodeShareState(token: string): ShareFormState | null {
   try {
-    const json = b64urlDec(token);
+    const json = decodeToken(token);
     const parsed = tokenSchema.parse(JSON.parse(json));
     if (parsed.v === 3) return decodeV3(parsed);
     if (parsed.v === 2) return decodeV2(parsed);
@@ -356,7 +372,7 @@ export function encodeDraftState(state: DraftFormState): string {
       return tr;
     });
   }
-  return b64urlEnc(JSON.stringify(token));
+  return encodeToken(JSON.stringify(token));
 }
 
 export function buildShareUrl(state: ShareFormState): string {
