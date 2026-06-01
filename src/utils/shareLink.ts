@@ -126,6 +126,7 @@ export function encodeShareState(state: ShareFormState): string {
       ...(t.location ? { l: t.location } : {}),
       ...(t.notes ? { nt: t.notes } : {}),
       ...(t.startDate ? { sd: fmtDate(t.startDate) } : {}),
+      ...(t.startsAfter ? { sa: t.startsAfter } : {}),
     })),
   };
   return b64urlEnc(JSON.stringify(token));
