@@ -338,7 +338,10 @@ export function exportToICS(sessions: Session[], eventName: string, language: st
     const baseSummary = t.export.summary
       .replace('{{eventName}}', eventName)
       .replace('{{sessionNumber}}', session.sessionNumber.toString());
-    const summary = session.slotLabel ? `${baseSummary} (${session.slotLabel})` : baseSummary;
+    const summaryParts = [baseSummary];
+    if (session.trackName) summaryParts.push(`[${session.trackName}]`);
+    if (session.slotLabel) summaryParts.push(`(${session.slotLabel})`);
+    const summary = summaryParts.join(" ");
     const baseDescription = t.export.description
       .replace('{{sessionNumber}}', session.sessionNumber.toString())
       .replace('{{eventName}}', eventName);
@@ -348,6 +351,7 @@ export function exportToICS(sessions: Session[], eventName: string, language: st
     const effLocation = session.location ?? opts.location;
     const effNotes = session.notes ?? opts.notes;
     const descParts = [baseDescription];
+    if (session.trackName) descParts.push(`Class: ${session.trackName}`);
     if (rolledNote) descParts.push(rolledNote);
     if (effNotes) descParts.push(effNotes);
     const fullDescription = descParts.join("\n\n");
