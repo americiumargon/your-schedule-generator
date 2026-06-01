@@ -1,39 +1,48 @@
-# Automated CI test for PDF export
+# CI tests for CSV and ICS export (Combined + Per-track ZIP)
 
-Port the ad-hoc PDF verification script into a proper Vitest test that runs in CI for both export scopes.
+Extend the existing Vitest suite with coverage for the two remaining export formats across both scopes.
 
 ## What gets added
 
-### 1. Vitest setup
-- Add dev deps: `vitest`, `@vitest/coverage-v8` (optional), `jsdom`, `@types/node` (already present), `pypdf`-free — we'll parse PDFs in JS using `pdf-parse` or just inspect the raw `Uint8Array` for keywords (text streams in jsPDF are uncompressed enough to grep). To avoid extra deps, search the raw PDF bytes for required substrings.
-- Create `vitest.config.ts` with `environment: "jsdom"` and `setupFiles: ["src/test/setup.ts"]`.
-- Create `src/test/setup.ts` shimming `URL.createObjectURL` / `revokeObjectURL` and a fake `<a>` click so `jsPDF.save()` doesn't crash. Patch `jsPDF.API.save` to push the `arraybuffer` output into a module-level capture array (same trick used in the manual verification).
-- Add npm scripts: `"test": "vitest run"`, `"test:watch": "vitest"`.
+### 1. Capture helper update — `src/test/setup.ts`
+`exportToCSV` and `exportToICS` build a `Blob` and trigger download via an anchor + `URL.createObjectURL`. The existing `URL.createObjectURL` patch already pushes every blob into `globalThis.__capturedBlobs`, so no new wiring is needed. We only add a small typed helper export (optional) or rely on the existing global.
 
-### 2. The test — `src/utils/__tests__/pdfExport.test.ts`
-Fixture: 2 tracks (Beginner Mon/Wed 09:00–10:00, Advanced Tue/Thu 18:00–19:30), 4-week range, no holidays. Built via existing `scheduleGenerator` / `projectGenerator` helpers so the test exercises the real pipeline.
+### 2. New test file — `src/utils/__tests__/csvIcsExport.test.ts`
+Uses the same 2-track fixture as the PDF test (Beginner Mon/Wed 09:00–10:00, Advanced Tue/Thu 18:00–19:30, 4 sessions per track).
 
-Cases:
-1. **Combined PDF** — call `exportToPDF(sessions, "QA Term", t, { includeTrackColumn: true })`. Assert: 1 captured PDF, byte length > 1KB, raw bytes contain `"QA Term"`, `"Track"`, `"Beginner"`, `"Advanced"`, `"09:00"`, `"18:00"`.
-2. **Per-track ZIP** — call `exportPerTrackZip(...)` with `formats: ["pdf"]`. Use `JSZip.loadAsync` on the captured Blob, assert entries `Beginner.pdf` and `Advanced.pdf` exist. For each, assert byte length > 1KB, own track name present, the other track name absent, no `"Track"` column header.
+**Combined CSV** (`exportToCSV(..., { includeTrackColumn: true })`)
+- 1 captured blob, mime `text/csv`.
+- First line equals the Google Calendar header with trailing `Class` column.
+- 8 data rows (1 header + 8).
+- Rows contain `09:00 AM`, `06:00 PM`, both track names in the `Class` column.
+- Formula-injection check: a session with notes starting `=cmd` is neutralized with a leading `'`.
 
-Shared `t()` resolver reads `src/locales/en.json` (dotted-key lookup, same as the manual script).
+**Combined ICS** (`exportToICS(...)`)
+- 1 captured blob, mime `text/calendar`.
+- Contains `BEGIN:VCALENDAR` / `END:VCALENDAR`, exactly 8 `BEGIN:VEVENT` blocks.
+- Contains `[Beginner]` and `[Advanced]` summary tags.
+- Contains `DTSTART` lines with `T090000` and `T180000`.
 
-### 3. GitHub Actions workflow — `.github/workflows/test.yml`
-- Triggers: `push` and `pull_request` on all branches.
-- Steps: checkout → setup-node 20 → `npm ci` → `npm test`.
-- No artifacts uploaded; failures surface via the test runner.
+**Per-track ZIP — CSV** (`exportPerTrackZip(..., "csv", ...)`)
+- Last captured blob is a zip; load with `JSZip.loadAsync`.
+- Entries match `Beginner.*\.csv` and `Advanced.*\.csv`.
+- Beginner.csv contains `09:00 AM`, not `18:00`/`06:00 PM`; Advanced.csv inverse.
+- Neither file contains a `Class` column header (per-track files are single-track).
+
+**Per-track ZIP — ICS** (`exportPerTrackZip(..., "ics", ...)`)
+- Zip contains one `.ics` per track.
+- Each has `BEGIN:VCALENDAR`, 4 `BEGIN:VEVENT` blocks, the correct track's times, and no events from the other track.
+
+### 3. No CI workflow changes
+`.github/workflows/test.yml` already runs `npm test` which executes the whole Vitest suite — new tests are picked up automatically.
 
 ## Technical details
 
-- Capture mechanism: monkey-patch `jsPDF.API.save` once in `setup.ts` so every `doc.save()` call inside `pdfExport.ts` / `perTrackExport.ts` pushes `{ name, buffer }` to a global `__pdfCaptures` array; tests clear and read it.
-- For the ZIP case, monkey-patch `URL.createObjectURL` to retain the most recent `Blob` on a `globalThis.__lastBlob` reference, since `perTrackExport` builds a Blob and triggers a download via anchor click.
-- Raw-byte assertions: decode the captured `ArrayBuffer` with `TextDecoder("latin1")` and run `includes()` checks. jsPDF writes table cell text uncompressed by default, so plain substring matches are reliable for ASCII content like track names, times, and column headers.
-- No production code changes — purely additive test + workflow + config.
+- `beforeEach` resets `globalThis.__capturedBlobs = []` (already pattern used in pdfExport.test.ts).
+- Blob → text via `await blob.text()` for CSV/ICS assertions.
+- Count `BEGIN:VEVENT` occurrences with `text.match(/BEGIN:VEVENT/g)?.length`.
+- Reuse the local `t()` resolver pattern (only used by the per-track zip API; CSV/ICS exports read locale JSON internally).
+- No production code changes.
 
 ## Files touched
-- `package.json` (devDeps + scripts)
-- `vitest.config.ts` (new)
-- `src/test/setup.ts` (new)
-- `src/utils/__tests__/pdfExport.test.ts` (new)
-- `.github/workflows/test.yml` (new)
+- `src/utils/__tests__/csvIcsExport.test.ts` (new)
