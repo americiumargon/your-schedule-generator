@@ -224,6 +224,7 @@ function subjectFor(eventName: string, sessionNumber: number, sessionWord: strin
 
 export function exportToCSV(sessions: Session[], eventName: string, language: string = 'en', opts: ExportOptions = {}): void {
   const t = language === 'id' ? id : en;
+  const includeTrack = !!opts.includeTrackColumn;
 
   const headers = [
     "Subject",
@@ -234,7 +235,8 @@ export function exportToCSV(sessions: Session[], eventName: string, language: st
     "All Day Event",
     "Description",
     "Location",
-    "Private"
+    "Private",
+    ...(includeTrack ? ["Class"] : []),
   ];
 
   const baseLocation = opts.location ?? "";
@@ -250,6 +252,7 @@ export function exportToCSV(sessions: Session[], eventName: string, language: st
     const effLocation = session.location ?? baseLocation;
     const effNotes = session.notes ?? baseNotes;
     const descParts = [baseDescription];
+    if (session.trackName) descParts.push(`Class: ${session.trackName}`);
     if (rolledNote) descParts.push(rolledNote);
     if (effNotes) descParts.push(effNotes);
     const description = descParts.join("\n\n");
@@ -263,7 +266,8 @@ export function exportToCSV(sessions: Session[], eventName: string, language: st
       "False",
       description,
       effLocation,
-      ""
+      "",
+      ...(includeTrack ? [session.trackName ?? ""] : []),
     ];
   });
 
@@ -278,7 +282,7 @@ export function exportToCSV(sessions: Session[], eventName: string, language: st
     ...rows.map(row => row.map(escapeCSV).join(",")),
   ].join("\n");
 
-  downloadFile(csvContent, `${eventName || "schedule"}.csv`, "text/csv");
+  downloadFile(csvContent, `${opts.filename || eventName || "schedule"}.csv`, "text/csv");
 }
 
 function sanitizeTzid(tz: string | undefined): string {
