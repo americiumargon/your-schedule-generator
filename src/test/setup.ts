@@ -1,4 +1,5 @@
 // Test environment setup for Vitest (jsdom)
+import jsPDF from "jspdf";
 
 declare global {
   // eslint-disable-next-line no-var
