@@ -102,10 +102,11 @@ export function exportToPDF(
   ): { text: string; size: number } => {
     doc.setFont("helvetica", style);
     let size = startSize;
-    while (size > minSize && doc.getStringUnitWidth(text) * size > maxW) {
-      size -= 1;
-    }
     doc.setFontSize(size);
+    while (size > minSize && doc.getTextWidth(text) > maxW) {
+      size -= 1;
+      doc.setFontSize(size);
+    }
     let out = text;
     if (doc.getTextWidth(out) > maxW) {
       const ellipsis = "…";
@@ -116,6 +117,7 @@ export function exportToPDF(
     }
     return { text: out, size };
   };
+
 
   const titleSrc = branding.orgName || eventName || "Schedule";
   const title = fitText(titleSrc, headerTextMaxW, 18, 12, "bold");
