@@ -21,6 +21,15 @@ URL.createObjectURL = ((blob: Blob) => {
 
 URL.revokeObjectURL = (() => {}) as typeof URL.revokeObjectURL;
 
+// Patch jsPDF save() to capture the produced PDF as a Blob, since jsdom's
+// download path may not reliably invoke URL.createObjectURL.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(jsPDF as any).API.save = function (this: jsPDF) {
+  const ab = this.output("arraybuffer") as ArrayBuffer;
+  globalThis.__capturedBlobs.push(new Blob([ab], { type: "application/pdf" }));
+  return this;
+};
+
 Object.defineProperty(window, "matchMedia", {
   writable: true,
   value: (query: string) => ({
