@@ -372,7 +372,7 @@ export function encodeDraftState(state: DraftFormState): string {
       return tr;
     });
   }
-  return b64urlEnc(JSON.stringify(token));
+  return encodeToken(JSON.stringify(token));
 }
 
 export function buildShareUrl(state: ShareFormState): string {
