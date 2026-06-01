@@ -254,13 +254,13 @@ export function ScheduleDisplay({ eventName, sessions, location, notes, timezone
     return sessions.filter((_, idx) => enabledSessions.has(idx));
   };
 
-  const handleExport = (format: "csv" | "ics" | "pdf") => {
+  const handleExport = (format: "csv" | "ics" | "pdf", scope: ExportScope = "combined") => {
     const enabled = getEnabledSessions();
     if (enabled.length === 0) {
       toast.error(t('export.errorNoSessions'));
       return;
     }
-    onExport(format, enabled, i18n.language);
+    onExport(format, enabled, i18n.language, scope);
   };
 
   const [copyFormat, setCopyFormat] = useState<CopyFormat>("markdown");
