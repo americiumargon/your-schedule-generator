@@ -224,6 +224,8 @@ function subjectFor(eventName: string, sessionNumber: number, sessionWord: strin
 }
 
 export function exportToCSV(sessions: Session[], eventName: string, language: string = 'en', opts: ExportOptions = {}): void {
+  validateExportOptions(opts);
+  assertValidSessionDates(sessions);
   const t = language === 'id' ? id : en;
   const includeTrack = !!opts.includeTrackColumn;
 
