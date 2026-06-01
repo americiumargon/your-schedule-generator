@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { generateProject } from "@/utils/projectGenerator";
-import { createTrack } from "@/utils/tracks";
+import { createTrack, wouldCreateCycle, findCycleTrackIds } from "@/utils/tracks";
 import type { ProjectState } from "@/utils/tracks";
 
 function baseProject(overrides: Partial<ProjectState> = {}): ProjectState {
