@@ -139,14 +139,18 @@ const Index = () => {
     });
   };
 
-  const handleExport = (format: "csv" | "ics", enabledSessions: Session[], language: string) => {
+  const handleExport = (format: "csv" | "ics" | "pdf", enabledSessions: Session[], language: string) => {
     const opts = { location, notes, reminderMinutes, timezone };
     if (format === "csv") {
       exportToCSV(enabledSessions, eventName, language, opts);
       toast.success(t('export.successCsv'));
-    } else {
+    } else if (format === "ics") {
       exportToICS(enabledSessions, eventName, language, opts);
       toast.success(t('export.successIcs'));
+    } else {
+      const branding = loadBranding();
+      exportToPDF(enabledSessions, eventName, language, opts, branding, t);
+      toast.success(t('export.successPdf'));
     }
   };
 
