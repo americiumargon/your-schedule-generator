@@ -266,10 +266,52 @@ function decodeV2(parsed: z.infer<typeof v2Token>): ShareFormState | null {
   };
 }
 
+function decodeV3(parsed: z.infer<typeof v3Token>): ShareFormState {
+  const startDate = parsed.sd ? parseDate(parsed.sd) ?? undefined : undefined;
+  const endDate = parsed.ed ? parseDate(parsed.ed) ?? undefined : undefined;
+  const holidays: Date[] = [];
+  for (const s of parsed.h ?? []) {
+    const d = parseDate(s);
+    if (d) holidays.push(d);
+  }
+  const tracks: Track[] = (parsed.tr ?? []).map((tr, idx) => {
+    const slots = (tr.ts && tr.ts.length > 0
+      ? tr.ts.map((s) => ({ startTime: s.s ?? "", endTime: s.e ?? "", label: s.l }))
+      : [{ startTime: "", endTime: "", label: undefined as string | undefined }]);
+    return createTrack({
+      id: tr.id,
+      name: tr.n,
+      color: tr.c,
+      selectedDays: tr.d,
+      timeSlots: slots,
+      recurrence: decRec(tr.rec),
+      location: tr.l,
+      notes: tr.nt,
+      startDate: tr.sd ? parseDate(tr.sd) ?? undefined : undefined,
+      startsAfter: tr.sa,
+    }, idx);
+  });
+  // Cast: ShareFormState requires startDate, but ScheduleForm tolerates
+  // undefined via its initializer fallbacks. This is the only consumer.
+  return {
+    projectName: parsed.pn ?? "",
+    startDate: startDate as Date,
+    mode: parsed.m ?? "count",
+    numberOfMeetings: parsed.c,
+    endDate,
+    holidays,
+    holidayBehavior: (parsed.hb ?? "skip") as HolidayBehavior,
+    reminderMinutes: parsed.r ?? 0,
+    timezone: parsed.tz ?? "",
+    tracks,
+  };
+}
+
 export function decodeShareState(token: string): ShareFormState | null {
   try {
     const json = b64urlDec(token);
     const parsed = tokenSchema.parse(JSON.parse(json));
+    if (parsed.v === 3) return decodeV3(parsed);
     if (parsed.v === 2) return decodeV2(parsed);
     return decodeV1(parsed);
   } catch (e) {
@@ -278,8 +320,53 @@ export function decodeShareState(token: string): ShareFormState | null {
   }
 }
 
+export function encodeDraftState(state: DraftFormState): string {
+  const fmtIf = (d: Date | undefined) => (d ? fmtDate(d) : undefined);
+  const token: Record<string, unknown> = { v: 3 };
+  if (state.projectName) token.pn = state.projectName;
+  if (state.startDate) token.sd = fmtIf(state.startDate);
+  if (state.mode) token.m = state.mode;
+  if (state.mode === "count" && state.numberOfMeetings != null) token.c = state.numberOfMeetings;
+  if (state.mode === "endDate" && state.endDate) token.ed = fmtIf(state.endDate);
+  if (state.holidays && state.holidays.length > 0) token.h = state.holidays.map(fmtDate);
+  if (state.holidayBehavior && state.holidayBehavior !== "skip") token.hb = state.holidayBehavior;
+  if (state.reminderMinutes != null && state.reminderMinutes !== 0) token.r = state.reminderMinutes;
+  if (state.timezone) token.tz = state.timezone;
+  if (state.tracks && state.tracks.length > 0) {
+    token.tr = state.tracks.map((t) => {
+      const tr: Record<string, unknown> = {};
+      if (t.id) tr.id = t.id;
+      if (t.name) tr.n = t.name;
+      if (t.color) tr.c = t.color;
+      if (t.selectedDays && t.selectedDays.length > 0) tr.d = t.selectedDays;
+      if (t.timeSlots && t.timeSlots.length > 0) {
+        tr.ts = t.timeSlots.map((s) => {
+          const slot: Record<string, unknown> = {};
+          if (s.startTime) slot.s = s.startTime;
+          if (s.endTime) slot.e = s.endTime;
+          if (s.label) slot.l = s.label;
+          return slot;
+        });
+      }
+      if (t.recurrence) tr.rec = encRec(t.recurrence);
+      if (t.location) tr.l = t.location;
+      if (t.notes) tr.nt = t.notes;
+      if (t.startDate) tr.sd = fmtDate(t.startDate);
+      if (t.startsAfter) tr.sa = t.startsAfter;
+      return tr;
+    });
+  }
+  return b64urlEnc(JSON.stringify(token));
+}
+
 export function buildShareUrl(state: ShareFormState): string {
   const token = encodeShareState(state);
+  const { origin, pathname } = window.location;
+  return `${origin}${pathname}#s=${token}`;
+}
+
+export function buildDraftUrl(state: DraftFormState): string {
+  const token = encodeDraftState(state);
   const { origin, pathname } = window.location;
   return `${origin}${pathname}#s=${token}`;
 }
