@@ -1,6 +1,19 @@
 import { z } from "zod";
-import { sanitizeTzid } from "./scheduleGenerator";
 import type { ExportOptions } from "./scheduleGenerator";
+
+// Local TZ check (avoids circular import with scheduleGenerator).
+function isValidTimezone(tz: string): boolean {
+  if (/[\r\n\t\x00-\x1F\x7F]/.test(tz)) return false;
+  try {
+    const anyIntl = Intl as unknown as { supportedValuesOf?: (k: string) => string[] };
+    if (typeof anyIntl.supportedValuesOf === "function") {
+      return anyIntl.supportedValuesOf("timeZone").includes(tz);
+    }
+  } catch {
+    // fall through
+  }
+  return /^[A-Za-z0-9_+\-/]+$/.test(tz);
+}
 
 // Constants shared with UI
 export const MIN_YEAR = 1970;
