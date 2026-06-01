@@ -753,6 +753,22 @@ export function ScheduleForm({ onGenerate, initialState }: Props) {
             </div>
           </div>
         </div>
+
+        {/* Subtle upgrade path for casual users */}
+        {!isMulti && (
+          <div className="pt-1">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={addTrack}
+              className="text-muted-foreground hover:text-foreground gap-1.5 -ml-2"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              {t('tracks.add')}
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* ===================== ADVANCED ===================== */}
