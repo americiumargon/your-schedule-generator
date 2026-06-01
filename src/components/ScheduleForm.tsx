@@ -130,6 +130,7 @@ function draftToTrack(d: TrackDraft): Track {
     location: d.location.trim() || undefined,
     notes: d.notes.trim() || undefined,
     startDate: d.startDate,
+    startsAfter: d.startsAfter,
   };
 }
 
