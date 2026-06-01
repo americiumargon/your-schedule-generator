@@ -4,15 +4,14 @@ import type { ExportOptions } from "./scheduleGenerator";
 // Local TZ check (avoids circular import with scheduleGenerator).
 function isValidTimezone(tz: string): boolean {
   if (/[\r\n\t\x00-\x1F\x7F]/.test(tz)) return false;
+  if (tz === "UTC") return true;
   try {
-    const anyIntl = Intl as unknown as { supportedValuesOf?: (k: string) => string[] };
-    if (typeof anyIntl.supportedValuesOf === "function") {
-      return anyIntl.supportedValuesOf("timeZone").includes(tz);
-    }
+    // Trust the runtime: if Intl can format with this zone, accept it.
+    new Intl.DateTimeFormat("en-US", { timeZone: tz }).format(new Date());
+    return true;
   } catch {
-    // fall through
+    return false;
   }
-  return /^[A-Za-z0-9_+\-/]+$/.test(tz);
 }
 
 // Constants shared with UI
