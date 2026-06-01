@@ -9,13 +9,9 @@ import JSZip from "jszip";
 type Captured = { filename: string; bytes: Uint8Array; type: string };
 const captured: Captured[] = [];
 
-const fakeAnchor = {
-  href: "",
-  download: "",
-  click() {
-    /* resolved via fetch below */
-  },
-} as unknown as HTMLAnchorElement;
+(globalThis as any).window = globalThis;
+(globalThis as any).navigator = { userAgent: "node" };
+(globalThis as any).self = globalThis;
 
 const blobMap = new Map<string, Blob>();
 let counter = 0;
@@ -32,25 +28,31 @@ let counter = 0;
   },
 };
 
+const pendingClicks: Promise<void>[] = [];
 (globalThis as any).document = {
   createElement(tag: string) {
-    if (tag !== "a") throw new Error(`unexpected createElement(${tag})`);
     const a: any = {
+      tagName: tag.toUpperCase(),
+      style: {},
+      setAttribute(_k: string, _v: string) {},
       href: "",
       download: "",
-      async click() {
+      rel: "",
+      target: "",
+      click() {
         const blob = blobMap.get(a.href);
-        if (!blob) throw new Error("no blob for " + a.href);
-        const buf = new Uint8Array(await blob.arrayBuffer());
-        captured.push({ filename: a.download, bytes: buf, type: blob.type });
+        if (!blob) return;
+        const p = blob.arrayBuffer().then((buf) => {
+          captured.push({ filename: a.download || "unnamed", bytes: new Uint8Array(buf), type: blob.type });
+        });
+        pendingClicks.push(p);
       },
     };
     return a;
   },
-  body: {
-    appendChild(_n: any) {},
-    removeChild(_n: any) {},
-  },
+  body: { appendChild() {}, removeChild() {} },
+  head: { appendChild() {}, removeChild() {} },
+  documentElement: { appendChild() {}, removeChild() {} },
 };
 
 // ---- Imports (after shims) ---------------------------------------------
@@ -127,19 +129,21 @@ function take() {
 }
 
 // Combined exports
-exportToCSV(combined as any, project.projectName, "en", opts);
-exportToICS(combined as any, project.projectName, "en", opts);
-exportToPDF(combined as any, project.projectName, "en", opts, branding as any, t);
-// downloadFile is synchronous-ish; allow microtasks
-await new Promise((r) => setTimeout(r, 50));
+try { exportToCSV(combined as any, project.projectName, "en", opts); } catch (e) { console.error("CSV failed:", e); }
+try { exportToICS(combined as any, project.projectName, "en", opts); } catch (e) { console.error("ICS failed:", e); }
+try { exportToPDF(combined as any, project.projectName, "en", opts, branding as any, t); } catch (e) { console.error("PDF failed:", e); }
+await Promise.all(pendingClicks.splice(0));
 const combinedFiles = take();
+console.log("Combined captured:", combinedFiles.map((f) => f.filename));
 
 // Per-track ZIP
 for (const fmt of ["csv", "ics", "pdf"] as const) {
-  await exportPerTrackZip(byTrack as any, project.tracks as any, project.projectName, fmt, opts, branding as any, t, "en");
+  try { await exportPerTrackZip(byTrack as any, project.tracks as any, project.projectName, fmt, opts, branding as any, t, "en"); }
+  catch (e) { console.error(`ZIP ${fmt} failed:`, e); }
 }
-await new Promise((r) => setTimeout(r, 50));
+await Promise.all(pendingClicks.splice(0));
 const zipFiles = take();
+console.log("ZIP captured:", zipFiles.map((f) => f.filename));
 
 // ---- Persist + assert ---------------------------------------------------
 const results: Record<string, string> = {};
@@ -161,7 +165,7 @@ assert("combined CSV has Class column", csvText.split("\n")[0].includes("Class")
 assert("combined CSV mentions Beginner", csvText.includes("Beginner"));
 assert("combined CSV mentions Advanced", csvText.includes("Advanced"));
 assert("combined CSV has Track: lines", csvText.includes("Track: Beginner") && csvText.includes("Track: Advanced"));
-const csvRows = csvText.split("\n").length - 1;
+const csvRows = (csvText.match(/^"Spring Term - /gm) ?? []).length;
 assert("combined CSV row count == combined sessions", csvRows === combined.length, `(${csvRows} vs ${combined.length})`);
 
 // Combined ICS
