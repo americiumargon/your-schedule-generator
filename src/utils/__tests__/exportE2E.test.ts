@@ -110,8 +110,15 @@ describe("Export E2E (browser environment)", () => {
     expect(params.get("dates")).toBe("20260105T090000Z/20260105T100000Z");
   });
 
-  it("builds a Google Calendar URL with RRULE for a recurring multi-session schedule", () => {
-    const sessions = makeSessions();
+  it("builds a Google Calendar URL with RRULE for a clean recurring schedule", () => {
+    // No holiday skips so the result is a representable weekly pattern.
+    const sessions = generateSchedule({
+      startDate: new Date(2026, 0, 5),
+      selectedDays: [1, 3],
+      timeSlots: [{ startTime: "09:00", endTime: "10:00" }],
+      mode: "count",
+      numberOfMeetings: 6,
+    });
     const result = buildGoogleCalendarUrl(EVENT_NAME, sessions, undefined, undefined, "UTC");
 
     expect("url" in result && result.url).toBeTruthy();
