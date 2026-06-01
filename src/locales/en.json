@@ -96,6 +96,7 @@
     "reminderDays": "{{count}} day before",
     "reminderDays_other": "{{count}} days before",
     "generateButton": "Generate schedule",
+    "saveDraft": "Save draft (copy link)",
     "validation": {
       "eventNameRequired": "Enter a session label",
       "projectNameRequired": "Enter a schedule name",
@@ -221,6 +222,7 @@
     "copyFailed": "Failed to copy schedule",
     "linkCopied": "Share link copied",
     "linkCopyFailed": "Failed to copy link",
+    "draftLinkCopied": "Draft link copied — open it later to keep editing",
     "loadedFromLink": "Loaded from shared link",
     "linkInvalid": "Shared link is invalid or outdated",
     "undo": "Undo",

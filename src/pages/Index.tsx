@@ -15,9 +15,11 @@ import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import {
   buildShareUrl,
+  buildDraftUrl,
   decodeShareState,
   readShareTokenFromHash,
   type ShareFormState,
+  type DraftFormState,
 } from "@/utils/shareLink";
 import { saveRecent } from "@/utils/recentSchedules";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
@@ -137,6 +139,16 @@ const Index = () => {
     }
   };
 
+  const handleSaveDraft = async (draft: DraftFormState) => {
+    try {
+      const url = buildDraftUrl(draft);
+      await navigator.clipboard.writeText(url);
+      toast.success(t('toast.draftLinkCopied'));
+    } catch {
+      toast.error(t('toast.linkCopyFailed'));
+    }
+  };
+
   const handleClear = () => {
     if (sessions.length === 0) return;
     const prevSessions = sessions;
@@ -236,7 +248,7 @@ const Index = () => {
             <div className="bg-card rounded-xl shadow-lg p-4 lg:p-6 lg:sticky lg:top-24 space-y-4">
               <h2 className="text-xl font-semibold">{t('form.title')}</h2>
               {hydrated && (
-                <ScheduleForm onGenerate={handleGenerate} initialState={initialFormState} />
+                <ScheduleForm onGenerate={handleGenerate} onSaveDraft={handleSaveDraft} initialState={initialFormState} />
               )}
               <BrandingSection />
             </div>

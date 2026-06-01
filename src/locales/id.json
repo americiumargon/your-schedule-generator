@@ -92,6 +92,7 @@
     "reminderHours": "{{count}} jam sebelumnya",
     "reminderDays": "{{count}} hari sebelumnya",
     "generateButton": "Buat jadwal",
+    "saveDraft": "Simpan draf (salin tautan)",
     "validation": {
       "eventNameRequired": "Masukkan label sesi",
       "projectNameRequired": "Masukkan nama jadwal",
@@ -216,6 +217,7 @@
     "copyFailed": "Gagal menyalin jadwal",
     "linkCopied": "Tautan berbagi disalin",
     "linkCopyFailed": "Gagal menyalin tautan",
+    "draftLinkCopied": "Tautan draf disalin — buka nanti untuk melanjutkan",
     "loadedFromLink": "Dimuat dari tautan berbagi",
     "linkInvalid": "Tautan berbagi tidak valid atau kedaluwarsa",
     "undo": "Batalkan",

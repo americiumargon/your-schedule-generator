@@ -144,6 +144,7 @@ function defaultDraft(idx = 0, withDefaultTime = false): TrackDraft {
 
 interface Props {
   onGenerate: (project: ProjectState) => void;
+  onSaveDraft?: (draft: Partial<ProjectState>) => void;
   initialState?: ProjectState;
 }
 
@@ -164,7 +165,7 @@ function SectionHeader({ icon: Icon, title, hint }: SectionHeaderProps) {
   );
 }
 
-export function ScheduleForm({ onGenerate, initialState }: Props) {
+export function ScheduleForm({ onGenerate, onSaveDraft, initialState }: Props) {
   const { t, i18n } = useTranslation();
   const browserTz = useMemo(() => getBrowserTimezone(), []);
   const dateLocale = i18n.language === 'id' ? idLocale : enUS;
@@ -1018,13 +1019,39 @@ export function ScheduleForm({ onGenerate, initialState }: Props) {
         </CollapsibleContent>
       </Collapsible>
 
-      <div className="sticky bottom-0 -mx-4 px-4 py-3 bg-card/95 backdrop-blur border-t border-border lg:static lg:bg-transparent lg:border-0 lg:p-0 lg:mx-0 lg:backdrop-blur-none z-10">
+      <div className="sticky bottom-0 -mx-4 px-4 py-3 bg-card/95 backdrop-blur border-t border-border lg:static lg:bg-transparent lg:border-0 lg:p-0 lg:mx-0 lg:backdrop-blur-none z-10 space-y-2">
         <Button type="submit" className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity gap-2" size="lg">
           <span>{t('form.generateButton')}</span>
           <kbd className="hidden sm:inline-flex text-[10px] font-mono bg-primary-foreground/15 px-1.5 py-0.5 rounded border border-primary-foreground/20">
             {modLabel}+Enter
           </kbd>
         </Button>
+        {onSaveDraft && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="w-full gap-2"
+            onClick={() => {
+              const numParsed = parseInt(numberOfMeetings);
+              onSaveDraft({
+                projectName: projectName.trim() || undefined,
+                startDate,
+                mode,
+                numberOfMeetings:
+                  mode === "count" && !isNaN(numParsed) && numParsed > 0 ? numParsed : undefined,
+                endDate: mode === "endDate" ? endDate : undefined,
+                holidays,
+                holidayBehavior,
+                reminderMinutes,
+                timezone,
+                tracks: drafts.map(draftToTrack),
+              });
+            }}
+          >
+            {t('form.saveDraft')}
+          </Button>
+        )}
       </div>
     </form>
   );
