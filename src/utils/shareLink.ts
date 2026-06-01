@@ -137,6 +137,21 @@ function b64urlDec(s: string): string {
   return decodeURIComponent(escape(atob(p)));
 }
 
+/** Compact, URL-safe encoding. Uses lz-string for ~40-60% shorter share links.
+ *  Prefixed with "1" so we can evolve the wire format later. */
+function encodeToken(json: string): string {
+  return "1" + LZString.compressToEncodedURIComponent(json);
+}
+/** Decodes new "1…" tokens (lz-string) and falls back to legacy base64url for
+ *  links generated before compression was introduced. */
+function decodeToken(token: string): string {
+  if (token.startsWith("1")) {
+    const out = LZString.decompressFromEncodedURIComponent(token.slice(1));
+    if (out) return out;
+  }
+  return b64urlDec(token);
+}
+
 function encRec(rec: Recurrence) {
   if (rec.type === "weekly") return { t: "weekly" as const, i: rec.interval };
   if (rec.type === "monthlyByWeekday") return { t: "monthlyByWeekday" as const, o: rec.ordinals };
