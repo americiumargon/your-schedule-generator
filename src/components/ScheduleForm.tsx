@@ -507,9 +507,9 @@ export function ScheduleForm({ onGenerate, onSaveDraft, initialState }: Props) {
         firstInvalid?.scrollIntoView({ behavior: "smooth", block: "center" });
         firstInvalid?.focus?.();
       });
-      // surface track-level error
       const firstTrackErr = perTrack[Object.keys(perTrack)[0] ?? ""];
-      if (firstTrackErr) toast.error(firstTrackErr);
+      const topErr = next.timezone ?? next.reminderMinutes ?? next.startDate ?? next.endDate ?? next.numberOfMeetings ?? firstTrackErr;
+      if (topErr) toast.error(topErr);
       return;
     }
 
