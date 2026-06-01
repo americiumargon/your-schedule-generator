@@ -229,8 +229,8 @@
     "remove": "Hapus",
     "clearAll": "Hapus semua",
     "createdAgo": "Dibuat {{ago}}",
-    "trackCount": "{{count}} trek",
-    "trackCount_other": "{{count}} trek"
+    "trackCount": "{{count}} grup",
+    "trackCount_other": "{{count}} grup"
   },
   "theme": {
     "toggleLight": "Ganti ke mode terang",
