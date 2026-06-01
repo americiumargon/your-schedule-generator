@@ -1,74 +1,100 @@
 ## Goal
-Simplify the form for casual users (single schedule, no jargon) while keeping every existing feature one click away under **More options**.
+Let users save their in-progress form as a shareable link they can paste anywhere, then resume on another device by opening that link — even if the form was never generated.
 
-## Guiding principle
-*One group = one schedule.* The words "group" and "session label" should not appear in the UI until the user opts into multi-group mode by clicking **Add another group**.
+## What works today
+- Share links already exist (`buildShareUrl` / `decodeShareState` / `readShareTokenFromHash`).
+- `Index.tsx` already reads `#s=…` on mount and pipes it into `ScheduleForm` via `initialState`.
+- Today's flow only allows sharing **after** a successful Generate — the share button lives in `ScheduleDisplay`.
 
-## Decisions
-- Keep the term **"Groups"** (no rename) — minimal churn, i18n stays intact.
-- **Auto-mirror** the session label to the schedule name when only one group exists.
-- Skip the "one-click preset chips" empty state for this pass.
-- Timezone, location, reminder, branding stay in **More options** (already there).
+## Gap
+1. No way to save/share form state *before* generation.
+2. The share-link Zod schema requires fully-valid data (`pn.min(1)`, `ts.min(1)`, time format, recurrence shape, etc.). A half-filled form can't be encoded, and a half-filled link can't be decoded.
 
 ## Changes
 
-### 1. `ScheduleForm.tsx` — Essentials, single-group mode
-When `drafts.length === 1`:
-- **Hide the `TrackTabs`** block entirely (lines ~468-483).
-- **Hide the "Session label" (eventName) input** (lines ~485-513). The active group's `name` is kept in sync with `projectName` automatically via a `useEffect`: `if (drafts.length === 1) updateActive({ name: projectName })`.
-- **Hide the entire "Per-group start date override" block** (lines ~543-621).
-- **Rename label** `form.projectName` from "Program name" → **"Schedule name"** (EN) / **"Nama jadwal"** (ID). Update placeholder accordingly.
+### 1. `src/utils/shareLink.ts` — add v3 "draft" token
+A new variant where every field is optional and validators are loose:
 
-When `drafts.length >= 2`:
-- All hidden blocks reappear, and the "Session label" field is editable inside each group's tab (current behavior).
-- Add a small **"Add another group"** button visible in single-group mode too, so the upgrade path is discoverable. Place it as a subtle text button under the form near the bottom of Essentials: `+ Add another group`.
-
-### 2. Reorder Essentials
-New order:
+```ts
+const v3Token = z.object({
+  v: z.literal(3),
+  pn: z.string().max(100).optional(),
+  sd: dateStr.optional(),
+  m: z.enum(["count", "endDate"]).optional(),
+  c: z.number().int().min(1).max(366).optional(),
+  ed: dateStr.optional(),
+  h: z.array(dateStr).max(366).optional(),
+  hb: z.enum(["skip", "rollForward"]).optional(),
+  r: z.number().optional(),
+  tz: z.string().max(100).optional(),
+  tr: z.array(draftTrackSchema).max(12).optional(),
+});
 ```
-1. Schedule name
-2. Start date
-3. End the schedule  [After N sessions | On specific date]
-4. Days of the week
-5. Session time
-( + Add another group  — text button, single-group mode only )
+
+Where `draftTrackSchema` mirrors `trackSchema` but with `n`, `d`, `ts`, `rec` all optional and `ts` items allowing empty `s`/`e` strings.
+
+Add a new exported type:
+```ts
+export type DraftFormState = Partial<ShareFormState> & { tracks?: Partial<Track>[] };
 ```
-The "End the schedule" mode block moves up to sit directly under Start date (currently it sits after the per-group override block).
 
-### 3. Smarter defaults (only when `initialState` is absent)
-- `startDate` defaults to **next Monday** at form mount (using `date-fns` `nextMonday(new Date())`).
-- First time slot defaults to **`09:00`–`10:00`**.
-- `numberOfMeetings` default input value = **`"8"`**.
-- These defaults only apply on fresh mount, never when loading from share link / recent.
+Export new functions:
+- `encodeDraftState(state: DraftFormState): string` — emits a v3 token, omits empty/undefined fields, b64url-encodes.
+- Extend `decodeShareState` to recognize v3 and return a `DraftFormState` (cast through to `ShareFormState` since `ScheduleForm`'s `initialState` already tolerates undefined fields in every initializer — verified line-by-line).
 
-### 4. `ScheduleDisplay.tsx` — single-group polish
-When the generated project has only one group:
-- Hide the **"Export as: Combined / One file per group"** scope toggle.
-- Hide the **"Group" column** in the schedule table (verify current behavior; conditionally render).
+Existing v1/v2 paths stay untouched for back-compat.
 
-### 5. i18n
-Update existing keys, no new keys required:
-- EN `form.projectName`: "Program name" → "Schedule name"
-- EN `form.projectNamePlaceholder`: → "e.g. Yoga class, Team standup, Spring semester"
-- ID `form.projectName`: "Nama program" → "Nama jadwal"
-- ID `form.projectNamePlaceholder`: → "contoh: Kelas yoga, Rapat tim, Semester genap"
-- EN `tracks.add`: keep "Add another group" (already exists, just surfaced in a new spot).
+### 2. `ScheduleForm.tsx` — expose current draft + add "Save draft" button
+- Add an optional `onSaveDraft?: (draft: DraftFormState) => void` prop.
+- Add a small **"Save draft"** button next to the existing **Generate schedule** button at the bottom of the form. Button is always enabled (the whole point is partial state).
+- Builds the current draft object from local state:
+  ```ts
+  const buildDraft = (): DraftFormState => ({
+    projectName: projectName || undefined,
+    startDate, mode, numberOfMeetings: parseInt(numberOfMeetings) || undefined,
+    endDate, holidays, holidayBehavior, reminderMinutes, timezone,
+    tracks: drafts.map(draftToTrack), // drafts already mostly safe
+  });
+  ```
+  Pass to `onSaveDraft`.
 
-### 6. Validation tweak
-`form.validation.eventNameRequired` is currently checked per draft. When single-group + auto-mirrored, the eventName comes from projectName, so projectName-required is sufficient. Keep the per-draft check (still relevant for multi-group), but make sure the toast doesn't fire if the only failure is the auto-mirrored name being empty (the projectName error already covers it).
+### 3. `Index.tsx` — wire it up
+- Add `handleSaveDraft`:
+  ```ts
+  const handleSaveDraft = async (draft: DraftFormState) => {
+    try {
+      const token = encodeDraftState(draft);
+      const { origin, pathname } = window.location;
+      await navigator.clipboard.writeText(`${origin}${pathname}#s=${token}`);
+      toast.success(t('toast.draftLinkCopied'));
+    } catch {
+      toast.error(t('toast.linkCopyFailed'));
+    }
+  };
+  ```
+- Pass `onSaveDraft={handleSaveDraft}` to `<ScheduleForm>`.
+- The existing `decodeShareState` call in the mount effect already returns a usable shape (v3 returns partial); the toast message stays the same (`toast.loadedFromLink`).
 
-## What stays exactly the same
-- Generation logic, exports (CSV/ICS/PDF/Google), share links, recent schedules, branding, recurrence types, holidays, per-group startsAfter/cycle detection — untouched.
-- Multi-group experience is unchanged once unlocked.
+### 4. i18n
+Add to `en.json` and `id.json`:
+- `form.saveDraft` — "Save draft" / "Simpan draf"
+- `form.saveDraftHelper` — "Copy a link to continue later" / "Salin tautan untuk dilanjutkan nanti" (tooltip / sr text)
+- `toast.draftLinkCopied` — "Draft link copied" / "Tautan draf disalin"
+
+### 5. Tests
+Extend `src/utils/__tests__/exportE2E.test.ts` or add `src/utils/__tests__/shareLink.test.ts`:
+- Encode an empty draft → decode → returns empty `DraftFormState` (no throw).
+- Encode partial draft (name only, no startDate) → decode round-trips name, leaves other fields undefined.
+- v2 fully-valid token still decodes correctly (regression).
 
 ## Files touched
-- `src/components/ScheduleForm.tsx` (bulk of work: conditional rendering, reorder, auto-mirror effect, defaults, "Add another group" CTA)
-- `src/components/ScheduleDisplay.tsx` (conditional hide of scope toggle + Group column)
-- `src/locales/en.json`, `src/locales/id.json` (label rewording)
+- `src/utils/shareLink.ts` (add v3 schema + `encodeDraftState`, extend `decodeShareState`)
+- `src/components/ScheduleForm.tsx` (add `onSaveDraft` prop + button)
+- `src/pages/Index.tsx` (add `handleSaveDraft`, pass prop)
+- `src/locales/en.json`, `src/locales/id.json`
+- new `src/utils/__tests__/shareLinkDraft.test.ts`
 
 ## Out of scope
-- Visual redesign / color / typography changes.
-- New empty-state preset chips.
-- Renaming "Groups" to "Classes."
-- Removing any feature.
-- Changes to exports, scheduling math, or share-link format.
+- Silent auto-save to localStorage (the manual "Save draft" + share link already supports cross-device use).
+- Multiple named drafts (Recents already covers post-generation; can revisit later).
+- Sync via Lovable Cloud (still client-side per project memory).
