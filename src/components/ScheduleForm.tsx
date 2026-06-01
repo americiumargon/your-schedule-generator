@@ -360,6 +360,10 @@ export function ScheduleForm({ onGenerate, initialState }: Props) {
         perTrack[d.id] = t('form.validation.timeRequired');
         continue;
       }
+      if (d.startDate && startDate && d.startDate < startDate) {
+        perTrack[d.id] = t('tracks.startBeforeProject');
+        continue;
+      }
     }
 
     if (Object.keys(perTrack).length > 0) {
