@@ -5,6 +5,8 @@
   },
   "form": {
     "title": "Detail jadwal",
+    "projectName": "Nama proyek",
+    "projectNamePlaceholder": "contoh: Semester genap, Kemah musim panas",
     "eventName": "Nama aktivitas",
     "eventNamePlaceholder": "contoh: Olahraga pagi, Rapat tim, Sesi belajar",
     "startDate": "Tanggal sesi pertama",
@@ -90,6 +92,7 @@
     "generateButton": "Buat jadwal",
     "validation": {
       "eventNameRequired": "Masukkan nama aktivitas",
+      "projectNameRequired": "Masukkan nama proyek",
       "dateRequired": "Pilih tanggal mulai",
       "meetingsRequired": "Jumlah sesi minimal 1",
       "daysRequired": "Pilih setidaknya satu hari dalam seminggu",
@@ -223,5 +226,16 @@
   "theme": {
     "toggleLight": "Ganti ke mode terang",
     "toggleDark": "Ganti ke mode gelap"
+  },
+  "tracks": {
+    "title": "Kelas",
+    "hint": "Rencanakan beberapa kelas dalam satu proyek",
+    "add": "Tambah kelas",
+    "rename": "Ganti nama",
+    "duplicate": "Duplikat",
+    "delete": "Hapus",
+    "color": "Warna",
+    "newName": "Kelas",
+    "minOne": "Minimal satu kelas diperlukan"
   }
 }
