@@ -62,6 +62,14 @@ const { exportToPDF } = await import("../src/utils/pdfExport");
 const { exportPerTrackZip } = await import("../src/utils/perTrackExport");
 const en = (await import("../src/locales/en.json")).default as any;
 const { newTrackId } = await import("../src/utils/tracks");
+const jsPDFmod: any = (await import("jspdf")).default;
+
+// Patch jsPDF.save to capture bytes directly
+jsPDFmod.API.save = function (filename: string) {
+  const ab = this.output("arraybuffer");
+  captured.push({ filename, bytes: new Uint8Array(ab) });
+  return this;
+};
 
 // ---- t() resolver from en.json ----
 const t = (key: string, opts?: Record<string, unknown>) => {
