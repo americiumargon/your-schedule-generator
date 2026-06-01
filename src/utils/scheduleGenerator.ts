@@ -272,9 +272,31 @@ export function exportToCSV(sessions: Session[], eventName: string, language: st
   downloadFile(csvContent, `${eventName || "schedule"}.csv`, "text/csv");
 }
 
+function sanitizeTzid(tz: string | undefined): string {
+  if (!tz) return "UTC";
+  const stripped = tz.replace(/[\r\n\t\x00-\x1F\x7F]/g, "").trim();
+  if (!stripped) return "UTC";
+  try {
+    const anyIntl = Intl as unknown as { supportedValuesOf?: (k: string) => string[] };
+    if (typeof anyIntl.supportedValuesOf === "function") {
+      const list = anyIntl.supportedValuesOf("timeZone");
+      if (list.includes(stripped)) return stripped;
+      return "UTC";
+    }
+  } catch {
+    // fall through to regex check
+  }
+  return /^[A-Za-z0-9_+\-/]+$/.test(stripped) ? stripped : "UTC";
+}
+
+function sanitizeUidPart(s: string | undefined): string {
+  if (!s) return "";
+  return s.replace(/[^A-Za-z0-9_-]/g, "");
+}
+
 export function exportToICS(sessions: Session[], eventName: string, language: string = 'en', opts: ExportOptions = {}): void {
   const t = language === 'id' ? id : en;
-  const tz = opts.timezone && opts.timezone.trim() ? opts.timezone : "UTC";
+  const tz = sanitizeTzid(opts.timezone);
   const useFloatingTzid = tz !== "UTC";
 
   const formatLocalICS = (date: Date, time: string): string => {
