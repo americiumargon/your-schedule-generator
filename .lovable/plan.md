@@ -1,48 +1,41 @@
-# CI tests for CSV and ICS export (Combined + Per-track ZIP)
+# Clarify the naming hierarchy
 
-Extend the existing Vitest suite with coverage for the two remaining export formats across both scopes.
+## Why
 
-## What gets added
+Right now the form shows three name-like surfaces stacked together — **Project name**, the **track tab label**, and an **"Activity name"** input — which reads as three competing identifiers. Under the hood there are only two stored values (`projectName` + per-track `name`); the tab label and the "Activity name" input edit the same field, which is the main source of confusion.
 
-### 1. Capture helper update — `src/test/setup.ts`
-`exportToCSV` and `exportToICS` build a `Blob` and trigger download via an anchor + `URL.createObjectURL`. The existing `URL.createObjectURL` patch already pushes every blob into `globalThis.__capturedBlobs`, so no new wiring is needed. We only add a small typed helper export (optional) or rely on the existing global.
+We'll keep the two-field model but rename everything to a clearer hierarchy and visually tie the name input to the active tab so the duplication stops feeling redundant.
 
-### 2. New test file — `src/utils/__tests__/csvIcsExport.test.ts`
-Uses the same 2-track fixture as the PDF test (Beginner Mon/Wed 09:00–10:00, Advanced Tue/Thu 18:00–19:30, 4 sessions per track).
+## New vocabulary
 
-**Combined CSV** (`exportToCSV(..., { includeTrackColumn: true })`)
-- 1 captured blob, mime `text/csv`.
-- First line equals the Google Calendar header with trailing `Class` column.
-- 8 data rows (1 header + 8).
-- Rows contain `09:00 AM`, `06:00 PM`, both track names in the `Class` column.
-- Formula-injection check: a session with notes starting `=cmd` is neutralized with a leading `'`.
+| Old label | New label | What it means |
+|---|---|---|
+| Project name | **Program name** | Top-level container (used for filenames, PDF title, CSV "Class" column header) |
+| Tracks / Track | **Groups / Group** | Parallel sub-schedules (e.g. Beginner, Advanced) |
+| Activity name (per track) | **Session label** | What each generated session is called (used in CSV summary, ICS SUMMARY, PDF rows) |
 
-**Combined ICS** (`exportToICS(...)`)
-- 1 captured blob, mime `text/calendar`.
-- Contains `BEGIN:VCALENDAR` / `END:VCALENDAR`, exactly 8 `BEGIN:VEVENT` blocks.
-- Contains `[Beginner]` and `[Advanced]` summary tags.
-- Contains `DTSTART` lines with `T090000` and `T180000`.
+Indonesian equivalents: Program / Grup / Sesi.
 
-**Per-track ZIP — CSV** (`exportPerTrackZip(..., "csv", ...)`)
-- Last captured blob is a zip; load with `JSZip.loadAsync`.
-- Entries match `Beginner.*\.csv` and `Advanced.*\.csv`.
-- Beginner.csv contains `09:00 AM`, not `18:00`/`06:00 PM`; Advanced.csv inverse.
-- Neither file contains a `Class` column header (per-track files are single-track).
+## UI changes
 
-**Per-track ZIP — ICS** (`exportPerTrackZip(..., "ics", ...)`)
-- Zip contains one `.ics` per track.
-- Each has `BEGIN:VCALENDAR`, 4 `BEGIN:VEVENT` blocks, the correct track's times, and no events from the other track.
+1. **Reorder + relabel the Essentials block** so the hierarchy reads top-down:
+   - `Program name` (was Project name)
+   - Mode picker (unchanged)
+   - `Groups` tab bar (was Tracks) — tab still shows the group's name
+   - Active group panel, headed by `Session label for "<group name>"` — the input that was "Activity name". Helper text: "Used as the title for each generated session. Renames the active tab."
+2. **Visually couple the name input to the tab**: add a thin colored left border on the input matching the active group's color, and a small caption above it like `Editing: <Group A>` so the user immediately sees the input belongs to the tab above.
+3. **Add-group button copy**: "Add another group" instead of "Add track".
+4. **Empty/single-group state**: when only one group exists, the tab bar still shows but with a softer style (already in place); no further change here.
 
-### 3. No CI workflow changes
-`.github/workflows/test.yml` already runs `npm test` which executes the whole Vitest suite — new tests are picked up automatically.
+## Files to touch
 
-## Technical details
+- `src/locales/en.json`, `src/locales/id.json` — rename keys' user-facing strings only (keep JSON keys like `projectName`, `eventName`, `tracks.*` to avoid a code-wide rename). Update: `form.projectName`, `form.projectNamePlaceholder`, `form.eventName`, `form.eventNamePlaceholder`, `form.validation.projectNameRequired`, `form.validation.eventNameRequired`, `tracks.title`, `tracks.hint`, `tracks.add`, plus any "track"/"activity"/"project" copy in `ScheduleDisplay.tsx`, share/export confirmations, and PDF/CSV column headers that the user sees.
+- `src/components/ScheduleForm.tsx` — relabel the two fields, add the "Editing: <group>" caption + colored accent on the Session label input, reorder so the tab bar sits directly above the active group panel (already close — minor spacing tweak).
+- `src/components/TrackTabs.tsx` — update visible "Add" button copy via i18n key; no structural change.
+- No changes to data shape, validation logic, exports, generator, tests, or storage keys. Internal variable names (`projectName`, `trackName`, `activityName`) stay as-is to keep the diff focused on UX.
 
-- `beforeEach` resets `globalThis.__capturedBlobs = []` (already pattern used in pdfExport.test.ts).
-- Blob → text via `await blob.text()` for CSV/ICS assertions.
-- Count `BEGIN:VEVENT` occurrences with `text.match(/BEGIN:VEVENT/g)?.length`.
-- Reuse the local `t()` resolver pattern (only used by the per-track zip API; CSV/ICS exports read locale JSON internally).
-- No production code changes.
+## Out of scope
 
-## Files touched
-- `src/utils/__tests__/csvIcsExport.test.ts` (new)
+- Inline-editing the tab title (deferred — chosen option keeps the separate input).
+- Renaming TypeScript identifiers, file names, or storage keys.
+- Changing export file naming logic.

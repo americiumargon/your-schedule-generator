@@ -5,10 +5,12 @@
   },
   "form": {
     "title": "Detail jadwal",
-    "projectName": "Nama proyek",
+    "projectName": "Nama program",
     "projectNamePlaceholder": "contoh: Semester genap, Kemah musim panas",
-    "eventName": "Nama aktivitas",
-    "eventNamePlaceholder": "contoh: Olahraga pagi, Rapat tim, Sesi belajar",
+    "eventName": "Label sesi",
+    "eventNamePlaceholder": "contoh: Kelas yoga, Rapat tim, Pelajaran matematika",
+    "sessionLabelEditing": "Mengedit grup: {{name}}",
+    "sessionLabelHelper": "Digunakan sebagai judul untuk setiap sesi yang dibuat. Mengubah nama grup aktif di atas.",
     "startDate": "Tanggal sesi pertama",
     "pickDate": "Pilih tanggal",
     "numberOfMeetings": "Jumlah sesi",
@@ -91,8 +93,8 @@
     "reminderDays": "{{count}} hari sebelumnya",
     "generateButton": "Buat jadwal",
     "validation": {
-      "eventNameRequired": "Masukkan nama aktivitas",
-      "projectNameRequired": "Masukkan nama proyek",
+      "eventNameRequired": "Masukkan label sesi",
+      "projectNameRequired": "Masukkan nama program",
       "dateRequired": "Pilih tanggal mulai",
       "meetingsRequired": "Jumlah sesi minimal 1",
       "daysRequired": "Pilih setidaknya satu hari dalam seminggu",
@@ -145,10 +147,10 @@
     "useDefaultPlaceholder": "Memakai default: {{value}}",
     "clearOverride": "Hapus penggantian",
     "overrideBadge": "diganti",
-    "colTrack": "Trek",
+    "colTrack": "Grup",
     "exportScope": "Ekspor sebagai",
     "exportScopeCombined": "Satu file gabungan",
-    "exportScopePerTrack": "Satu file per trek (ZIP)"
+    "exportScopePerTrack": "Satu file per grup (ZIP)"
   },
   "summary": {
     "totalSessions": "Sesi",
@@ -181,7 +183,7 @@
       "time": "Waktu",
       "location": "Lokasi",
       "notes": "Catatan",
-      "track": "Trek"
+      "track": "Grup"
     }
   },
   "branding": {
@@ -227,22 +229,22 @@
     "remove": "Hapus",
     "clearAll": "Hapus semua",
     "createdAgo": "Dibuat {{ago}}",
-    "trackCount": "{{count}} trek",
-    "trackCount_other": "{{count}} trek"
+    "trackCount": "{{count}} grup",
+    "trackCount_other": "{{count}} grup"
   },
   "theme": {
     "toggleLight": "Ganti ke mode terang",
     "toggleDark": "Ganti ke mode gelap"
   },
   "tracks": {
-    "title": "Trek",
-    "hint": "Rencanakan beberapa trek dalam satu proyek",
-    "add": "Tambah trek",
+    "title": "Grup",
+    "hint": "Rencanakan beberapa grup dalam satu program",
+    "add": "Tambah grup lain",
     "rename": "Ganti nama",
     "duplicate": "Duplikat",
     "delete": "Hapus",
     "color": "Warna",
-    "newName": "Trek",
-    "minOne": "Minimal satu trek diperlukan"
+    "newName": "Grup",
+    "minOne": "Minimal satu grup diperlukan"
   }
 }

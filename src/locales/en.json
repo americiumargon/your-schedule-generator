@@ -5,10 +5,12 @@
   },
   "form": {
     "title": "Schedule details",
-    "projectName": "Project name",
+    "projectName": "Program name",
     "projectNamePlaceholder": "e.g. Spring semester, Summer camp",
-    "eventName": "Activity name",
-    "eventNamePlaceholder": "e.g. Morning workout, Team standup, Study session",
+    "eventName": "Session label",
+    "eventNamePlaceholder": "e.g. Yoga class, Team standup, Math lesson",
+    "sessionLabelEditing": "Editing group: {{name}}",
+    "sessionLabelHelper": "Used as the title for each generated session. Renames the active group above.",
     "startDate": "First session date",
     "pickDate": "Pick a date",
     "numberOfMeetings": "Number of sessions",
@@ -95,8 +97,8 @@
     "reminderDays_other": "{{count}} days before",
     "generateButton": "Generate schedule",
     "validation": {
-      "eventNameRequired": "Enter an activity name",
-      "projectNameRequired": "Enter a project name",
+      "eventNameRequired": "Enter a session label",
+      "projectNameRequired": "Enter a program name",
       "dateRequired": "Select a start date",
       "meetingsRequired": "Number of sessions must be at least 1",
       "daysRequired": "Select at least one day of the week",
@@ -149,10 +151,10 @@
     "useDefaultPlaceholder": "Using default: {{value}}",
     "clearOverride": "Clear override",
     "overrideBadge": "override",
-    "colTrack": "Track",
+    "colTrack": "Group",
     "exportScope": "Export as",
     "exportScopeCombined": "Combined file",
-    "exportScopePerTrack": "One file per track (ZIP)"
+    "exportScopePerTrack": "One file per group (ZIP)"
   },
   "summary": {
     "totalSessions": "Sessions",
@@ -186,7 +188,7 @@
       "time": "Time",
       "location": "Location",
       "notes": "Notes",
-      "track": "Track"
+      "track": "Group"
     }
   },
   "branding": {
@@ -232,22 +234,22 @@
     "remove": "Remove",
     "clearAll": "Clear all",
     "createdAgo": "Created {{ago}}",
-    "trackCount": "{{count}} track",
-    "trackCount_other": "{{count}} tracks"
+    "trackCount": "{{count}} group",
+    "trackCount_other": "{{count}} groups"
   },
   "theme": {
     "toggleLight": "Switch to light mode",
     "toggleDark": "Switch to dark mode"
   },
   "tracks": {
-    "title": "Tracks",
-    "hint": "Plan multiple tracks in one project",
-    "add": "Add track",
+    "title": "Groups",
+    "hint": "Plan multiple groups within one program",
+    "add": "Add another group",
     "rename": "Rename",
     "duplicate": "Duplicate",
     "delete": "Delete",
     "color": "Color",
-    "newName": "Track",
-    "minOne": "At least one track is required"
+    "newName": "Group",
+    "minOne": "At least one group is required"
   }
 }

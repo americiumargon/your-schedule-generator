@@ -515,20 +515,36 @@ export function ScheduleForm({ onGenerate, initialState }: Props) {
           />
         </div>
 
-        {/* Track name */}
+        {/* Session label (renames the active group's tab) */}
         <div>
-          <Label htmlFor={`trackName-${active.id}`}>{t('form.eventName')}</Label>
+          <div className="flex items-center justify-between gap-2">
+            <Label htmlFor={`trackName-${active.id}`}>{t('form.eventName')}</Label>
+            <span
+              className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground"
+              aria-live="polite"
+            >
+              <span
+                className="h-2 w-2 rounded-full"
+                style={{ backgroundColor: active.color }}
+                aria-hidden
+              />
+              {t('form.sessionLabelEditing', { name: active.name })}
+            </span>
+          </div>
           <Input
             id={`trackName-${active.id}`}
             value={active.name}
             onChange={(e) => updateActive({ name: e.target.value })}
             placeholder={t('form.eventNamePlaceholder')}
             maxLength={100}
+            style={{ borderLeftWidth: 3, borderLeftColor: active.color }}
             className={cn("mt-2", trackErr && "border-destructive focus-visible:ring-destructive")}
             data-invalid={!!trackErr}
           />
+          <p className="text-xs text-muted-foreground mt-1.5">{t('form.sessionLabelHelper')}</p>
           {trackErr && <p className="text-sm font-medium text-destructive mt-1">{trackErr}</p>}
         </div>
+
 
         {/* Weekdays */}
         {needsWeekdays && (
