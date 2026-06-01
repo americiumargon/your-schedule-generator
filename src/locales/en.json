@@ -242,14 +242,14 @@
     "toggleDark": "Switch to dark mode"
   },
   "tracks": {
-    "title": "Tracks",
-    "hint": "Plan multiple tracks in one project",
-    "add": "Add track",
+    "title": "Groups",
+    "hint": "Plan multiple groups within one program",
+    "add": "Add another group",
     "rename": "Rename",
     "duplicate": "Duplicate",
     "delete": "Delete",
     "color": "Color",
-    "newName": "Track",
-    "minOne": "At least one track is required"
+    "newName": "Group",
+    "minOne": "At least one group is required"
   }
 }
