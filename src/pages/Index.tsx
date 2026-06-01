@@ -21,11 +21,14 @@ import {
 } from "@/utils/shareLink";
 import { saveRecent } from "@/utils/recentSchedules";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
-import type { ProjectState } from "@/utils/tracks";
+import type { ProjectState, Track } from "@/utils/tracks";
+import { exportPerTrackZip } from "@/utils/perTrackExport";
 
 const Index = () => {
   const { t } = useTranslation();
   const [sessions, setSessions] = useState<TrackedSession[]>([]);
+  const [byTrack, setByTrack] = useState<Record<string, TrackedSession[]>>({});
+  const [tracks, setTracks] = useState<Track[]>([]);
   const [projectName, setProjectName] = useState("");
   const [reminderMinutes, setReminderMinutes] = useState<number>(0);
   const [timezone, setTimezone] = useState<string>(() => {
@@ -58,19 +61,21 @@ const Index = () => {
   }, []);
 
   const handleGenerate = (project: ProjectState) => {
-    const { combined } = generateProject(project);
-    if (combined.length === 0) {
+    const result = generateProject(project);
+    if (result.combined.length === 0) {
       toast.error(t('form.validation.noSessionsInRange'));
       return;
     }
-    setSessions(combined);
+    setSessions(result.combined);
+    setByTrack(result.byTrack);
+    setTracks(project.tracks);
     setProjectName(project.projectName);
     setReminderMinutes(project.reminderMinutes);
     setTimezone(project.timezone);
     setLastFormState(project);
     saveRecent(project.projectName, project);
     setRecentRefresh((n) => n + 1);
-    toast.success(t('toast.generated', { count: combined.length }));
+    toast.success(t('toast.generated', { count: result.combined.length }));
   };
 
   const handleLoadRecent = (state: ShareFormState) => {
@@ -81,9 +86,34 @@ const Index = () => {
     });
   };
 
-  const handleExport = (format: "csv" | "ics" | "pdf", enabledSessions: TrackedSession[], language: string) => {
+  const handleExport = async (
+    format: "csv" | "ics" | "pdf",
+    enabledSessions: TrackedSession[],
+    language: string,
+    scope: "combined" | "perTrack" = "combined",
+  ) => {
     const hasMultipleTracks = new Set(enabledSessions.map((s) => s.trackId)).size > 1;
     const opts = { reminderMinutes, timezone, includeTrackColumn: hasMultipleTracks };
+    const branding = loadBranding();
+    if (scope === "perTrack" && hasMultipleTracks) {
+      // Filter byTrack to only enabled sessions
+      const enabledIds = new Set(enabledSessions.map((s) => `${s.trackId}#${s.sessionNumber}`));
+      const enabledByTrack: Record<string, TrackedSession[]> = {};
+      for (const tr of tracks) {
+        const list = (byTrack[tr.id] ?? []).filter((s) =>
+          enabledSessions.some(
+            (e) => e.trackId === s.trackId && e.date.getTime() === s.date.getTime() && e.startTime === s.startTime,
+          ),
+        );
+        if (list.length > 0) enabledByTrack[tr.id] = list;
+      }
+      void enabledIds;
+      await exportPerTrackZip(enabledByTrack, tracks, projectName, format, opts, branding, t, language);
+      toast.success(
+        format === "csv" ? t('export.successCsv') : format === "ics" ? t('export.successIcs') : t('export.successPdf'),
+      );
+      return;
+    }
     if (format === "csv") {
       exportToCSV(enabledSessions, projectName, language, opts);
       toast.success(t('export.successCsv'));
@@ -91,7 +121,6 @@ const Index = () => {
       exportToICS(enabledSessions, projectName, language, opts);
       toast.success(t('export.successIcs'));
     } else {
-      const branding = loadBranding();
       exportToPDF(enabledSessions, projectName, language, opts, branding, t);
       toast.success(t('export.successPdf'));
     }

@@ -144,7 +144,11 @@
     "notesOverrideLabel": "Catatan (sesi ini saja)",
     "useDefaultPlaceholder": "Memakai default: {{value}}",
     "clearOverride": "Hapus penggantian",
-    "overrideBadge": "diganti"
+    "overrideBadge": "diganti",
+    "colTrack": "Trek",
+    "exportScope": "Ekspor sebagai",
+    "exportScopeCombined": "Satu file gabungan",
+    "exportScopePerTrack": "Satu file per trek (ZIP)"
   },
   "summary": {
     "totalSessions": "Sesi",
@@ -176,7 +180,8 @@
       "day": "Hari",
       "time": "Waktu",
       "location": "Lokasi",
-      "notes": "Catatan"
+      "notes": "Catatan",
+      "track": "Trek"
     }
   },
   "branding": {
@@ -221,21 +226,23 @@
     "load": "Muat",
     "remove": "Hapus",
     "clearAll": "Hapus semua",
-    "createdAgo": "Dibuat {{ago}}"
+    "createdAgo": "Dibuat {{ago}}",
+    "trackCount": "{{count}} trek",
+    "trackCount_other": "{{count}} trek"
   },
   "theme": {
     "toggleLight": "Ganti ke mode terang",
     "toggleDark": "Ganti ke mode gelap"
   },
   "tracks": {
-    "title": "Kelas",
-    "hint": "Rencanakan beberapa kelas dalam satu proyek",
-    "add": "Tambah kelas",
+    "title": "Trek",
+    "hint": "Rencanakan beberapa trek dalam satu proyek",
+    "add": "Tambah trek",
     "rename": "Ganti nama",
     "duplicate": "Duplikat",
     "delete": "Hapus",
     "color": "Warna",
-    "newName": "Kelas",
-    "minOne": "Minimal satu kelas diperlukan"
+    "newName": "Trek",
+    "minOne": "Minimal satu trek diperlukan"
   }
 }

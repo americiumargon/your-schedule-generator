@@ -43,7 +43,12 @@ interface Session {
   rolledFrom?: Date;
   location?: string;
   notes?: string;
+  trackId?: string;
+  trackName?: string;
+  trackColor?: string;
 }
+
+export type ExportScope = "combined" | "perTrack";
 
 interface ScheduleDisplayProps {
   eventName: string;
@@ -51,7 +56,7 @@ interface ScheduleDisplayProps {
   location?: string;
   notes?: string;
   timezone?: string;
-  onExport: (format: "csv" | "ics" | "pdf", enabledSessions: Session[], language: string) => void;
+  onExport: (format: "csv" | "ics" | "pdf", enabledSessions: Session[], language: string, scope: ExportScope) => void;
   onClear: () => void;
   onUpdateSession?: (
     index: number,
@@ -249,13 +254,14 @@ export function ScheduleDisplay({ eventName, sessions, location, notes, timezone
     return sessions.filter((_, idx) => enabledSessions.has(idx));
   };
 
-  const handleExport = (format: "csv" | "ics" | "pdf") => {
+  const [exportScope, setExportScope] = useState<ExportScope>("combined");
+  const handleExport = (format: "csv" | "ics" | "pdf", scope: ExportScope = exportScope) => {
     const enabled = getEnabledSessions();
     if (enabled.length === 0) {
       toast.error(t('export.errorNoSessions'));
       return;
     }
-    onExport(format, enabled, i18n.language);
+    onExport(format, enabled, i18n.language, scope);
   };
 
   const [copyFormat, setCopyFormat] = useState<CopyFormat>("markdown");
@@ -305,6 +311,7 @@ export function ScheduleDisplay({ eventName, sessions, location, notes, timezone
   const enabledCount = enabledSessions.size;
   const allSelected = enabledCount === sessions.length;
   const someSelected = enabledCount > 0 && enabledCount < sessions.length;
+  const isMultiTrack = new Set(sessions.map((s) => s.trackId).filter(Boolean)).size > 1;
 
   const enabledList = getEnabledSessions();
   const firstDate = enabledList[0]?.date;
@@ -399,6 +406,28 @@ export function ScheduleDisplay({ eventName, sessions, location, notes, timezone
             </DropdownMenu>
           </div>
 
+          {isMultiTrack && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-2">
+                  {exportScope === "combined"
+                    ? t('schedule.exportScopeCombined')
+                    : t('schedule.exportScopePerTrack')}
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>{t('schedule.exportScope')}</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setExportScope("combined")}>
+                  {t('schedule.exportScopeCombined')}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setExportScope("perTrack")}>
+                  {t('schedule.exportScopePerTrack')}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
           <Button
             variant="outline"
             size="sm"
@@ -426,6 +455,7 @@ export function ScheduleDisplay({ eventName, sessions, location, notes, timezone
             <FileText className="h-4 w-4" />
             {t('schedule.pdfButton')}
           </Button>
+
           <Button
             variant="outline"
             size="sm"
@@ -514,6 +544,19 @@ export function ScheduleDisplay({ eventName, sessions, location, notes, timezone
                 />
                 <div className="min-w-0">
                   <div className="font-medium flex items-center gap-2 flex-wrap">
+                    {isMultiTrack && session.trackName && (
+                      <span
+                        className="inline-flex items-center gap-1.5 text-[11px] px-1.5 py-0.5 rounded border"
+                        style={{ borderColor: session.trackColor, color: session.trackColor }}
+                      >
+                        <span
+                          className="h-2 w-2 rounded-full"
+                          style={{ backgroundColor: session.trackColor }}
+                          aria-hidden
+                        />
+                        {session.trackName}
+                      </span>
+                    )}
                     <span>{t('schedule.session')} {session.sessionNumber}</span>
                     {isEdited && (
                       <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded bg-accent/20 text-accent-foreground border border-accent/30">

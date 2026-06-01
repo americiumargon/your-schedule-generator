@@ -148,7 +148,11 @@
     "notesOverrideLabel": "Notes (this session only)",
     "useDefaultPlaceholder": "Using default: {{value}}",
     "clearOverride": "Clear override",
-    "overrideBadge": "override"
+    "overrideBadge": "override",
+    "colTrack": "Track",
+    "exportScope": "Export as",
+    "exportScopeCombined": "Combined file",
+    "exportScopePerTrack": "One file per track (ZIP)"
   },
   "summary": {
     "totalSessions": "Sessions",
@@ -181,7 +185,8 @@
       "day": "Day",
       "time": "Time",
       "location": "Location",
-      "notes": "Notes"
+      "notes": "Notes",
+      "track": "Track"
     }
   },
   "branding": {
@@ -226,21 +231,23 @@
     "load": "Load",
     "remove": "Remove",
     "clearAll": "Clear all",
-    "createdAgo": "Created {{ago}}"
+    "createdAgo": "Created {{ago}}",
+    "trackCount": "{{count}} track",
+    "trackCount_other": "{{count}} tracks"
   },
   "theme": {
     "toggleLight": "Switch to light mode",
     "toggleDark": "Switch to dark mode"
   },
   "tracks": {
-    "title": "Classes",
-    "hint": "Plan multiple classes in one project",
-    "add": "Add class",
+    "title": "Tracks",
+    "hint": "Plan multiple tracks in one project",
+    "add": "Add track",
     "rename": "Rename",
     "duplicate": "Duplicate",
     "delete": "Delete",
     "color": "Color",
-    "newName": "Class",
-    "minOne": "At least one class is required"
+    "newName": "Track",
+    "minOne": "At least one track is required"
   }
 }
