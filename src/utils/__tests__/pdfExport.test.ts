@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import JSZip from "jszip";
 import { exportToPDF } from "@/utils/pdfExport";
 import { exportPerTrackZip } from "@/utils/perTrackExport";
@@ -151,6 +151,31 @@ describe("PDF export — Combined scope", () => {
         t,
       ),
     ).not.toThrow();
+  });
+
+  it("does not log a column-width overflow warning with long location + notes", async () => {
+    const { sessions } = makeSessions();
+    const longLoc = "Building 7, Wing C, Room 412B, North Campus Annex";
+    const longNotes = "Bring laptop, charger, notebook, and pre-read chapter 3 before arriving on time.";
+    const withText = sessions.map((s) => ({ ...s, location: longLoc, notes: longNotes }));
+
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    try {
+      exportToPDF(
+        withText,
+        "QA Term",
+        "en",
+        { includeTrackColumn: true, filename: "wide" },
+        { accentColor: "#0ea5e9", orgName: "QA Org" },
+        t,
+      );
+      const overflowed = logSpy.mock.calls.some((args) =>
+        args.some((a) => typeof a === "string" && /could not fit page/i.test(a)),
+      );
+      expect(overflowed).toBe(false);
+    } finally {
+      logSpy.mockRestore();
+    }
   });
 });
 

@@ -1,68 +1,44 @@
-## Goal
+## Test results
 
-Make the PDF logo feature discoverable from the export controls (no longer buried in the Branding panel) and produce richer PDFs that lead with a cover page featuring a large logo, then carry a small repeating logo in the header of every following page.
+Ran the full suite and inspected the live preview.
 
-## UX changes
+- **Automated tests**: 105/105 pass across 7 files (validation, validationEdgeCases, projectGenerator, shareLinkDraft, exportE2E, csvIcsExport, pdfExport).
+- **Live preview**: app loads, form renders, language toggle and theme toggle present, empty state correct.
+- **One real defect surfaced**: the PDF exporter logs `Of the table content, 211 units width could not fit page` on every combined-scope export. The table truncates Location/Notes content silently in landscape A4 when both columns are present (and gets worse with the Track column added).
 
-1. **Quick logo button next to the PDF export button** (`ScheduleHeader` / wherever `exportToPDF` is triggered from `Index.tsx`):
-   - New `LogoQuickUpload` button: shows "Add logo" (with upload icon) when no logo is set, or a small logo thumbnail + "Change" / "Remove" menu when one is set.
-   - Clicking opens a file picker reusing the same validation as `BrandingSection` (PNG/JPEG/SVG, ≤500 KB).
-   - Tooltip: "Used on PDF cover and header. Manage full branding below."
-   - Writes through `saveBranding({ logoDataUrl })` so the existing Branding panel stays in sync.
+No other functional regressions were found. Generation logic, share links, drafts, CSV/ICS, per-track export, project generator, and edge-case validation are all green.
 
-2. **Branding panel** keeps all existing fields; gets a small hint pointing to the new quick-upload button so users understand they're the same logo.
+## Root cause
 
-3. **PDF export dialog/button area**: add a checkbox "Include cover page" (default: on when a logo OR org name is set, off otherwise). Persisted in `branding` as `coverPage?: boolean` (extends `Branding` interface).
+In `src/utils/pdfExport.ts` (lines 304-311) the column widths are hardcoded:
 
-## PDF rendering changes (`src/utils/pdfExport.ts`)
+```text
+#  28 | date 70 | day 36 | time up to 140 | track 90 | location ? | notes ?
+```
 
-1. **Cover page** (rendered first when `branding.coverPage !== false` AND (`logoDataUrl` or `orgName`)):
-   - Full A4 page.
-   - Accent-colored top band (~40% page height) OR full-bleed accent background — pick band for print friendliness.
-   - Large centered logo (max 280×180 pt, preserving aspect).
-   - Below logo: org name (24pt bold), tagline (13pt), event name (16pt), date range, session count, location, timezone.
-   - Footer of cover page: `footerText` if set.
-   - Call `doc.addPage()` before continuing to the existing schedule page.
+Fixed widths total up to **364pt** before Location/Notes. Landscape A4 inner width is ~770pt, leaving ~400pt to split between Location and Notes — but autoTable's `linebreak` overflow pushes content past the right margin when either cell has long text, hence the 211pt overflow warning. Portrait orientation (if ever used) overflows even sooner.
 
-2. **Repeating header logo** on schedule pages (already partly there in `didDrawPage`):
-   - Extend the existing thin top strip on pages 2+ to also draw a small logo (max height 14 pt, max width 60 pt) on the left of the strip when `logoDataUrl` is present.
-   - Page 1 of the schedule (page 2 of the PDF when cover is on) already renders the tall header band with logo — no change.
+## Plan
 
-3. **Skip the existing tall header band on page 1** when the cover page is enabled, so we don't repeat the logo immediately. Replace it with a slim accent strip identical to subsequent pages.
+**Single fix, scoped to `src/utils/pdfExport.ts`:**
 
-## Data / types
+1. Compute the available inner page width from `doc.internal.pageSize.getWidth() - 2 * marginX`.
+2. Subtract the fixed columns (`#`, date, day, time, track-if-present) to get remaining width.
+3. Split the remainder between Location and Notes:
+   - both present → 40% / 60%
+   - only one present → 100% to that column
+4. Pass the computed widths into `columnStyles` for Location and Notes (instead of leaving them unconstrained).
+5. Tighten `timeColW` upper bound to `120` so the time column doesn't starve the flex columns.
+6. Keep `overflow: "linebreak"` so long values wrap inside their cell instead of overflowing the page.
 
-- Extend `Branding` in `src/utils/branding.ts`:
-  ```ts
-  coverPage?: boolean;
-  ```
-- No migration needed (localStorage is forward-compatible; missing field treated as default).
+**Test additions in `src/utils/__tests__/pdfExport.test.ts`:**
 
-## i18n
+- Add a case with long location + long notes strings and assert the autoTable warning is not emitted (spy on `console.log` / capture `doc`'s warnings list) and that `doc.getNumberOfPages()` stays reasonable.
+- Add a case with Track + Location + Notes all present to lock in the new flex sizing.
 
-Add keys to `src/locales/en.json` and `id.json`:
-- `branding.quickUpload`, `branding.quickChange`, `branding.quickRemove`, `branding.quickHint`
-- `pdf.includeCover`, `pdf.cover.event`, `pdf.cover.dates`, `pdf.cover.sessions`
+**Out of scope:** No UI changes, no changes to CSV/ICS/Google Calendar/share-link logic, no schema changes. All other features are verified working.
 
-## Tests
+## Files
 
-- Extend `src/utils/__tests__` with a small unit test that constructs a fake branding with a 1×1 PNG data URL and calls `exportToPDF`, asserting:
-  - `doc.getNumberOfPages()` increases by 1 when `coverPage` is true.
-  - Does not throw when logo is omitted.
-- No snapshot of binary PDF — assert structural side effects only.
-
-## Out of scope
-
-- Per-track logos for `perTrackExport` (can be a follow-up).
-- Server-side logo storage (project is fully client-side per project memory).
-- Changing CSV / ICS exports.
-
-## Files touched
-
-- `src/utils/branding.ts` — add `coverPage` field.
-- `src/utils/pdfExport.ts` — cover page + small repeating header logo + skip tall band when cover is on.
-- `src/components/BrandingSection.tsx` — hint copy, cover-page toggle.
-- `src/components/LogoQuickUpload.tsx` — new component.
-- `src/pages/Index.tsx` (or wherever the PDF export button lives) — render `LogoQuickUpload` next to the PDF export button + cover toggle.
-- `src/locales/en.json`, `src/locales/id.json` — new strings.
-- `src/utils/__tests__/pdfExport.test.ts` — new minimal tests.
+- `src/utils/pdfExport.ts` — column-width calculation
+- `src/utils/__tests__/pdfExport.test.ts` — two new assertions

@@ -299,7 +299,7 @@ export function exportToPDF(
 
   const timeSamples = body.map((r) => r[3]);
   const longestTime = timeSamples.reduce((a, b) => (b.length > a.length ? b : a), "00:00 – 00:00");
-  const timeColW = Math.min(140, Math.max(60, Math.ceil(longestTime.length * 5.2) + 12));
+  const timeColW = Math.min(120, Math.max(60, Math.ceil(longestTime.length * 5.2) + 12));
 
   const colStyles: Record<number, { cellWidth?: number; halign?: "left" | "right" | "center" }> = {
     0: { cellWidth: 28, halign: "right" },
@@ -307,14 +307,29 @@ export function exportToPDF(
     2: { cellWidth: 36 },
     3: { cellWidth: timeColW },
   };
+  const trackColW = hasTrack ? 90 : 0;
   const trackColIdx = hasTrack ? 4 : -1;
-  if (hasTrack) colStyles[4] = { cellWidth: 90 };
+  if (hasTrack) colStyles[4] = { cellWidth: trackColW };
+
+  // Distribute remaining inner width between Location and Notes so they
+  // never overflow the page (autoTable can't reflow fixed-width columns).
+  const innerW = pageW - marginX * 2;
+  const fixedW = 28 + 70 + 36 + timeColW + trackColW;
+  const remaining = Math.max(120, innerW - fixedW);
+  const flexIdx = hasTrack ? 5 : 4;
+  if (hasLocation && hasNotes) {
+    colStyles[flexIdx] = { cellWidth: Math.floor(remaining * 0.4) };
+    colStyles[flexIdx + 1] = { cellWidth: Math.floor(remaining * 0.6) };
+  } else if (hasLocation || hasNotes) {
+    colStyles[flexIdx] = { cellWidth: remaining };
+  }
 
   autoTable(doc, {
     startY: y,
     head: [head],
     body,
     margin: { left: marginX, right: marginX, top: 32, bottom: 40 },
+    tableWidth: "wrap",
     styles: { fontSize: 9, cellPadding: 6, overflow: "linebreak", valign: "middle" },
     headStyles: {
       fillColor: [accent[0], accent[1], accent[2]],
