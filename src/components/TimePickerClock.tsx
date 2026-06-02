@@ -11,6 +11,7 @@ interface Props {
   ariaLabel?: string;
   placeholder?: string;
   className?: string;
+  invalid?: boolean;
 }
 
 const pad = (n: number) => n.toString().padStart(2, "0");
