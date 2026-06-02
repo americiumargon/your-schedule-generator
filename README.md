@@ -1,73 +1,40 @@
-# Welcome to your Lovable project
+# Your Schedule Generator
 
-## Project info
+A web app for generating recurring schedules. Built for academies, bootcamps, and anyone running multiple classes or events at once.
 
-**URL**: https://lovable.dev/projects/9c8e8603-b9f4-411f-be84-4f3daa02ae72
+**Live app:** [yourschedulegenerator.netlify.app](https://yourschedulegenerator.netlify.app)
 
-## How can I edit this code?
+## What it does
 
-There are several ways of editing your application.
+You define your classes (days, times, recurrence pattern, start date), and it generates every session with exact dates. Then you export the schedule to CSV, ICS, PDF, or add it directly to Google Calendar.
 
-**Use Lovable**
+I built this to solve my own problem: scheduling 8+ concurrent class batches at [Ruby Thalib Academy](https://rubythalib.ai), where each batch has different days, times, and session counts. Doing it manually was eating hours every month.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/9c8e8603-b9f4-411f-be84-4f3daa02ae72) and start prompting.
+## Features
 
-Changes made via Lovable will be committed automatically to this repo.
+- **Multi-group scheduling.** Plan several classes or tracks within one project, each with its own days, times, and session count.
+- **Flexible recurrence.** Weekly, biweekly, every 3 to 4 weeks, monthly by weekday (e.g. every 2nd Tuesday), or monthly by date.
+- **Holiday handling.** Mark dates to skip, with the option to auto-roll sessions forward to the next available day.
+- **Group dependencies.** Chain groups so one starts after another finishes.
+- **Multiple time slots.** Create morning and evening sessions on the same day.
+- **Export anywhere.** CSV, ICS (with reminders and timezone), PDF (with optional cover page and branding), or Google Calendar link.
+- **Per-track export.** Download a ZIP with separate files for each group.
+- **Copy formats.** Plain text, Markdown, or rich text to paste into docs or messages.
+- **Share and draft links.** Generate a URL that loads the exact schedule config for someone else, or for yourself later.
+- **PDF branding.** Add your logo, org name, tagline, accent color, and footer.
+- **Bilingual.** English and Indonesian (Bahasa Indonesia).
+- **Dark/light mode.**
+- **Recent schedules.** Quickly reload past configurations from local storage.
 
-**Use your preferred IDE**
+## Tech stack
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+React, TypeScript, Vite, Tailwind CSS, shadcn/ui, i18next, jsPDF, date-fns.
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## Run locally
 
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+```bash
+git clone https://github.com/americiumargon/your-schedule-generator.git
+cd your-schedule-generator
+npm install
 npm run dev
 ```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/9c8e8603-b9f4-411f-be84-4f3daa02ae72) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
