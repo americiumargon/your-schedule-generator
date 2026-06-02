@@ -744,15 +744,32 @@ export function ScheduleForm({ onGenerate, onSaveDraft, initialState }: Props) {
 
         {mode === "count" ? (
           <div>
-            <Label htmlFor="numberOfMeetings">{t('form.numberOfMeetings')}</Label>
-            <Input id="numberOfMeetings" type="number" min="1" max="366"
-              value={numberOfMeetings}
-              onChange={(e) => { setNumberOfMeetings(e.target.value); setErrors((p) => ({ ...p, numberOfMeetings: undefined })); }}
-              data-invalid={!!errors.numberOfMeetings}
-              aria-invalid={!!errors.numberOfMeetings}
-              className={cn("mt-2", errors.numberOfMeetings && "border-destructive focus-visible:ring-destructive")}
+            <div className="flex items-center justify-between gap-2">
+              <Label htmlFor={`numberOfMeetings-${active.id}`}>{t('form.numberOfMeetings')}</Label>
+              {isMulti && (
+                <span className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground" aria-live="polite">
+                  <span className="h-2 w-2 rounded-full" style={{ backgroundColor: active.color }} aria-hidden />
+                  {t('form.sessionLabelEditing', { name: active.name })}
+                </span>
+              )}
+            </div>
+            <Input
+              id={`numberOfMeetings-${active.id}`}
+              type="number"
+              min="1"
+              max="366"
+              value={active.numberOfMeetings}
+              onChange={(e) => {
+                updateActive({ numberOfMeetings: e.target.value });
+                setErrors((p) => p.perTrack ? { ...p, perTrack: { ...p.perTrack, [active.id]: undefined as unknown as string } } : p);
+              }}
+              data-invalid={!!trackErr}
+              aria-invalid={!!trackErr}
+              className={cn("mt-2", trackErr && "border-destructive focus-visible:ring-destructive")}
             />
-            {fieldError(errors.numberOfMeetings)}
+            {isMulti && (
+              <p className="text-xs text-muted-foreground mt-1.5">{t('tracks.sessionsHelp')}</p>
+            )}
           </div>
         ) : (
           <div>
