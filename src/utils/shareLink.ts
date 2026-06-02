@@ -311,6 +311,7 @@ function decodeV3(parsed: z.infer<typeof v3Token>): ShareFormState {
       notes: tr.nt,
       startDate: tr.sd ? parseDate(tr.sd) ?? undefined : undefined,
       startsAfter: tr.sa,
+      numberOfMeetings: tr.nm ?? (parsed.m === "count" ? parsed.c : undefined),
     }, idx);
   });
   // Cast: ShareFormState requires startDate, but ScheduleForm tolerates
