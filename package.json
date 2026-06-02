@@ -71,6 +71,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.32.0",
+    "@playwright/test": "^1.60.0",
     "@tailwindcss/typography": "^0.5.16",
     "@types/lz-string": "^1.5.0",
     "@types/node": "^22.16.5",
