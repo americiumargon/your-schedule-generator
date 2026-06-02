@@ -158,6 +158,7 @@ function defaultDraft(idx = 0, withDefaultTime = false): TrackDraft {
   if (withDefaultTime) {
     d.timeSlots = [{ startTime: "09:00", endTime: "10:00", label: "" }];
   }
+  if (!d.numberOfMeetings) d.numberOfMeetings = "8";
   return d;
 }
 
