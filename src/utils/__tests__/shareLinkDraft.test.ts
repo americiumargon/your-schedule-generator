@@ -153,6 +153,7 @@ describe("share link drafts (v3)", () => {
     expect(decoded).not.toBeNull();
     expect(decoded!.tracks[0].numberOfMeetings).toBe(3);
     expect(decoded!.tracks[1].numberOfMeetings).toBe(6);
+  });
 });
 
 describe("share link per-group session counts", () => {
