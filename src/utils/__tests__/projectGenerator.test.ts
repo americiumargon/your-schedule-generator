@@ -75,6 +75,22 @@ describe("generateProject — per-group startDate override", () => {
     const lastA = aSessions[aSessions.length - 1].date;
     const dayAfterLastA = new Date(lastA);
     dayAfterLastA.setDate(dayAfterLastA.getDate() + 1);
+
+    const groupB = createTrack({
+      name: "B",
+      selectedDays: [1, 3],
+      timeSlots: [{ startTime: "09:00", endTime: "10:00" }],
+      recurrence: { type: "weekly", interval: 1 },
+      startDate: dayAfterLastA,
+    });
+
+    const { byTrack } = generateProject(
+      baseProject({ tracks: [groupA, groupB], numberOfMeetings: 5 })
+    );
+    const firstB = byTrack[groupB.id][0].date;
+    expect(firstB.getTime()).toBeGreaterThan(lastA.getTime());
+  });
+
   it("honors per-track numberOfMeetings overrides independently", () => {
     const groupA = createTrack({
       name: "A",
@@ -108,21 +124,6 @@ describe("generateProject — per-group startDate override", () => {
       baseProject({ tracks: [groupA], numberOfMeetings: 5 })
     );
     expect(byTrack[groupA.id]).toHaveLength(5);
-  });
-
-    const groupB = createTrack({
-      name: "B",
-      selectedDays: [1, 3],
-      timeSlots: [{ startTime: "09:00", endTime: "10:00" }],
-      recurrence: { type: "weekly", interval: 1 },
-      startDate: dayAfterLastA,
-    });
-
-    const { byTrack } = generateProject(
-      baseProject({ tracks: [groupA, groupB], numberOfMeetings: 5 })
-    );
-    const firstB = byTrack[groupB.id][0].date;
-    expect(firstB.getTime()).toBeGreaterThan(lastA.getTime());
   });
 });
 
