@@ -137,6 +137,7 @@ function draftToTrack(d: TrackDraft): Track {
       : d.recurrenceType === "monthlyByWeekday"
       ? { type: "monthlyByWeekday" as const, ordinals: [...d.ordinals].sort((a, b) => a - b) }
       : { type: "monthlyByDate" as const, daysOfMonth: [...d.daysOfMonth].sort((a, b) => a - b) };
+  const nm = parseInt(d.numberOfMeetings);
   return {
     id: d.id,
     name: d.name.trim() || "Track",
@@ -148,6 +149,7 @@ function draftToTrack(d: TrackDraft): Track {
     notes: d.notes.trim() || undefined,
     startDate: d.startDate,
     startsAfter: d.startsAfter,
+    numberOfMeetings: !isNaN(nm) && nm > 0 ? nm : undefined,
   };
 }
 
