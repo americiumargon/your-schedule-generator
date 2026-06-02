@@ -137,7 +137,11 @@ function draftToTrack(d: TrackDraft): Track {
       : d.recurrenceType === "monthlyByWeekday"
       ? { type: "monthlyByWeekday" as const, ordinals: [...d.ordinals].sort((a, b) => a - b) }
       : { type: "monthlyByDate" as const, daysOfMonth: [...d.daysOfMonth].sort((a, b) => a - b) };
-  const nm = parseInt(d.numberOfMeetings);
+  // Defense-in-depth: only accept a per-track count that passes the same
+  // validator submit uses. Anything else falls back to project-level / undefined
+  // so a malformed value can never silently corrupt schedule generation.
+  const nmValid = validateMeetings(d.numberOfMeetings) === null;
+  const nm = nmValid ? parseInt(d.numberOfMeetings, 10) : NaN;
   return {
     id: d.id,
     name: d.name.trim() || "Track",
@@ -149,7 +153,7 @@ function draftToTrack(d: TrackDraft): Track {
     notes: d.notes.trim() || undefined,
     startDate: d.startDate,
     startsAfter: d.startsAfter,
-    numberOfMeetings: !isNaN(nm) && nm > 0 ? nm : undefined,
+    numberOfMeetings: !isNaN(nm) ? nm : undefined,
   };
 }
 
@@ -758,6 +762,9 @@ export function ScheduleForm({ onGenerate, onSaveDraft, initialState }: Props) {
               type="number"
               min="1"
               max="366"
+              step="1"
+              inputMode="numeric"
+              pattern="[0-9]*"
               value={active.numberOfMeetings}
               onChange={(e) => {
                 updateActive({ numberOfMeetings: e.target.value });

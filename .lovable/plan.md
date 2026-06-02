@@ -1,46 +1,43 @@
-## Problem
+## Goals
 
-Currently, "Number of sessions" is a single project-level field. Changing it regenerates all groups using the same count, so users cannot give each group its own length.
+1. Lock down per-group session counts with a regression test.
+2. Ensure invalid per-track counts can never reach the generator.
+3. Prove share links faithfully round-trip mixed per-group counts.
 
-## Solution
+## 1. Regression test — group isolation
 
-In **count mode**, move the count to each track. End-date mode stays project-wide (groups share the same window).
+`src/utils/__tests__/projectGenerator.test.ts`, new `describe("per-group session count isolation")`:
 
-### Data model (`src/utils/tracks.ts`)
+- Build a project with three tracks (counts 3 / 6 / 9). Generate.
+- Mutate only track A's `numberOfMeetings` to 12 and regenerate.
+- Assert: A has 12 sessions, B still 6, C still 9.
+- Also assert reference equality: the original `byTrack[B.id]` / `[C.id]` arrays from run #1 have identical length and date sequence as run #2 (no cross-contamination through shared references or holiday/recurrence state).
 
-Add to `Track`:
-```ts
-numberOfMeetings?: number; // per-track session count (count mode)
-```
+## 2. Per-track count validation
 
-### Schedule generator (`src/utils/projectGenerator.ts`)
+Validator (`validateMeetings`) is already strict (empty, non-numeric, decimals, out-of-range, NaN/Infinity all rejected) — reuse it, no schema change.
 
-When `project.mode === "count"`, pass `track.numberOfMeetings ?? project.numberOfMeetings` to `generateSchedule`. (Project-level value kept as a transient fallback for backward compat with existing share links / recent schedules; new UI always sets per-track.)
+Form (`src/components/ScheduleForm.tsx`):
+- Already runs `validateMeetings(d.numberOfMeetings)` per track in count mode on submit. Confirm and keep.
+- Add defense-in-depth in `draftToTrack`: only set `numberOfMeetings` when `validateMeetings(d.numberOfMeetings) === null`; otherwise leave undefined so the generator falls back / produces zero sessions and the submit-time validator (which has already blocked submit) is the single source of truth.
+- Add `inputMode="numeric"` and `pattern="[0-9]*"` on the per-track count Input to discourage non-numeric entry on mobile keyboards.
 
-### Form UI (`src/components/ScheduleForm.tsx`)
+New focused tests in `src/utils/__tests__/validationEdgeCases.test.ts` under a new `describe("per-track meetings validation")`:
+- "", "   ", "0", "367", "1.5", "-3", "1e2", "abc", "NaN" → each returns the expected ValidationCode.
+- "1", "366", "  42  " → null.
 
-- Remove the top-level "Number of sessions" input from count mode (keep the End Date input for endDate mode).
-- Add a "Number of sessions" input to each active track panel (rendered just under the days/time-slots area), bound to `track.numberOfMeetings`.
-- Validation: required in count mode, 1–366, mirrors existing `validateMeetings`. Errors shown per-track.
-- Drop `numberOfMeetings` from the project-level error block; aggregate per-track errors into the existing per-track error map.
-- On generate: build `ProjectState` with each track carrying its own count; omit project-level `numberOfMeetings`.
+## 3. Share link per-group counts
 
-### Share links / recent schedules (`src/utils/shareLink.ts`)
+Existing v2 encoder/decoder already carry `nm` per track plus the legacy `c` fallback. Add coverage in `src/utils/__tests__/shareLinkDraft.test.ts`:
 
-- Encode/decode `track.numberOfMeetings` alongside other track fields.
-- When loading an old link that has only the project-level `numberOfMeetings` in count mode, hydrate every track's `numberOfMeetings` from it so existing links keep working.
-
-### i18n (`src/locales/en.json`, `src/locales/id.json`)
-
-- Reuse existing `form.numberOfMeetings` label inside the track panel; no new strings strictly required, but add a short helper line like `tracks.sessionsHelp` ("Sessions for this group") for clarity in both locales.
-
-### Tests
-
-- Update `src/utils/__tests__/projectGenerator.test.ts`: add a case where two tracks have different `numberOfMeetings` and verify each track's session count.
-- Update `src/utils/__tests__/shareLinkDraft.test.ts`: round-trip per-track count; legacy link fallback fills tracks.
-- Update e2e `e2e/schedule.spec.ts`: the form interaction now sets the count inside the track panel instead of the top-level field.
+- Three-track mix: counts [4, 11, 33] + project-level `c=undefined`. Encode → decode → each track's `numberOfMeetings` matches exactly and other fields (name, color, days, slots, recurrence) survive.
+- Mixed presence: track A has `numberOfMeetings=5`, track B has none, project-level `c=12`. After decode: A=5, B=12 (legacy fallback). 
+- Boundary values: counts [1, 366] round-trip cleanly.
+- Negative case: a v2 token with `mode="count"` AND no `c` AND no `nm` on any track decodes to `null` (existing relaxed decoder check).
+- Draft (v3) round-trip: tracks `[{nm: 2}, {nm: 8}]` come back identical.
 
 ## Out of scope
 
-- End-date mode remains a single project-wide end date.
-- No changes to PDF/CSV/ICS exports — they already render whatever sessions were generated.
+- No UI redesign or new copy.
+- No changes to ICS/CSV/PDF export pipelines.
+- End-date mode unchanged.
