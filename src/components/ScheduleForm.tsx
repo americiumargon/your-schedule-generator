@@ -1019,6 +1019,7 @@ export function ScheduleForm({ onGenerate, onSaveDraft, initialState }: Props) {
                                   value={slot.startTime}
                                   onChange={(v) => updateSlot(idx, { startTime: v })}
                                   ariaLabel={t('form.startTime')}
+                                  invalid={isSlotRangeInvalid(slot)}
                                 />
                               </div>
                             </div>
@@ -1030,10 +1031,14 @@ export function ScheduleForm({ onGenerate, onSaveDraft, initialState }: Props) {
                                   value={slot.endTime}
                                   onChange={(v) => updateSlot(idx, { endTime: v })}
                                   ariaLabel={t('form.endTime')}
+                                  invalid={isSlotRangeInvalid(slot)}
                                 />
                               </div>
                             </div>
                           </div>
+                          {isSlotRangeInvalid(slot) && (
+                            <p role="alert" className="text-sm font-medium text-destructive">{timeOrderMsg}</p>
+                          )}
                         </div>
                       );
                     })}
