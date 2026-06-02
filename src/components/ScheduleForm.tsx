@@ -845,6 +845,7 @@ export function ScheduleForm({ onGenerate, onSaveDraft, initialState }: Props) {
                   value={firstSlot?.startTime ?? ""}
                   onChange={(v) => updateSlot(0, { startTime: v })}
                   ariaLabel={t('form.startTime')}
+                  invalid={firstSlot ? isSlotRangeInvalid(firstSlot) : false}
                 />
               </div>
             </div>
@@ -856,10 +857,14 @@ export function ScheduleForm({ onGenerate, onSaveDraft, initialState }: Props) {
                   value={firstSlot?.endTime ?? ""}
                   onChange={(v) => updateSlot(0, { endTime: v })}
                   ariaLabel={t('form.endTime')}
+                  invalid={firstSlot ? isSlotRangeInvalid(firstSlot) : false}
                 />
               </div>
             </div>
           </div>
+          {firstSlot && isSlotRangeInvalid(firstSlot) && (
+            <p role="alert" className="text-sm font-medium text-destructive mt-1">{timeOrderMsg}</p>
+          )}
         </div>
 
         {/* Subtle upgrade path for casual users */}
