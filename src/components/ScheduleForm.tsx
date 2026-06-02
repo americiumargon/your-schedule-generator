@@ -432,16 +432,15 @@ export function ScheduleForm({ onGenerate, onSaveDraft, initialState }: Props) {
       if (c) next.startDate = tCode(c);
     }
 
-    // Count / end date
-    if (mode === "count") {
-      const c = validateMeetings(numberOfMeetings);
-      if (c) next.numberOfMeetings = tCode(c);
-    } else if (!endDate) {
-      next.endDate = t('form.validation.endDateRequired');
-    } else {
-      const c = validateDate(endDate);
-      if (c) next.endDate = tCode(c);
-      else if (startDate && endDate < startDate) next.endDate = t('form.validation.endDateAfterStart');
+    // End date (count is validated per-track below)
+    if (mode === "endDate") {
+      if (!endDate) {
+        next.endDate = t('form.validation.endDateRequired');
+      } else {
+        const c = validateDate(endDate);
+        if (c) next.endDate = tCode(c);
+        else if (startDate && endDate < startDate) next.endDate = t('form.validation.endDateAfterStart');
+      }
     }
 
     // Timezone & reminder (project-level export inputs)
