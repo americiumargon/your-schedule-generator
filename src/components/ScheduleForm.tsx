@@ -101,6 +101,7 @@ interface TrackDraft {
   notes: string;
   startDate?: Date;
   startsAfter?: string;
+  numberOfMeetings: string;
 }
 
 function trackToDraft(t: Track): TrackDraft {
