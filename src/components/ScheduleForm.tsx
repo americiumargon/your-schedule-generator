@@ -121,6 +121,7 @@ function trackToDraft(t: Track): TrackDraft {
     notes: t.notes ?? "",
     startDate: t.startDate,
     startsAfter: t.startsAfter,
+    numberOfMeetings: t.numberOfMeetings != null ? String(t.numberOfMeetings) : "",
   };
 }
 
