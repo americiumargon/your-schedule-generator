@@ -59,6 +59,7 @@ export function createTrack(partial: Partial<Track> = {}, indexHint = 0): Track 
     notes: partial.notes,
     startDate: partial.startDate,
     startsAfter: partial.startsAfter,
+    numberOfMeetings: partial.numberOfMeetings,
   };
 }
 
