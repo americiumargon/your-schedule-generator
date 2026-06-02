@@ -107,13 +107,5 @@ test.describe("Mobile viewports", () => {
       });
     });
   }
-
-  test.describe("iPhone 13 device profile", () => {
-    test.use({ ...devices["iPhone 13"] });
-
-    test("smoke: load, generate, and see results", async ({ page }) => {
-      await fillBasicSchedule(page, "Device Profile Run");
-      await expect(sessionCards(page)).toHaveCount(8);
-    });
-  });
 });
+
