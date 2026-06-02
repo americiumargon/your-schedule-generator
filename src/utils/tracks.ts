@@ -13,6 +13,8 @@ export interface Track {
   startDate?: Date;
   /** Optional predecessor track id, set when startDate was computed via "Start after group" helper. */
   startsAfter?: string;
+  /** Per-group session count (count mode). Falls back to ProjectState.numberOfMeetings when undefined. */
+  numberOfMeetings?: number;
 }
 
 export interface ProjectState {
