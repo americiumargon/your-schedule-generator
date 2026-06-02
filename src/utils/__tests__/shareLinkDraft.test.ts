@@ -258,7 +258,6 @@ describe("share link per-group session counts", () => {
       ],
     });
     // Use the same wire prefix as encodeToken().
-    const LZString = require("lz-string");
     const token = "1" + LZString.compressToEncodedURIComponent(rawJson);
     expect(decodeShareState(token)).toBeNull();
   });
