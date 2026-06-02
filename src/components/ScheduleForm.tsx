@@ -196,9 +196,8 @@ export function ScheduleForm({ onGenerate, onSaveDraft, initialState }: Props) {
     () => initialState?.startDate ?? (initialState ? undefined : nextMonday(new Date()))
   );
   const [mode, setMode] = useState<Mode>(() => initialState?.mode ?? "count");
-  const [numberOfMeetings, setNumberOfMeetings] = useState<string>(() =>
-    initialState?.numberOfMeetings != null ? String(initialState.numberOfMeetings) : (initialState ? "" : "8")
-  );
+  // Project-level count is no longer collected here — each track owns its own
+  // numberOfMeetings. Legacy share links hydrate tracks via decodeV2 fallback.
   const [endDate, setEndDate] = useState<Date | undefined>(() => initialState?.endDate);
   const [holidays, setHolidays] = useState<Date[]>(() => initialState?.holidays ?? []);
   const [holidayBehavior, setHolidayBehavior] = useState<HolidayBehavior>(() => initialState?.holidayBehavior ?? "skip");
