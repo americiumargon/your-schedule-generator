@@ -1,44 +1,46 @@
-## Test results
+## Problem
 
-Ran the full suite and inspected the live preview.
+Currently, "Number of sessions" is a single project-level field. Changing it regenerates all groups using the same count, so users cannot give each group its own length.
 
-- **Automated tests**: 105/105 pass across 7 files (validation, validationEdgeCases, projectGenerator, shareLinkDraft, exportE2E, csvIcsExport, pdfExport).
-- **Live preview**: app loads, form renders, language toggle and theme toggle present, empty state correct.
-- **One real defect surfaced**: the PDF exporter logs `Of the table content, 211 units width could not fit page` on every combined-scope export. The table truncates Location/Notes content silently in landscape A4 when both columns are present (and gets worse with the Track column added).
+## Solution
 
-No other functional regressions were found. Generation logic, share links, drafts, CSV/ICS, per-track export, project generator, and edge-case validation are all green.
+In **count mode**, move the count to each track. End-date mode stays project-wide (groups share the same window).
 
-## Root cause
+### Data model (`src/utils/tracks.ts`)
 
-In `src/utils/pdfExport.ts` (lines 304-311) the column widths are hardcoded:
-
-```text
-#  28 | date 70 | day 36 | time up to 140 | track 90 | location ? | notes ?
+Add to `Track`:
+```ts
+numberOfMeetings?: number; // per-track session count (count mode)
 ```
 
-Fixed widths total up to **364pt** before Location/Notes. Landscape A4 inner width is ~770pt, leaving ~400pt to split between Location and Notes — but autoTable's `linebreak` overflow pushes content past the right margin when either cell has long text, hence the 211pt overflow warning. Portrait orientation (if ever used) overflows even sooner.
+### Schedule generator (`src/utils/projectGenerator.ts`)
 
-## Plan
+When `project.mode === "count"`, pass `track.numberOfMeetings ?? project.numberOfMeetings` to `generateSchedule`. (Project-level value kept as a transient fallback for backward compat with existing share links / recent schedules; new UI always sets per-track.)
 
-**Single fix, scoped to `src/utils/pdfExport.ts`:**
+### Form UI (`src/components/ScheduleForm.tsx`)
 
-1. Compute the available inner page width from `doc.internal.pageSize.getWidth() - 2 * marginX`.
-2. Subtract the fixed columns (`#`, date, day, time, track-if-present) to get remaining width.
-3. Split the remainder between Location and Notes:
-   - both present → 40% / 60%
-   - only one present → 100% to that column
-4. Pass the computed widths into `columnStyles` for Location and Notes (instead of leaving them unconstrained).
-5. Tighten `timeColW` upper bound to `120` so the time column doesn't starve the flex columns.
-6. Keep `overflow: "linebreak"` so long values wrap inside their cell instead of overflowing the page.
+- Remove the top-level "Number of sessions" input from count mode (keep the End Date input for endDate mode).
+- Add a "Number of sessions" input to each active track panel (rendered just under the days/time-slots area), bound to `track.numberOfMeetings`.
+- Validation: required in count mode, 1–366, mirrors existing `validateMeetings`. Errors shown per-track.
+- Drop `numberOfMeetings` from the project-level error block; aggregate per-track errors into the existing per-track error map.
+- On generate: build `ProjectState` with each track carrying its own count; omit project-level `numberOfMeetings`.
 
-**Test additions in `src/utils/__tests__/pdfExport.test.ts`:**
+### Share links / recent schedules (`src/utils/shareLink.ts`)
 
-- Add a case with long location + long notes strings and assert the autoTable warning is not emitted (spy on `console.log` / capture `doc`'s warnings list) and that `doc.getNumberOfPages()` stays reasonable.
-- Add a case with Track + Location + Notes all present to lock in the new flex sizing.
+- Encode/decode `track.numberOfMeetings` alongside other track fields.
+- When loading an old link that has only the project-level `numberOfMeetings` in count mode, hydrate every track's `numberOfMeetings` from it so existing links keep working.
 
-**Out of scope:** No UI changes, no changes to CSV/ICS/Google Calendar/share-link logic, no schema changes. All other features are verified working.
+### i18n (`src/locales/en.json`, `src/locales/id.json`)
 
-## Files
+- Reuse existing `form.numberOfMeetings` label inside the track panel; no new strings strictly required, but add a short helper line like `tracks.sessionsHelp` ("Sessions for this group") for clarity in both locales.
 
-- `src/utils/pdfExport.ts` — column-width calculation
-- `src/utils/__tests__/pdfExport.test.ts` — two new assertions
+### Tests
+
+- Update `src/utils/__tests__/projectGenerator.test.ts`: add a case where two tracks have different `numberOfMeetings` and verify each track's session count.
+- Update `src/utils/__tests__/shareLinkDraft.test.ts`: round-trip per-track count; legacy link fallback fills tracks.
+- Update e2e `e2e/schedule.spec.ts`: the form interaction now sets the count inside the track panel instead of the top-level field.
+
+## Out of scope
+
+- End-date mode remains a single project-wide end date.
+- No changes to PDF/CSV/ICS exports — they already render whatever sessions were generated.

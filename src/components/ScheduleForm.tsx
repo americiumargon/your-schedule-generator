@@ -101,6 +101,7 @@ interface TrackDraft {
   notes: string;
   startDate?: Date;
   startsAfter?: string;
+  numberOfMeetings: string;
 }
 
 function trackToDraft(t: Track): TrackDraft {
@@ -120,6 +121,7 @@ function trackToDraft(t: Track): TrackDraft {
     notes: t.notes ?? "",
     startDate: t.startDate,
     startsAfter: t.startsAfter,
+    numberOfMeetings: t.numberOfMeetings != null ? String(t.numberOfMeetings) : "",
   };
 }
 
@@ -135,6 +137,7 @@ function draftToTrack(d: TrackDraft): Track {
       : d.recurrenceType === "monthlyByWeekday"
       ? { type: "monthlyByWeekday" as const, ordinals: [...d.ordinals].sort((a, b) => a - b) }
       : { type: "monthlyByDate" as const, daysOfMonth: [...d.daysOfMonth].sort((a, b) => a - b) };
+  const nm = parseInt(d.numberOfMeetings);
   return {
     id: d.id,
     name: d.name.trim() || "Track",
@@ -146,6 +149,7 @@ function draftToTrack(d: TrackDraft): Track {
     notes: d.notes.trim() || undefined,
     startDate: d.startDate,
     startsAfter: d.startsAfter,
+    numberOfMeetings: !isNaN(nm) && nm > 0 ? nm : undefined,
   };
 }
 
@@ -154,6 +158,7 @@ function defaultDraft(idx = 0, withDefaultTime = false): TrackDraft {
   if (withDefaultTime) {
     d.timeSlots = [{ startTime: "09:00", endTime: "10:00", label: "" }];
   }
+  if (!d.numberOfMeetings) d.numberOfMeetings = "8";
   return d;
 }
 
@@ -191,9 +196,8 @@ export function ScheduleForm({ onGenerate, onSaveDraft, initialState }: Props) {
     () => initialState?.startDate ?? (initialState ? undefined : nextMonday(new Date()))
   );
   const [mode, setMode] = useState<Mode>(() => initialState?.mode ?? "count");
-  const [numberOfMeetings, setNumberOfMeetings] = useState<string>(() =>
-    initialState?.numberOfMeetings != null ? String(initialState.numberOfMeetings) : (initialState ? "" : "8")
-  );
+  // Project-level count is no longer collected here — each track owns its own
+  // numberOfMeetings. Legacy share links hydrate tracks via decodeV2 fallback.
   const [endDate, setEndDate] = useState<Date | undefined>(() => initialState?.endDate);
   const [holidays, setHolidays] = useState<Date[]>(() => initialState?.holidays ?? []);
   const [holidayBehavior, setHolidayBehavior] = useState<HolidayBehavior>(() => initialState?.holidayBehavior ?? "skip");
@@ -286,7 +290,7 @@ export function ScheduleForm({ onGenerate, onSaveDraft, initialState }: Props) {
       return;
     }
     const srcTrack = draftToTrack(src);
-    const parsedCount = parseInt(numberOfMeetings);
+    const parsedCount = parseInt(src.numberOfMeetings);
     try {
       const sessions = generateSchedule({
         startDate: srcTrack.startDate ?? startDate,
@@ -428,16 +432,15 @@ export function ScheduleForm({ onGenerate, onSaveDraft, initialState }: Props) {
       if (c) next.startDate = tCode(c);
     }
 
-    // Count / end date
-    if (mode === "count") {
-      const c = validateMeetings(numberOfMeetings);
-      if (c) next.numberOfMeetings = tCode(c);
-    } else if (!endDate) {
-      next.endDate = t('form.validation.endDateRequired');
-    } else {
-      const c = validateDate(endDate);
-      if (c) next.endDate = tCode(c);
-      else if (startDate && endDate < startDate) next.endDate = t('form.validation.endDateAfterStart');
+    // End date (count is validated per-track below)
+    if (mode === "endDate") {
+      if (!endDate) {
+        next.endDate = t('form.validation.endDateRequired');
+      } else {
+        const c = validateDate(endDate);
+        if (c) next.endDate = tCode(c);
+        else if (startDate && endDate < startDate) next.endDate = t('form.validation.endDateAfterStart');
+      }
     }
 
     // Timezone & reminder (project-level export inputs)
@@ -479,6 +482,10 @@ export function ScheduleForm({ onGenerate, onSaveDraft, initialState }: Props) {
       }
       const slotCode = validateTimeSlots(d.timeSlots);
       if (slotCode) { perTrack[d.id] = tCode(slotCode); continue; }
+      if (mode === "count") {
+        const c = validateMeetings(d.numberOfMeetings);
+        if (c) { perTrack[d.id] = tCode(c); continue; }
+      }
       if (d.startDate) {
         const c = validateDate(d.startDate);
         if (c) { perTrack[d.id] = tCode(c); continue; }
@@ -518,7 +525,7 @@ export function ScheduleForm({ onGenerate, onSaveDraft, initialState }: Props) {
       projectName: trimmedProject,
       startDate: startDate!,
       mode,
-      numberOfMeetings: mode === "count" ? parseInt(numberOfMeetings) : undefined,
+      numberOfMeetings: undefined,
       endDate: mode === "endDate" ? endDate : undefined,
       holidays,
       holidayBehavior,
@@ -737,15 +744,32 @@ export function ScheduleForm({ onGenerate, onSaveDraft, initialState }: Props) {
 
         {mode === "count" ? (
           <div>
-            <Label htmlFor="numberOfMeetings">{t('form.numberOfMeetings')}</Label>
-            <Input id="numberOfMeetings" type="number" min="1" max="366"
-              value={numberOfMeetings}
-              onChange={(e) => { setNumberOfMeetings(e.target.value); setErrors((p) => ({ ...p, numberOfMeetings: undefined })); }}
-              data-invalid={!!errors.numberOfMeetings}
-              aria-invalid={!!errors.numberOfMeetings}
-              className={cn("mt-2", errors.numberOfMeetings && "border-destructive focus-visible:ring-destructive")}
+            <div className="flex items-center justify-between gap-2">
+              <Label htmlFor={`numberOfMeetings-${active.id}`}>{t('form.numberOfMeetings')}</Label>
+              {isMulti && (
+                <span className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground" aria-live="polite">
+                  <span className="h-2 w-2 rounded-full" style={{ backgroundColor: active.color }} aria-hidden />
+                  {t('form.sessionLabelEditing', { name: active.name })}
+                </span>
+              )}
+            </div>
+            <Input
+              id={`numberOfMeetings-${active.id}`}
+              type="number"
+              min="1"
+              max="366"
+              value={active.numberOfMeetings}
+              onChange={(e) => {
+                updateActive({ numberOfMeetings: e.target.value });
+                setErrors((p) => p.perTrack ? { ...p, perTrack: { ...p.perTrack, [active.id]: undefined as unknown as string } } : p);
+              }}
+              data-invalid={!!trackErr}
+              aria-invalid={!!trackErr}
+              className={cn("mt-2", trackErr && "border-destructive focus-visible:ring-destructive")}
             />
-            {fieldError(errors.numberOfMeetings)}
+            {isMulti && (
+              <p className="text-xs text-muted-foreground mt-1.5">{t('tracks.sessionsHelp')}</p>
+            )}
           </div>
         ) : (
           <div>
@@ -1096,13 +1120,11 @@ export function ScheduleForm({ onGenerate, onSaveDraft, initialState }: Props) {
             size="sm"
             className="w-full gap-2"
             onClick={() => {
-              const numParsed = parseInt(numberOfMeetings);
               onSaveDraft({
                 projectName: projectName.trim() || undefined,
                 startDate,
                 mode,
-                numberOfMeetings:
-                  mode === "count" && !isNaN(numParsed) && numParsed > 0 ? numParsed : undefined,
+                numberOfMeetings: undefined,
                 endDate: mode === "endDate" ? endDate : undefined,
                 holidays,
                 holidayBehavior,

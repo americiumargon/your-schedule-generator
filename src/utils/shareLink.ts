@@ -58,6 +58,7 @@ const trackSchema = z.object({
   nt: z.string().max(2000).optional(),
   sd: dateStr.optional(),
   sa: z.string().min(1).max(64).optional(),
+  nm: z.number().int().min(1).max(366).optional(),
 });
 
 const v2Token = z.object({
@@ -98,6 +99,7 @@ const draftTrackSchema = z.object({
   nt: z.string().max(2000).optional(),
   sd: dateStr.optional(),
   sa: z.string().min(1).max(64).optional(),
+  nm: z.number().int().min(1).max(366).optional(),
 });
 const v3Token = z.object({
   v: z.literal(3),
@@ -187,6 +189,7 @@ export function encodeShareState(state: ShareFormState): string {
       ...(t.notes ? { nt: t.notes } : {}),
       ...(t.startDate ? { sd: fmtDate(t.startDate) } : {}),
       ...(t.startsAfter ? { sa: t.startsAfter } : {}),
+      ...(t.numberOfMeetings != null ? { nm: t.numberOfMeetings } : {}),
     })),
   };
   return encodeToken(JSON.stringify(token));
@@ -224,6 +227,7 @@ function decodeV1(parsed: z.infer<typeof v1Token>): ShareFormState | null {
     recurrence: decRec(parsed.rec),
     location: parsed.l,
     notes: parsed.nt,
+    numberOfMeetings: parsed.m === "count" ? parsed.c : undefined,
   });
   return {
     projectName: parsed.n,
@@ -249,7 +253,15 @@ function decodeV2(parsed: z.infer<typeof v2Token>): ShareFormState | null {
     if (!ed) return null;
     endDate = ed;
   }
-  if (parsed.m === "count" && parsed.c == null) return null;
+  // Count mode is valid if either the legacy project-level count OR at least
+  // one per-track count is present (newer links carry counts on tracks).
+  if (
+    parsed.m === "count" &&
+    parsed.c == null &&
+    !parsed.tr.some((tr) => tr.nm != null)
+  ) {
+    return null;
+  }
   const holidays: Date[] = [];
   for (const s of parsed.h) {
     const d = parseDate(s);
@@ -267,6 +279,8 @@ function decodeV2(parsed: z.infer<typeof v2Token>): ShareFormState | null {
     notes: tr.nt,
     startDate: tr.sd ? parseDate(tr.sd) ?? undefined : undefined,
     startsAfter: tr.sa,
+    // Legacy fallback: pre-per-track links only carried the project-level count.
+    numberOfMeetings: tr.nm ?? (parsed.m === "count" ? parsed.c : undefined),
   }));
   return {
     projectName: parsed.pn,
@@ -305,6 +319,7 @@ function decodeV3(parsed: z.infer<typeof v3Token>): ShareFormState {
       notes: tr.nt,
       startDate: tr.sd ? parseDate(tr.sd) ?? undefined : undefined,
       startsAfter: tr.sa,
+      numberOfMeetings: tr.nm ?? (parsed.m === "count" ? parsed.c : undefined),
     }, idx);
   });
   // Cast: ShareFormState requires startDate, but ScheduleForm tolerates
@@ -369,6 +384,7 @@ export function encodeDraftState(state: DraftFormState): string {
       if (t.notes) tr.nt = t.notes;
       if (t.startDate) tr.sd = fmtDate(t.startDate);
       if (t.startsAfter) tr.sa = t.startsAfter;
+      if (t.numberOfMeetings != null) tr.nm = t.numberOfMeetings;
       return tr;
     });
   }

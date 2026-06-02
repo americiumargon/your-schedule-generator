@@ -271,6 +271,7 @@
     "startBeforeProject": "Tanggal mulai grup tidak boleh sebelum tanggal mulai program.",
     "startAfterProjectEnd": "Setelah tanggal selesai program — grup ini tidak akan memiliki sesi.",
     "sourceGroupNotReady": "Atur hari dan waktu untuk {{name}} terlebih dahulu.",
-    "circularDependency": "Itu akan membuat ketergantungan melingkar antar grup."
+    "circularDependency": "Itu akan membuat ketergantungan melingkar antar grup.",
+    "sessionsHelp": "Jumlah sesi untuk grup ini"
   }
 }
