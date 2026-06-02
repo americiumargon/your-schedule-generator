@@ -99,6 +99,7 @@ const draftTrackSchema = z.object({
   nt: z.string().max(2000).optional(),
   sd: dateStr.optional(),
   sa: z.string().min(1).max(64).optional(),
+  nm: z.number().int().min(1).max(366).optional(),
 });
 const v3Token = z.object({
   v: z.literal(3),
