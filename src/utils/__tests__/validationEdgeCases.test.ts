@@ -434,6 +434,32 @@ describe("validateMeetings — boundary fuzz", () => {
   });
 });
 
+describe("per-track meetings validation", () => {
+  it("rejects empty / whitespace-only input", () => {
+    expect(validateMeetings("")).toBe("meetingsInvalid");
+    expect(validateMeetings("   ")).toBe("meetingsInvalid");
+  });
+
+  it("rejects malformed numeric strings", () => {
+    expect(validateMeetings("abc")).toBe("meetingsInvalid");
+    expect(validateMeetings("1.5")).toBe("meetingsInvalid");
+    expect(validateMeetings("-3")).toBe("meetingsInvalid");
+    expect(validateMeetings("1e2")).toBe("meetingsInvalid");
+    expect(validateMeetings("NaN")).toBe("meetingsInvalid");
+  });
+
+  it("rejects out-of-range integer strings", () => {
+    expect(validateMeetings("0")).toBe("meetingsOutOfRange");
+    expect(validateMeetings("367")).toBe("meetingsOutOfRange");
+  });
+
+  it("accepts boundary and padded values", () => {
+    expect(validateMeetings("1")).toBeNull();
+    expect(validateMeetings("366")).toBeNull();
+    expect(validateMeetings("  42  ")).toBeNull();
+  });
+});
+
 describe("validateInterval — boundary fuzz", () => {
   it.each([1, 2, 6, 12])("accepts %i", (n) => expect(validateInterval(n)).toBeNull());
   it.each([0, -1, 13, 1.5, NaN, Infinity, "2"])("rejects %p", (n) => {
