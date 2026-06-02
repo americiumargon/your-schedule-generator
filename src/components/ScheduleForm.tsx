@@ -482,6 +482,10 @@ export function ScheduleForm({ onGenerate, onSaveDraft, initialState }: Props) {
       }
       const slotCode = validateTimeSlots(d.timeSlots);
       if (slotCode) { perTrack[d.id] = tCode(slotCode); continue; }
+      if (mode === "count") {
+        const c = validateMeetings(d.numberOfMeetings);
+        if (c) { perTrack[d.id] = tCode(c); continue; }
+      }
       if (d.startDate) {
         const c = validateDate(d.startDate);
         if (c) { perTrack[d.id] = tCode(c); continue; }
