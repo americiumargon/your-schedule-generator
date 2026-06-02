@@ -1120,13 +1120,11 @@ export function ScheduleForm({ onGenerate, onSaveDraft, initialState }: Props) {
             size="sm"
             className="w-full gap-2"
             onClick={() => {
-              const numParsed = parseInt(numberOfMeetings);
               onSaveDraft({
                 projectName: projectName.trim() || undefined,
                 startDate,
                 mode,
-                numberOfMeetings:
-                  mode === "count" && !isNaN(numParsed) && numParsed > 0 ? numParsed : undefined,
+                numberOfMeetings: undefined,
                 endDate: mode === "endDate" ? endDate : undefined,
                 holidays,
                 holidayBehavior,
