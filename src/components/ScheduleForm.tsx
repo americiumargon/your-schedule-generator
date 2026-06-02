@@ -290,7 +290,7 @@ export function ScheduleForm({ onGenerate, onSaveDraft, initialState }: Props) {
       return;
     }
     const srcTrack = draftToTrack(src);
-    const parsedCount = parseInt(numberOfMeetings);
+    const parsedCount = parseInt(src.numberOfMeetings);
     try {
       const sessions = generateSchedule({
         startDate: srcTrack.startDate ?? startDate,
