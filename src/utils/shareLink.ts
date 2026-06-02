@@ -376,6 +376,7 @@ export function encodeDraftState(state: DraftFormState): string {
       if (t.notes) tr.nt = t.notes;
       if (t.startDate) tr.sd = fmtDate(t.startDate);
       if (t.startsAfter) tr.sa = t.startsAfter;
+      if (t.numberOfMeetings != null) tr.nm = t.numberOfMeetings;
       return tr;
     });
   }
