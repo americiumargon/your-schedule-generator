@@ -59,7 +59,7 @@ function minutePositions(): NumPos[] {
   return list;
 }
 
-export function TimePickerClock({ value, onChange, id, ariaLabel, placeholder = "--:--", className }: Props) {
+export function TimePickerClock({ value, onChange, id, ariaLabel, placeholder = "--:--", className, invalid }: Props) {
   const [open, setOpen] = useState(false);
   const [stage, setStage] = useState<Stage>("hour");
   const parsed = parse(value);
