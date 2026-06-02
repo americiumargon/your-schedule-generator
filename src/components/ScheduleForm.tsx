@@ -762,6 +762,9 @@ export function ScheduleForm({ onGenerate, onSaveDraft, initialState }: Props) {
               type="number"
               min="1"
               max="366"
+              step="1"
+              inputMode="numeric"
+              pattern="[0-9]*"
               value={active.numberOfMeetings}
               onChange={(e) => {
                 updateActive({ numberOfMeetings: e.target.value });
