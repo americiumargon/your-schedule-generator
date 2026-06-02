@@ -227,6 +227,7 @@ function decodeV1(parsed: z.infer<typeof v1Token>): ShareFormState | null {
     recurrence: decRec(parsed.rec),
     location: parsed.l,
     notes: parsed.nt,
+    numberOfMeetings: parsed.m === "count" ? parsed.c : undefined,
   });
   return {
     projectName: parsed.n,
