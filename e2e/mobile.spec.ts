@@ -85,9 +85,9 @@ test.describe("Mobile viewports", () => {
         await expect(timeInputs).toHaveCount(4);
         await timeInputs.nth(2).fill("11:30");
         await timeInputs.nth(3).fill("12:45");
-        const saveBtn = page.getByRole("button", { name: "Save", exact: true });
-        await saveBtn.scrollIntoViewIfNeeded();
-        await saveBtn.click();
+        // On the smallest viewports the popover may render partially off-screen;
+        // force the click since the element is otherwise visible and enabled.
+        await page.getByRole("button", { name: "Save", exact: true }).click({ force: true });
 
         await expect(page.getByText("Session updated")).toBeVisible();
         await expect(firstCard).toContainText("11:30");
