@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useKeyboardShortcuts, modKeyLabel } from "@/hooks/useKeyboardShortcuts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ClockTimePicker } from "@/components/ui/clock-time-picker";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -15,7 +16,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import {
   CalendarIcon, Check, ChevronDown, ChevronsUpDown, Clock, MapPin, Plus, Repeat, Settings2, Trash2,
 } from "lucide-react";
-import { format, addDays, nextMonday } from "date-fns";
+import { format, addDays } from "date-fns";
 import { enUS, id as idLocale } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
@@ -157,12 +158,8 @@ function draftToTrack(d: TrackDraft): Track {
   };
 }
 
-function defaultDraft(idx = 0, withDefaultTime = false): TrackDraft {
+function defaultDraft(idx = 0): TrackDraft {
   const d = trackToDraft(createTrack({}, idx));
-  if (withDefaultTime) {
-    d.timeSlots = [{ startTime: "09:00", endTime: "10:00", label: "" }];
-  }
-  if (!d.numberOfMeetings) d.numberOfMeetings = "8";
   return d;
 }
 
@@ -197,7 +194,7 @@ export function ScheduleForm({ onGenerate, onSaveDraft, initialState }: Props) {
   // Shared (project-level)
   const [projectName, setProjectName] = useState<string>(() => initialState?.projectName ?? "");
   const [startDate, setStartDate] = useState<Date | undefined>(
-    () => initialState?.startDate ?? (initialState ? undefined : nextMonday(new Date()))
+    () => initialState?.startDate
   );
   const [mode, setMode] = useState<Mode>(() => initialState?.mode ?? "count");
   // Project-level count is no longer collected here — each track owns its own
@@ -214,7 +211,7 @@ export function ScheduleForm({ onGenerate, onSaveDraft, initialState }: Props) {
   const [drafts, setDrafts] = useState<TrackDraft[]>(() => {
     const initial = initialState?.tracks;
     if (initial && initial.length > 0) return initial.map(trackToDraft);
-    return [defaultDraft(0, true)];
+    return [defaultDraft(0)];
   });
   const [activeId, setActiveId] = useState<string>(() => drafts[0].id);
   const active = drafts.find((d) => d.id === activeId) ?? drafts[0];
@@ -834,17 +831,21 @@ export function ScheduleForm({ onGenerate, onSaveDraft, initialState }: Props) {
           <div className="grid grid-cols-2 gap-2">
             <div>
               <Label htmlFor={`slot-start-0-${active.id}`} className="text-xs text-muted-foreground">{t('form.startTime')}</Label>
-              <Input id={`slot-start-0-${active.id}`} type="time"
+              <ClockTimePicker
+                id={`slot-start-0-${active.id}`}
                 value={firstSlot?.startTime ?? ""}
-                onChange={(e) => updateSlot(0, { startTime: e.target.value })}
-                className="mt-1" />
+                onChange={(v) => updateSlot(0, { startTime: v })}
+                className="mt-1"
+              />
             </div>
             <div>
               <Label htmlFor={`slot-end-0-${active.id}`} className="text-xs text-muted-foreground">{t('form.endTime')}</Label>
-              <Input id={`slot-end-0-${active.id}`} type="time"
+              <ClockTimePicker
+                id={`slot-end-0-${active.id}`}
                 value={firstSlot?.endTime ?? ""}
-                onChange={(e) => updateSlot(0, { endTime: e.target.value })}
-                className="mt-1" />
+                onChange={(v) => updateSlot(0, { endTime: v })}
+                className="mt-1"
+              />
             </div>
           </div>
         </div>
@@ -995,17 +996,21 @@ export function ScheduleForm({ onGenerate, onSaveDraft, initialState }: Props) {
                           <div className="grid grid-cols-2 gap-2">
                             <div>
                               <Label htmlFor={`slot-start-${idx}-${active.id}`} className="text-xs text-muted-foreground">{t('form.startTime')}</Label>
-                              <Input id={`slot-start-${idx}-${active.id}`} type="time"
+                              <ClockTimePicker
+                                id={`slot-start-${idx}-${active.id}`}
                                 value={slot.startTime}
-                                onChange={(e) => updateSlot(idx, { startTime: e.target.value })}
-                                className="mt-1 h-9" />
+                                onChange={(v) => updateSlot(idx, { startTime: v })}
+                                className="mt-1 h-9"
+                              />
                             </div>
                             <div>
                               <Label htmlFor={`slot-end-${idx}-${active.id}`} className="text-xs text-muted-foreground">{t('form.endTime')}</Label>
-                              <Input id={`slot-end-${idx}-${active.id}`} type="time"
+                              <ClockTimePicker
+                                id={`slot-end-${idx}-${active.id}`}
                                 value={slot.endTime}
-                                onChange={(e) => updateSlot(idx, { endTime: e.target.value })}
-                                className="mt-1 h-9" />
+                                onChange={(v) => updateSlot(idx, { endTime: v })}
+                                className="mt-1 h-9"
+                              />
                             </div>
                           </div>
                         </div>

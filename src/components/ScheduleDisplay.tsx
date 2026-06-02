@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Calendar as CalendarUI } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ClockTimePicker } from "@/components/ui/clock-time-picker";
 import {
   Popover,
   PopoverContent,
@@ -171,11 +172,11 @@ function EditSessionPopover({
         <div className="grid grid-cols-2 gap-2">
           <div className="space-y-2">
             <Label>{t('form.startTime')}</Label>
-            <Input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
+            <ClockTimePicker value={startTime} onChange={setStartTime} />
           </div>
           <div className="space-y-2">
             <Label>{t('form.endTime')}</Label>
-            <Input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
+            <ClockTimePicker value={endTime} onChange={setEndTime} />
           </div>
         </div>
         <div className="space-y-2">
