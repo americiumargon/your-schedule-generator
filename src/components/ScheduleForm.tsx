@@ -542,6 +542,13 @@ export function ScheduleForm({ onGenerate, onSaveDraft, initialState }: Props) {
   const extraSlots = timeSlots.slice(1);
   const trackErr = errors.perTrack?.[active.id];
 
+  // Inline slot range validation: when both times are valid HH:mm but end <= start.
+  const TIME_RE_INLINE = /^([01]\d|2[0-3]):[0-5]\d$/;
+  const isSlotRangeInvalid = (s: TimeSlotInput) =>
+    TIME_RE_INLINE.test(s.startTime) && TIME_RE_INLINE.test(s.endTime) && s.startTime >= s.endTime;
+  const anyInvalidSlot = drafts.some((d) => d.timeSlots.some(isSlotRangeInvalid));
+  const timeOrderMsg = t('form.validation.timeOrder');
+
   return (
     <form ref={formRef} onSubmit={handleSubmit} className="space-y-8 pb-4 lg:pb-0">
       {/* ===================== ESSENTIALS ===================== */}
