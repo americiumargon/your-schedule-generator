@@ -85,7 +85,9 @@ test.describe("Mobile viewports", () => {
         await expect(timeInputs).toHaveCount(4);
         await timeInputs.nth(2).fill("11:30");
         await timeInputs.nth(3).fill("12:45");
-        await page.getByRole("button", { name: "Save", exact: true }).click();
+        const saveBtn = page.getByRole("button", { name: "Save", exact: true });
+        await saveBtn.scrollIntoViewIfNeeded();
+        await saveBtn.click();
 
         await expect(page.getByText("Session updated")).toBeVisible();
         await expect(firstCard).toContainText("11:30");
