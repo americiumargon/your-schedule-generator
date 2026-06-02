@@ -50,11 +50,12 @@ test.describe("Schedule Generator E2E", () => {
 
     await firstCard.getByRole("button", { name: "Edit session" }).click();
 
-    // The popover renders its own Start time / End time inputs in a dialog.
-    const popover = page.locator('[role="dialog"]').last();
-    await popover.getByLabel("Start time").fill("11:30");
-    await popover.getByLabel("End time").fill("12:45");
-    await popover.getByRole("button", { name: "Save", exact: true }).click();
+    // The popover adds two new time inputs after the form's two inputs.
+    const timeInputs = page.locator('input[type="time"]');
+    await expect(timeInputs).toHaveCount(4);
+    await timeInputs.nth(2).fill("11:30");
+    await timeInputs.nth(3).fill("12:45");
+    await page.getByRole("button", { name: "Save", exact: true }).click();
 
     await expect(page.getByText("Session updated")).toBeVisible();
 
