@@ -11,6 +11,7 @@ interface Props {
   ariaLabel?: string;
   placeholder?: string;
   className?: string;
+  invalid?: boolean;
 }
 
 const pad = (n: number) => n.toString().padStart(2, "0");
@@ -58,7 +59,7 @@ function minutePositions(): NumPos[] {
   return list;
 }
 
-export function TimePickerClock({ value, onChange, id, ariaLabel, placeholder = "--:--", className }: Props) {
+export function TimePickerClock({ value, onChange, id, ariaLabel, placeholder = "--:--", className, invalid }: Props) {
   const [open, setOpen] = useState(false);
   const [stage, setStage] = useState<Stage>("hour");
   const parsed = parse(value);
@@ -142,14 +143,16 @@ export function TimePickerClock({ value, onChange, id, ariaLabel, placeholder = 
           id={id}
           type="button"
           aria-label={ariaLabel}
+          aria-invalid={invalid || undefined}
           className={cn(
             "flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
             !displayValue && "text-muted-foreground",
+            invalid && "border-destructive focus-visible:ring-destructive",
             className,
           )}
         >
           <span>{displayValue || placeholder}</span>
-          <Clock className="h-4 w-4 text-muted-foreground" />
+          <Clock className={cn("h-4 w-4", invalid ? "text-destructive" : "text-muted-foreground")} />
         </button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-4" align="start">

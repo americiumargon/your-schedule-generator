@@ -542,6 +542,13 @@ export function ScheduleForm({ onGenerate, onSaveDraft, initialState }: Props) {
   const extraSlots = timeSlots.slice(1);
   const trackErr = errors.perTrack?.[active.id];
 
+  // Inline slot range validation: when both times are valid HH:mm but end <= start.
+  const TIME_RE_INLINE = /^([01]\d|2[0-3]):[0-5]\d$/;
+  const isSlotRangeInvalid = (s: TimeSlotInput) =>
+    TIME_RE_INLINE.test(s.startTime) && TIME_RE_INLINE.test(s.endTime) && s.startTime >= s.endTime;
+  const anyInvalidSlot = drafts.some((d) => d.timeSlots.some(isSlotRangeInvalid));
+  const timeOrderMsg = t('form.validation.timeOrder');
+
   return (
     <form ref={formRef} onSubmit={handleSubmit} className="space-y-8 pb-4 lg:pb-0">
       {/* ===================== ESSENTIALS ===================== */}
@@ -838,6 +845,7 @@ export function ScheduleForm({ onGenerate, onSaveDraft, initialState }: Props) {
                   value={firstSlot?.startTime ?? ""}
                   onChange={(v) => updateSlot(0, { startTime: v })}
                   ariaLabel={t('form.startTime')}
+                  invalid={firstSlot ? isSlotRangeInvalid(firstSlot) : false}
                 />
               </div>
             </div>
@@ -849,10 +857,14 @@ export function ScheduleForm({ onGenerate, onSaveDraft, initialState }: Props) {
                   value={firstSlot?.endTime ?? ""}
                   onChange={(v) => updateSlot(0, { endTime: v })}
                   ariaLabel={t('form.endTime')}
+                  invalid={firstSlot ? isSlotRangeInvalid(firstSlot) : false}
                 />
               </div>
             </div>
           </div>
+          {firstSlot && isSlotRangeInvalid(firstSlot) && (
+            <p role="alert" className="text-sm font-medium text-destructive mt-1">{timeOrderMsg}</p>
+          )}
         </div>
 
         {/* Subtle upgrade path for casual users */}
@@ -1007,6 +1019,7 @@ export function ScheduleForm({ onGenerate, onSaveDraft, initialState }: Props) {
                                   value={slot.startTime}
                                   onChange={(v) => updateSlot(idx, { startTime: v })}
                                   ariaLabel={t('form.startTime')}
+                                  invalid={isSlotRangeInvalid(slot)}
                                 />
                               </div>
                             </div>
@@ -1018,10 +1031,14 @@ export function ScheduleForm({ onGenerate, onSaveDraft, initialState }: Props) {
                                   value={slot.endTime}
                                   onChange={(v) => updateSlot(idx, { endTime: v })}
                                   ariaLabel={t('form.endTime')}
+                                  invalid={isSlotRangeInvalid(slot)}
                                 />
                               </div>
                             </div>
                           </div>
+                          {isSlotRangeInvalid(slot) && (
+                            <p role="alert" className="text-sm font-medium text-destructive">{timeOrderMsg}</p>
+                          )}
                         </div>
                       );
                     })}
@@ -1140,7 +1157,13 @@ export function ScheduleForm({ onGenerate, onSaveDraft, initialState }: Props) {
             variant="outline"
             size="sm"
             className="w-full gap-2"
+            disabled={anyInvalidSlot}
+            title={anyInvalidSlot ? timeOrderMsg : undefined}
             onClick={() => {
+              if (anyInvalidSlot) {
+                toast.error(timeOrderMsg);
+                return;
+              }
               onSaveDraft({
                 projectName: projectName.trim() || undefined,
                 startDate,
