@@ -1157,7 +1157,13 @@ export function ScheduleForm({ onGenerate, onSaveDraft, initialState }: Props) {
             variant="outline"
             size="sm"
             className="w-full gap-2"
+            disabled={anyInvalidSlot}
+            title={anyInvalidSlot ? timeOrderMsg : undefined}
             onClick={() => {
+              if (anyInvalidSlot) {
+                toast.error(timeOrderMsg);
+                return;
+              }
               onSaveDraft({
                 projectName: projectName.trim() || undefined,
                 startDate,
