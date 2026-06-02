@@ -271,6 +271,8 @@ function decodeV2(parsed: z.infer<typeof v2Token>): ShareFormState | null {
     notes: tr.nt,
     startDate: tr.sd ? parseDate(tr.sd) ?? undefined : undefined,
     startsAfter: tr.sa,
+    // Legacy fallback: pre-per-track links only carried the project-level count.
+    numberOfMeetings: tr.nm ?? (parsed.m === "count" ? parsed.c : undefined),
   }));
   return {
     projectName: parsed.pn,
