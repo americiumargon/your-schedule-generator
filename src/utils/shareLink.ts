@@ -189,6 +189,7 @@ export function encodeShareState(state: ShareFormState): string {
       ...(t.notes ? { nt: t.notes } : {}),
       ...(t.startDate ? { sd: fmtDate(t.startDate) } : {}),
       ...(t.startsAfter ? { sa: t.startsAfter } : {}),
+      ...(t.numberOfMeetings != null ? { nm: t.numberOfMeetings } : {}),
     })),
   };
   return encodeToken(JSON.stringify(token));
