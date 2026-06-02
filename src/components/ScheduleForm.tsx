@@ -525,7 +525,7 @@ export function ScheduleForm({ onGenerate, onSaveDraft, initialState }: Props) {
       projectName: trimmedProject,
       startDate: startDate!,
       mode,
-      numberOfMeetings: mode === "count" ? parseInt(numberOfMeetings) : undefined,
+      numberOfMeetings: undefined,
       endDate: mode === "endDate" ? endDate : undefined,
       holidays,
       holidayBehavior,
