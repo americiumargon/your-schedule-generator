@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import LZString from "lz-string";
 import {
   encodeDraftState,
   encodeShareState,
