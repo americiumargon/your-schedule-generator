@@ -15,12 +15,13 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import {
   CalendarIcon, Check, ChevronDown, ChevronsUpDown, Clock, MapPin, Plus, Repeat, Settings2, Trash2,
 } from "lucide-react";
-import { format, addDays, nextMonday } from "date-fns";
+import { format, addDays } from "date-fns";
 import { enUS, id as idLocale } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { TrackTabs } from "@/components/TrackTabs";
+import { TimePickerClock } from "@/components/TimePickerClock";
 import { createTrack, newTrackId, TRACK_COLORS, wouldCreateCycle, findCycleTrackIds, type ProjectState, type Track } from "@/utils/tracks";
 import { generateSchedule } from "@/utils/scheduleGenerator";
 import {
@@ -157,12 +158,11 @@ function draftToTrack(d: TrackDraft): Track {
   };
 }
 
-function defaultDraft(idx = 0, withDefaultTime = false): TrackDraft {
+function defaultDraft(idx = 0, _withDefaultTime = false): TrackDraft {
   const d = trackToDraft(createTrack({}, idx));
-  if (withDefaultTime) {
-    d.timeSlots = [{ startTime: "09:00", endTime: "10:00", label: "" }];
-  }
-  if (!d.numberOfMeetings) d.numberOfMeetings = "8";
+  d.timeSlots = [{ startTime: "", endTime: "", label: "" }];
+  d.name = "";
+  d.numberOfMeetings = "";
   return d;
 }
 
@@ -196,9 +196,7 @@ export function ScheduleForm({ onGenerate, onSaveDraft, initialState }: Props) {
 
   // Shared (project-level)
   const [projectName, setProjectName] = useState<string>(() => initialState?.projectName ?? "");
-  const [startDate, setStartDate] = useState<Date | undefined>(
-    () => initialState?.startDate ?? (initialState ? undefined : nextMonday(new Date()))
-  );
+  const [startDate, setStartDate] = useState<Date | undefined>(() => initialState?.startDate);
   const [mode, setMode] = useState<Mode>(() => initialState?.mode ?? "count");
   // Project-level count is no longer collected here — each track owns its own
   // numberOfMeetings. Legacy share links hydrate tracks via decodeV2 fallback.
@@ -834,17 +832,25 @@ export function ScheduleForm({ onGenerate, onSaveDraft, initialState }: Props) {
           <div className="grid grid-cols-2 gap-2">
             <div>
               <Label htmlFor={`slot-start-0-${active.id}`} className="text-xs text-muted-foreground">{t('form.startTime')}</Label>
-              <Input id={`slot-start-0-${active.id}`} type="time"
-                value={firstSlot?.startTime ?? ""}
-                onChange={(e) => updateSlot(0, { startTime: e.target.value })}
-                className="mt-1" />
+              <div className="mt-1">
+                <TimePickerClock
+                  id={`slot-start-0-${active.id}`}
+                  value={firstSlot?.startTime ?? ""}
+                  onChange={(v) => updateSlot(0, { startTime: v })}
+                  ariaLabel={t('form.startTime')}
+                />
+              </div>
             </div>
             <div>
               <Label htmlFor={`slot-end-0-${active.id}`} className="text-xs text-muted-foreground">{t('form.endTime')}</Label>
-              <Input id={`slot-end-0-${active.id}`} type="time"
-                value={firstSlot?.endTime ?? ""}
-                onChange={(e) => updateSlot(0, { endTime: e.target.value })}
-                className="mt-1" />
+              <div className="mt-1">
+                <TimePickerClock
+                  id={`slot-end-0-${active.id}`}
+                  value={firstSlot?.endTime ?? ""}
+                  onChange={(v) => updateSlot(0, { endTime: v })}
+                  ariaLabel={t('form.endTime')}
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -995,17 +1001,25 @@ export function ScheduleForm({ onGenerate, onSaveDraft, initialState }: Props) {
                           <div className="grid grid-cols-2 gap-2">
                             <div>
                               <Label htmlFor={`slot-start-${idx}-${active.id}`} className="text-xs text-muted-foreground">{t('form.startTime')}</Label>
-                              <Input id={`slot-start-${idx}-${active.id}`} type="time"
-                                value={slot.startTime}
-                                onChange={(e) => updateSlot(idx, { startTime: e.target.value })}
-                                className="mt-1 h-9" />
+                              <div className="mt-1">
+                                <TimePickerClock
+                                  id={`slot-start-${idx}-${active.id}`}
+                                  value={slot.startTime}
+                                  onChange={(v) => updateSlot(idx, { startTime: v })}
+                                  ariaLabel={t('form.startTime')}
+                                />
+                              </div>
                             </div>
                             <div>
                               <Label htmlFor={`slot-end-${idx}-${active.id}`} className="text-xs text-muted-foreground">{t('form.endTime')}</Label>
-                              <Input id={`slot-end-${idx}-${active.id}`} type="time"
-                                value={slot.endTime}
-                                onChange={(e) => updateSlot(idx, { endTime: e.target.value })}
-                                className="mt-1 h-9" />
+                              <div className="mt-1">
+                                <TimePickerClock
+                                  id={`slot-end-${idx}-${active.id}`}
+                                  value={slot.endTime}
+                                  onChange={(v) => updateSlot(idx, { endTime: v })}
+                                  ariaLabel={t('form.endTime')}
+                                />
+                              </div>
                             </div>
                           </div>
                         </div>
