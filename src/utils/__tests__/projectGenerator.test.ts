@@ -127,6 +127,64 @@ describe("generateProject — per-group startDate override", () => {
   });
 });
 
+describe("per-group session count isolation (regression)", () => {
+  function mkTrack(name: string, count: number) {
+    return createTrack({
+      name,
+      selectedDays: [1], // Monday
+      timeSlots: [{ startTime: "09:00", endTime: "10:00" }],
+      recurrence: { type: "weekly", interval: 1 },
+      numberOfMeetings: count,
+    });
+  }
+
+  it("changing one track's numberOfMeetings never alters the others", () => {
+    const a = mkTrack("A", 3);
+    const b = mkTrack("B", 6);
+    const c = mkTrack("C", 9);
+
+    const first = generateProject(
+      baseProject({ tracks: [a, b, c], numberOfMeetings: undefined })
+    );
+    expect(first.byTrack[a.id]).toHaveLength(3);
+    expect(first.byTrack[b.id]).toHaveLength(6);
+    expect(first.byTrack[c.id]).toHaveLength(9);
+
+    // Snapshot B and C date sequences before mutating A.
+    const bDates = first.byTrack[b.id].map((s) => s.date.toISOString());
+    const cDates = first.byTrack[c.id].map((s) => s.date.toISOString());
+
+    // Mutate ONLY track A — leave B and C objects untouched.
+    const aBumped = { ...a, numberOfMeetings: 12 };
+    const second = generateProject(
+      baseProject({ tracks: [aBumped, b, c], numberOfMeetings: undefined })
+    );
+
+    expect(second.byTrack[aBumped.id]).toHaveLength(12);
+    expect(second.byTrack[b.id]).toHaveLength(6);
+    expect(second.byTrack[c.id]).toHaveLength(9);
+
+    // B and C produce the exact same dates — no cross-contamination.
+    expect(second.byTrack[b.id].map((s) => s.date.toISOString())).toEqual(bDates);
+    expect(second.byTrack[c.id].map((s) => s.date.toISOString())).toEqual(cDates);
+  });
+
+  it("a track with an invalid undefined count falls back to project default without disturbing siblings", () => {
+    const a = createTrack({
+      name: "A",
+      selectedDays: [1],
+      timeSlots: [{ startTime: "09:00", endTime: "10:00" }],
+      recurrence: { type: "weekly", interval: 1 },
+      // no per-track count
+    });
+    const b = mkTrack("B", 4);
+    const { byTrack } = generateProject(
+      baseProject({ tracks: [a, b], numberOfMeetings: 7 })
+    );
+    expect(byTrack[a.id]).toHaveLength(7);
+    expect(byTrack[b.id]).toHaveLength(4);
+  });
+
 describe("wouldCreateCycle / findCycleTrackIds", () => {
   it("rejects self-reference", () => {
     const tracks = [{ id: "a" }, { id: "b" }];
