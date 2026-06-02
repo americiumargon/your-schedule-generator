@@ -58,6 +58,7 @@ const trackSchema = z.object({
   nt: z.string().max(2000).optional(),
   sd: dateStr.optional(),
   sa: z.string().min(1).max(64).optional(),
+  nm: z.number().int().min(1).max(366).optional(),
 });
 
 const v2Token = z.object({
