@@ -157,12 +157,11 @@ function draftToTrack(d: TrackDraft): Track {
   };
 }
 
-function defaultDraft(idx = 0, withDefaultTime = false): TrackDraft {
+function defaultDraft(idx = 0, _withDefaultTime = false): TrackDraft {
   const d = trackToDraft(createTrack({}, idx));
-  if (withDefaultTime) {
-    d.timeSlots = [{ startTime: "09:00", endTime: "10:00", label: "" }];
-  }
-  if (!d.numberOfMeetings) d.numberOfMeetings = "8";
+  d.timeSlots = [{ startTime: "", endTime: "", label: "" }];
+  d.name = "";
+  d.numberOfMeetings = "";
   return d;
 }
 
@@ -196,9 +195,7 @@ export function ScheduleForm({ onGenerate, onSaveDraft, initialState }: Props) {
 
   // Shared (project-level)
   const [projectName, setProjectName] = useState<string>(() => initialState?.projectName ?? "");
-  const [startDate, setStartDate] = useState<Date | undefined>(
-    () => initialState?.startDate ?? (initialState ? undefined : nextMonday(new Date()))
-  );
+  const [startDate, setStartDate] = useState<Date | undefined>(() => initialState?.startDate);
   const [mode, setMode] = useState<Mode>(() => initialState?.mode ?? "count");
   // Project-level count is no longer collected here — each track owns its own
   // numberOfMeetings. Legacy share links hydrate tracks via decodeV2 fallback.
