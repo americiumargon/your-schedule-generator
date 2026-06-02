@@ -253,7 +253,15 @@ function decodeV2(parsed: z.infer<typeof v2Token>): ShareFormState | null {
     if (!ed) return null;
     endDate = ed;
   }
-  if (parsed.m === "count" && parsed.c == null) return null;
+  // Count mode is valid if either the legacy project-level count OR at least
+  // one per-track count is present (newer links carry counts on tracks).
+  if (
+    parsed.m === "count" &&
+    parsed.c == null &&
+    !parsed.tr.some((tr) => tr.nm != null)
+  ) {
+    return null;
+  }
   const holidays: Date[] = [];
   for (const s of parsed.h) {
     const d = parseDate(s);
