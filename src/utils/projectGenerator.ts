@@ -44,7 +44,7 @@ export function generateProject(project: ProjectState): GeneratedProject {
       holidayBehavior: project.holidayBehavior,
       recurrence: track.recurrence,
       mode: project.mode,
-      numberOfMeetings: project.numberOfMeetings,
+      numberOfMeetings: track.numberOfMeetings ?? project.numberOfMeetings,
       endDate: project.endDate,
     });
     // Apply per-session location/notes defaults from track if present
